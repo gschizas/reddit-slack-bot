@@ -172,3 +172,4 @@ fabric.properties
 .idea/workspace.xml
 config/
 data/
+*.refresh_token
