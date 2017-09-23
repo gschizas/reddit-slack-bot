@@ -173,3 +173,6 @@ fabric.properties
 config/
 data/
 *.refresh_token
+*.pem
+setup_fiddler.sh
+
