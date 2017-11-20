@@ -176,3 +176,4 @@ data/
 *.pem
 setup_fiddler.sh
 *.pickle
+usernotes/
