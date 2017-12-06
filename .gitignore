@@ -178,3 +178,4 @@ setup_fiddler.sh
 *.pickle
 usernotes/
 modmail_to_slack.yml
+logs/
