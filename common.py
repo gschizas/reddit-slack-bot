@@ -4,7 +4,6 @@ import os.path
 
 
 def setup_logging():
-    global logger
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
@@ -25,6 +24,7 @@ def setup_logging():
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+    return logger
 
 
 def change_to_local_dir():
