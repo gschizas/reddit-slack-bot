@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import base64
 import datetime
 import json
@@ -10,15 +9,16 @@ import zlib
 
 import prawcore
 import requests
-
 from slackclient import SlackClient
 
 from praw_wrapper import praw_wrapper
 
 
 def main():
-    slack_api_token = os.environ['SLACK_API_TOKEN']
+    global r
+    global sc
 
+    slack_api_token = os.environ['SLACK_API_TOKEN']
     sc = SlackClient(slack_api_token)
     r = praw_wrapper()
 
@@ -68,53 +68,63 @@ def main():
             text = msg['text']
             print('{0} says {1}'.format(username, text))
             if text.lower().startswith('eurobot'):
-                args = text.lower().split()[1:]
-                message_text = ' / '.join(args) + ":tada:"
-                print(message_text)
-                # sc.api_call("chat.postMessage", channel=channel_id, text=message_text)
                 subreddit_name = subreddit_teams.get(teaminfo['domain'])
                 if not subreddit_name:
                     continue
                 sr = r.subreddit(subreddit_name)
-                if args[0:2] == ['modqueue', 'post']:
-                    text = ''
-                    for s in sr.mod.modqueue(only='submissions'):
-                        text += s.title + '\n' + s.url + '\n'
-                    sc.api_call("chat.postMessage", channel=channel_id, text=text)
-                elif args[0:1] == ['usernotes'] and len(args) == 2:
-                    redditor_username = args[1]
-                    tb_notes = sr.wiki['usernotes']
-                    tb_notes_1 = json.loads(tb_notes.content_md)
-                    warnings = tb_notes_1['constants']['warnings']
-                    tb_notes_2 = json.loads(zlib.decompress(base64.b64decode(tb_notes_1['blob'])).decode())
-                    redditor = r.redditor(redditor_username)
-                    try:
-                        redditor._fetch()
-                        redditor_username = redditor.name  # fix capitalization
-                        notes = tb_notes_2.get(redditor_username)
-                        text = ''
-                        if notes is None:
-                            text = f"user {redditor_username} doesn't have any user notes"
-                        else:
-                            for note in notes['ns']:
-                                warning = warnings[note['w']]
-                                when = datetime.datetime.fromtimestamp(note['t'])
-                                note = note['n']
-                                text += f"<!date^{int(when.timestamp())}^{warning} at {{date_short}} {{time}}: {note}|{warning} at {when.isoformat()}: {note}>\n"
-                    except prawcore.exceptions.NotFound:
-                        text = f"user {redditor_username} not found"
-                    sc.api_call("chat.postMessage", channel=channel_id, text=text)
-                elif len(args) == 2 and args[0] == 'crypto':
-                    cryptocoin = args[1].upper()
-                    prices = requests.get("https://min-api.cryptocompare.com/data/price",
-                                          params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
-                    if prices.get('Response') == 'Error':
-                        text = prices['Message']
-                    else:
-                        text = f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}"
-                    sc.api_call("chat.postMessage", channel=channel_id, text=text)
-
+                reply_text = process_command(sr, text)
+                if reply_text:
+                    sc.api_call("chat.postMessage", channel=channel_id, text=reply_text)
         time.sleep(1)
+
+
+def process_command(sr, text):
+    global r, sc
+    args = text.lower().split()[1:]
+    message_text = ' / '.join(args) + ":tada:"
+    print(message_text)
+    # sc.api_call("chat.postMessage", channel=channel_id, text=message_text)
+
+    if args[0:2] == ['modqueue', 'post']:
+        text = ''
+        for s in sr.mod.modqueue(only='submissions'):
+            text += s.title + '\n' + s.url + '\n'
+        return text
+    elif args[0:1] == ['usernotes'] and len(args) == 2:
+        redditor_username = args[1]
+        tb_notes = sr.wiki['usernotes']
+        tb_notes_1 = json.loads(tb_notes.content_md)
+        warnings = tb_notes_1['constants']['warnings']
+        tb_notes_2 = json.loads(zlib.decompress(base64.b64decode(tb_notes_1['blob'])).decode())
+        redditor = r.redditor(redditor_username)
+        try:
+            redditor._fetch()
+            redditor_username = redditor.name  # fix capitalization
+            notes = tb_notes_2.get(redditor_username)
+            text = ''
+            if notes is None:
+                text = f"user {redditor_username} doesn't have any user notes"
+            else:
+                for note in notes['ns']:
+                    warning = warnings[note['w']]
+                    when = datetime.datetime.fromtimestamp(note['t'])
+                    note = note['n']
+                    text += (f"<!date^{int(when.timestamp())}^{warning} at {{date_short}} {{time}}: {note}|" 
+                             f"{warning} at {when.isoformat()}: {note}>\n")
+        except prawcore.exceptions.NotFound:
+            text = f"user {redditor_username} not found"
+        return text
+    elif len(args) == 2 and args[0] == 'crypto':
+        cryptocoin = args[1].upper()
+        prices = requests.get("https://min-api.cryptocompare.com/data/price",
+                              params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
+        if prices.get('Response') == 'Error':
+            text = prices['Message']
+        else:
+            text = f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}"
+        return text
+    else:
+        return None
 
 
 if __name__ == '__main__':
