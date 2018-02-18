@@ -7,6 +7,7 @@ import logging.handlers
 import os
 import sys
 import time
+import subprocess
 import zlib
 
 import prawcore
@@ -102,6 +103,8 @@ def process_command(sr, text):
         return cmd_usernotes(sr, args)
     elif len(args) == 2 and args[0] == 'crypto':
         return cmd_crypto_price(args)
+    elif args[0:1] == ['fortune']:
+        return cmd_fortune()
     else:
         return None
 
@@ -148,6 +151,9 @@ def cmd_modqueue_posts(sr):
     for s in sr.mod.modqueue(only='submissions'):
         text += s.title + '\n' + s.url + '\n'
     return text
+
+def cmd_fortune():
+    return subprocess.check_output('/usr/games/fortune').decode()
 
 
 if __name__ == '__main__':
