@@ -109,7 +109,7 @@ def process_command(sr, text):
                     warning = warnings[note['w']]
                     when = datetime.datetime.fromtimestamp(note['t'])
                     note = note['n']
-                    text += (f"<!date^{int(when.timestamp())}^{warning} at {{date_short}} {{time}}: {note}|" 
+                    text += (f"<!date^{int(when.timestamp())}^{warning} at {{date_short}} {{time}}: {note}|"
                              f"{warning} at {when.isoformat()}: {note}>\n")
         except prawcore.exceptions.NotFound:
             text = f"user {redditor_username} not found"
