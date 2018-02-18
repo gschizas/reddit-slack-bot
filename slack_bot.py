@@ -57,12 +57,10 @@ def main():
         print('Connection failed')
         sys.exit(1)
 
-    usernames = {}
     teams = {}
 
     while True:
         for msg in sc.rtm_read():
-            print(msg)
             if msg['type'] != 'message':
                 continue
             if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message'):
@@ -70,18 +68,9 @@ def main():
             if msg.get('subtype') == 'message_changed':
                 msg.update(msg['message'])
                 del msg['message']
-                print(msg)
 
-            user_id = msg['user']
             channel_id = msg['channel']
             team_id = msg.get('source_team', '')
-
-            if user_id not in usernames:
-                response = sc.api_call('users.info', user=user_id)
-                if response['ok']:
-                    usernames[user_id] = response['user']['name']
-
-            username = usernames.get(user_id, f"Unknown - {user_id}")
 
             response = sc.api_call('team.info')
             if response['ok']:
@@ -90,7 +79,7 @@ def main():
             teaminfo = teams.get(team_id, {'name': 'Unknown - ' + team_id, 'domain': ''})
 
             text = msg['text']
-            print('{0} says {1}'.format(username, text))
+
             if text.lower().startswith('eurobot'):
                 subreddit_name = subreddit_teams.get(teaminfo['domain'])
                 if not subreddit_name:
