@@ -48,13 +48,14 @@ def init():
 
 
 def main():
+    global logger
     setup_logging()
     init()
 
     if sc.rtm_connect():
-        print('Connection established')
+        logger.info('Connection established')
     else:
-        print('Connection failed')
+        logger.critical('Connection failed')
         sys.exit(1)
 
     teams = {}
