@@ -2,6 +2,8 @@
 import base64
 import datetime
 import json
+import logging
+import logging.handlers
 import os
 import sys
 import time
@@ -12,6 +14,24 @@ import requests
 from slackclient import SlackClient
 
 from praw_wrapper import praw_wrapper
+
+
+def setup_logging():
+    global logger
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+    fh = logging.handlers.TimedRotatingFileHandler('logs/slack_bot.log', when='midnight')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 
 def init():
@@ -28,6 +48,7 @@ def init():
 
 
 def main():
+    setup_logging()
     init()
 
     if sc.rtm_connect():
