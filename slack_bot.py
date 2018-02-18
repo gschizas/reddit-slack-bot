@@ -94,9 +94,6 @@ def main():
 def process_command(sr, text):
     global r, sc
     args = text.lower().split()[1:]
-    message_text = ' / '.join(args) + ":tada:"
-    print(message_text)
-    # sc.api_call("chat.postMessage", channel=channel_id, text=message_text)
 
     if args[0:2] == ['modqueue', 'post']:
         text = ''
