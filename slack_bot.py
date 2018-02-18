@@ -5,9 +5,9 @@ import json
 import logging
 import logging.handlers
 import os
+import subprocess
 import sys
 import time
-import subprocess
 import zlib
 
 import prawcore
@@ -151,6 +151,7 @@ def cmd_modqueue_posts(sr):
     for s in sr.mod.modqueue(only='submissions'):
         text += s.title + '\n' + s.url + '\n'
     return text
+
 
 def cmd_fortune():
     return subprocess.check_output('/usr/games/fortune').decode()
