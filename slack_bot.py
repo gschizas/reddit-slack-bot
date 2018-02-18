@@ -96,45 +96,57 @@ def process_command(sr, text):
     args = text.lower().split()[1:]
 
     if args[0:2] == ['modqueue', 'post']:
-        text = ''
-        for s in sr.mod.modqueue(only='submissions'):
-            text += s.title + '\n' + s.url + '\n'
-        return text
+        return cmd_modqueue_posts(sr)
     elif args[0:1] == ['usernotes'] and len(args) == 2:
-        redditor_username = args[1]
-        tb_notes = sr.wiki['usernotes']
-        tb_notes_1 = json.loads(tb_notes.content_md)
-        warnings = tb_notes_1['constants']['warnings']
-        tb_notes_2 = json.loads(zlib.decompress(base64.b64decode(tb_notes_1['blob'])).decode())
-        redditor = r.redditor(redditor_username)
-        try:
-            redditor._fetch()
-            redditor_username = redditor.name  # fix capitalization
-            notes = tb_notes_2.get(redditor_username)
-            text = ''
-            if notes is None:
-                return f"user {redditor_username} doesn't have any user notes"
-
-            for note in notes['ns']:
-                warning = warnings[note['w']]
-                when = datetime.datetime.fromtimestamp(note['t'])
-                note = note['n']
-                text += (f"<!date^{int(when.timestamp())}^{warning} at {{date_short}} {{time}}: {note}|"
-                         f"{warning} at {when.isoformat()}: {note}>\n")
-            return text
-        except prawcore.exceptions.NotFound:
-            return f"user {redditor_username} not found"
+        return cmd_usernotes(sr, args)
     elif len(args) == 2 and args[0] == 'crypto':
-        cryptocoin = args[1].upper()
-        prices = requests.get("https://min-api.cryptocompare.com/data/price",
-                              params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
-        if prices.get('Response') == 'Error':
-            text = prices['Message']
-        else:
-            text = f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}"
-        return text
+        return cmd_crypto_price(args)
     else:
         return None
+
+
+def cmd_crypto_price(args):
+    cryptocoin = args[1].upper()
+    prices = requests.get("https://min-api.cryptocompare.com/data/price",
+                          params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
+    if prices.get('Response') == 'Error':
+        text = prices['Message']
+    else:
+        text = f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}"
+    return text
+
+
+def cmd_usernotes(sr, args):
+    redditor_username = args[1]
+    tb_notes = sr.wiki['usernotes']
+    tb_notes_1 = json.loads(tb_notes.content_md)
+    warnings = tb_notes_1['constants']['warnings']
+    tb_notes_2 = json.loads(zlib.decompress(base64.b64decode(tb_notes_1['blob'])).decode())
+    redditor = r.redditor(redditor_username)
+    try:
+        redditor._fetch()
+        redditor_username = redditor.name  # fix capitalization
+        notes = tb_notes_2.get(redditor_username)
+        text = ''
+        if notes is None:
+            return f"user {redditor_username} doesn't have any user notes"
+
+        for note in notes['ns']:
+            warning = warnings[note['w']]
+            when = datetime.datetime.fromtimestamp(note['t'])
+            note = note['n']
+            text += (f"<!date^{int(when.timestamp())}^{warning} at {{date_short}} {{time}}: {note}|"
+                     f"{warning} at {when.isoformat()}: {note}>\n")
+        return text
+    except prawcore.exceptions.NotFound:
+        return f"user {redditor_username} not found"
+
+
+def cmd_modqueue_posts(sr):
+    text = ''
+    for s in sr.mod.modqueue(only='submissions'):
+        text += s.title + '\n' + s.url + '\n'
+    return text
 
 
 if __name__ == '__main__':
