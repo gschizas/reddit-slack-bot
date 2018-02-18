@@ -14,13 +14,21 @@ from slackclient import SlackClient
 from praw_wrapper import praw_wrapper
 
 
-def main():
+def init():
     global r
     global sc
-
+    global subreddit_teams
     slack_api_token = os.environ['SLACK_API_TOKEN']
     sc = SlackClient(slack_api_token)
     r = praw_wrapper()
+    subreddit_teams = {
+        'reddit-europe': 'europe',
+        'reddit-greece': 'greece'
+    }
+
+
+def main():
+    init()
 
     if sc.rtm_connect():
         print('Connection established')
@@ -30,11 +38,6 @@ def main():
 
     usernames = {}
     teams = {}
-
-    subreddit_teams = {
-        'reddit-europe': 'europe',
-        'reddit-greece': 'greece'
-    }
 
     while True:
         for msg in sc.rtm_read():
