@@ -113,17 +113,17 @@ def process_command(sr, text):
             notes = tb_notes_2.get(redditor_username)
             text = ''
             if notes is None:
-                text = f"user {redditor_username} doesn't have any user notes"
-            else:
-                for note in notes['ns']:
-                    warning = warnings[note['w']]
-                    when = datetime.datetime.fromtimestamp(note['t'])
-                    note = note['n']
-                    text += (f"<!date^{int(when.timestamp())}^{warning} at {{date_short}} {{time}}: {note}|"
-                             f"{warning} at {when.isoformat()}: {note}>\n")
+                return f"user {redditor_username} doesn't have any user notes"
+
+            for note in notes['ns']:
+                warning = warnings[note['w']]
+                when = datetime.datetime.fromtimestamp(note['t'])
+                note = note['n']
+                text += (f"<!date^{int(when.timestamp())}^{warning} at {{date_short}} {{time}}: {note}|"
+                         f"{warning} at {when.isoformat()}: {note}>\n")
+            return text
         except prawcore.exceptions.NotFound:
-            text = f"user {redditor_username} not found"
-        return text
+            return f"user {redditor_username} not found"
     elif len(args) == 2 and args[0] == 'crypto':
         cryptocoin = args[1].upper()
         prices = requests.get("https://min-api.cryptocompare.com/data/price",
