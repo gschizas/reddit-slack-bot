@@ -5,9 +5,11 @@ import json
 import logging
 import logging.handlers
 import os
+import re
 import subprocess
 import sys
 import time
+import urllib.parse
 import zlib
 
 import prawcore
@@ -105,6 +107,8 @@ def process_command(sr, text):
         return cmd_crypto_price(args)
     elif args[0:1] == ['fortune']:
         return cmd_fortune()
+    elif args[0:2] == ['domaintag', 'add'] and len(args) == 4:
+        return cmd_add_domain_tag(sr, args[2], args[3])
     else:
         return None
 
@@ -155,6 +159,21 @@ def cmd_modqueue_posts(sr):
 
 def cmd_fortune():
     return subprocess.check_output('/usr/games/fortune').decode()
+
+
+def cmd_add_domain_tag(sr, url_text, color):
+    toolbox_data = json.loads(sr.wiki['toolbox'].content_md)
+    if re.match('<.*>', url_text):
+        url_text = url_text[1:-1]
+    url = urllib.parse.urlparse(url_text)
+    final_url = url.netloc
+    if len(url.path) > 1:
+        final_url += url.path
+    if not re.match(r'\#[0-9a-f]{6}', color, re.IGNORECASE):
+        return f"{color} is not a good color on you!"
+    toolbox_data[final_url] = color
+    sr.wiki['toolbox'].edit(json.dumps(toolbox_data), 'Updated by slackbot')
+    return f"Added color {color} for domain {final_url}"
 
 
 if __name__ == '__main__':
