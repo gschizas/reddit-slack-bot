@@ -171,7 +171,11 @@ def cmd_add_domain_tag(sr, url_text, color):
         final_url += url.path
     if not re.match(r'\#[0-9a-f]{6}', color, re.IGNORECASE):
         return f"{color} is not a good color on you!"
-    toolbox_data[final_url] = color
+    entry = [tag for tag in toolbox_data['domainTags'] if tag['name'] == final_url]
+    if entry:
+        entry['color'] = color
+    else:
+        toolbox_data['domainTags'].append({'name': final_url, 'color': color})
     sr.wiki['toolbox'].edit(json.dumps(toolbox_data), 'Updated by slackbot')
     return f"Added color {color} for domain {final_url}"
 
