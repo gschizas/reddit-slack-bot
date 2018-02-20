@@ -25,10 +25,11 @@ def setup_logging():
     global logger
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
+    log_name = os.environ['LOG_NAME']
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-    fh = logging.handlers.TimedRotatingFileHandler('logs/slack_bot.log', when='midnight')
+    fh = logging.handlers.TimedRotatingFileHandler(f'logs/slack_bot-{log_name}.log', when='midnight')
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
@@ -42,18 +43,17 @@ def setup_logging():
 def init():
     global r
     global sc
-    global subreddit_teams
+    global trigger_word
+    global subreddit_name
     slack_api_token = os.environ['SLACK_API_TOKEN']
+    trigger_word = os.environ['BOT_NAME']
+    subreddit_name = os.environ.get('SUBREDDIT_NAME')
     sc = SlackClient(slack_api_token)
     r = praw_wrapper()
-    subreddit_teams = {
-        'reddit-europe': 'europe',
-        'reddit-greece': 'greece'
-    }
 
 
 def main():
-    global logger
+    global logger, subreddit_name, trigger_word
     setup_logging()
     init()
 
@@ -86,8 +86,7 @@ def main():
 
             text = msg['text']
 
-            if text.lower().startswith('eurobot'):
-                subreddit_name = subreddit_teams.get(teaminfo['domain'])
+            if text.lower().startswith(triger_word):
                 if not subreddit_name:
                     continue
                 sr = r.subreddit(subreddit_name)
