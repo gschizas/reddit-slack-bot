@@ -86,7 +86,7 @@ def main():
 
             text = msg['text']
 
-            if text.lower().startswith(triger_word):
+            if text.lower().startswith(trigger_word):
                 if not subreddit_name:
                     continue
                 sr = r.subreddit(subreddit_name)
