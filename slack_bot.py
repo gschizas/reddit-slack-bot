@@ -87,9 +87,8 @@ def main():
             text = msg['text']
 
             if text.lower().startswith(trigger_word):
-                if not subreddit_name:
-                    continue
-                sr = r.subreddit(subreddit_name)
+                if subreddit_name:
+                    sr = r.subreddit(subreddit_name)
                 reply_text = process_command(sr, text)
                 if reply_text:
                     sc.api_call("chat.postMessage", channel=channel_id, text=reply_text)
