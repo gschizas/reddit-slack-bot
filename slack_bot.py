@@ -91,9 +91,13 @@ def main():
                     sr = r.subreddit(subreddit_name)
                 else:
                     sr = None
-                reply_text = process_command(sr, text)
+                reply_text, extra_data = process_command(sr, text)
                 if reply_text:
-                    sc.api_call("chat.postMessage", channel=channel_id, text=reply_text)
+                    if extra_data and 'image' in extra_data:
+                        result = sc.api_call("files.upload", channels=channel_id, file=extra_data['image'])
+                        logger.info(result)
+                    else:
+                        sc.api_call("chat.postMessage", channel=channel_id, text=reply_text)
         time.sleep(1)
 
 
@@ -102,18 +106,21 @@ def process_command(sr, text):
     args = text.lower().split()[1:]
 
     if args[0:2] == ['modqueue', 'post']:
-        return cmd_modqueue_posts(sr)
+        return cmd_modqueue_posts(sr), None
     elif args[0:1] == ['usernotes'] and len(args) == 2:
-        return cmd_usernotes(sr, args)
+        return cmd_usernotes(sr, args), None
     elif len(args) == 2 and args[0] == 'crypto':
-        return cmd_crypto_price(args)
+        return cmd_crypto_price(args), None
     elif args[0:1] == ['fortune']:
-        return cmd_fortune()
+        return cmd_fortune(), None
     elif args[0:2] == ['domaintag', 'add'] and len(args) == 4:
-        return cmd_add_domain_tag(sr, args[2], args[3])
+        return cmd_add_domain_tag(sr, args[2], args[3]), None
     elif len(args) == 4 and args[2] == 'in':
-        return cmd_do_conversion(args[0], args[1], args[3])
+        return cmd_do_conversion(args[0], args[1], args[3]), None
+    elif args[0:1] in [['w'], ['weather']]:
+        return cmd_weather(' '.join(args[1:]))
     else:
+        logger.info(args)
         return None
 
 
@@ -126,6 +133,11 @@ def cmd_crypto_price(args):
     else:
         text = f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}"
     return text
+
+
+def cmd_weather(place):
+    weather = requests.get('http://wttr.in/' + place + '_0.png')
+    return weather.ok, {'image': weather.content}
 
 
 def cmd_do_conversion(value_text, currency_from, currency_to):
@@ -142,6 +154,9 @@ def cmd_do_conversion(value_text, currency_from, currency_to):
 
     currency_from = currency_from.upper()
     currency_to = currency_to.upper()
+
+    if currency_from == currency_to:
+        return "Tautological bot is tautological"
 
     prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
                           params={'fsym': currency_from, 'tsyms': currency_to})
