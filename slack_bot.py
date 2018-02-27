@@ -136,7 +136,7 @@ def cmd_crypto_price(args):
 
 
 def cmd_weather(place):
-    weather = requests.get('http://wttr.in/' + place + '_0.png')
+    weather = requests.get('http://wttr.in/' + place + '_p0.png')
     return weather.ok, {'image': weather.content}
 
 
