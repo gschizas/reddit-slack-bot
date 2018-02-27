@@ -2,6 +2,7 @@ import logging
 import logging.handlers
 import os
 import os.path
+import sys
 
 
 def setup_logging():
@@ -13,7 +14,7 @@ def setup_logging():
     if not os.path.exists('logs'):
         os.mkdir('logs')
 
-    filename = os.path.basename(__file__)
+    filename = os.path.basename(sys.argv[0])
     basename = os.path.splitext(filename)[0]
 
     fh = logging.handlers.TimedRotatingFileHandler(f'logs/{filename}.log', when='W0')
