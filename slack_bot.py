@@ -111,6 +111,8 @@ def process_command(sr, text):
         return cmd_fortune()
     elif args[0:2] == ['domaintag', 'add'] and len(args) == 4:
         return cmd_add_domain_tag(sr, args[2], args[3])
+    elif len(args) == 4 and args[2] == 'in':
+        return cmd_do_conversion(args[0], args[1], args[3])
     else:
         return None
 
@@ -123,6 +125,34 @@ def cmd_crypto_price(args):
         text = prices['Message']
     else:
         text = f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}"
+    return text
+
+
+def cmd_do_conversion(value_text, currency_from, currency_to):
+    try:
+        value = float(value_text)
+    except ValueError:
+        return f"{value_text} is not a good number"
+
+    if not(re.match('^\w+$', currency_from)):
+        return f"{currency_from} is not a real currency"
+
+    if not(re.match('^\w+$', currency_to)):
+        return f"{currency_to} is not a real currency"
+
+    currency_from = currency_from.upper()
+    currency_to = currency_to.upper()
+
+    prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
+                          params={'fsym': currency_from, 'tsyms': currency_to})
+    logging.info(prices_page.url)
+    prices = prices_page.json()
+    if prices.get('Response') == 'Error':
+        text = prices['Message']
+    else:
+        price = prices[currency_to]
+        new_value = value * price
+        text = f"{value:.2f} {currency_from} is {new_value:.2f} {currency_to}"
     return text
 
 
