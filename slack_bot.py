@@ -123,7 +123,7 @@ def process_command(sr, text):
         return "No, you're " + ' '.join(args[1:]), None
     else:
         logger.info(args)
-        return None
+        return None, None
 
 
 def cmd_crypto_price(args):
