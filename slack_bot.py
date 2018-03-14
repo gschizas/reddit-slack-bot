@@ -117,7 +117,7 @@ def process_command(sr, text):
         return cmd_add_domain_tag(sr, args[2], args[3]), None
     elif len(args) == 4 and args[2] == 'in':
         return cmd_do_conversion(args[0], args[1], args[3]), None
-    elif len(args) > 2 and args[0:1] in [['w'], ['weather']]:
+    elif len(args) >= 2 and args[0:1] in [['w'], ['weather']]:
         return cmd_weather(' '.join(args[1:]))
     elif len(args) >= 2 and args[0:1] in [['you'], ['your'], ['youre'], ["you're"]]:
         return "No, you're " + ' '.join(args[1:]), None
