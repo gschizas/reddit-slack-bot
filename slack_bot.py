@@ -107,7 +107,7 @@ def process_command(sr, text):
 
     if args[0:2] == ['modqueue', 'post']:
         return cmd_modqueue_posts(sr), None
-    elif args[0:1] == ['usernotes'] and len(args) == 2:
+    elif len(args) == 2 and args[0:1] == ['usernotes'] :
         return cmd_usernotes(sr, args), None
     elif len(args) == 2 and args[0] == 'crypto':
         return cmd_crypto_price(args), None
@@ -117,7 +117,7 @@ def process_command(sr, text):
         return cmd_add_domain_tag(sr, args[2], args[3]), None
     elif len(args) == 4 and args[2] == 'in':
         return cmd_do_conversion(args[0], args[1], args[3]), None
-    elif args[0:1] in [['w'], ['weather']]:
+    elif len(args) > 2 and args[0:1] in [['w'], ['weather']]:
         return cmd_weather(' '.join(args[1:]))
     else:
         logger.info(args)
