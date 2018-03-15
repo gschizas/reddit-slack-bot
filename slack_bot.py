@@ -71,7 +71,7 @@ def main():
                 continue
             if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message'):
                 continue
-            if msg.get('subtype') == 'message_changed':
+            if 'message' in msg:
                 msg.update(msg['message'])
                 del msg['message']
 
