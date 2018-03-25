@@ -121,6 +121,13 @@ def process_command(sr, text):
         return cmd_weather(' '.join(args[1:]))
     elif len(args) >= 2 and args[0:1] in [['you'], ['your'], ['youre'], ["you're"]]:
         return "No, you're " + ' '.join(args[1:]), None
+    elif len(args) >= 2 and args[0:1] in [['binary'], ['bin']]:
+        rest_of_text = ' '.join(args[1:])
+        try:
+            decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
+        except Exception as e:
+            decoded_text = e.message
+        return decoded_text, None
     else:
         logger.info(args)
         return None, None
