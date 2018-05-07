@@ -106,19 +106,19 @@ def process_command(sr, text):
     args = text.lower().split()[1:]
 
     if args[0:2] == ['modqueue', 'post']:
-        return cmd_modqueue_posts(sr), None
+        return do_modqueue_posts(sr), None
     elif len(args) == 2 and args[0:1] == ['usernotes'] :
-        return cmd_usernotes(sr, args), None
+        return do_usernotes(sr, args), None
     elif len(args) == 2 and args[0] == 'crypto':
-        return cmd_crypto_price(args), None
+        return do_crypto_price(args), None
     elif args[0:1] == ['fortune']:
-        return cmd_fortune(), None
+        return do_fortune(), None
     elif args[0:2] == ['domaintag', 'add'] and len(args) == 4:
-        return cmd_add_domain_tag(sr, args[2], args[3]), None
+        return do_add_domain_tag(sr, args[2], args[3]), None
     elif len(args) == 4 and args[2] == 'in':
-        return cmd_do_conversion(args[0], args[1], args[3]), None
+        return do_do_conversion(args[0], args[1], args[3]), None
     elif len(args) >= 2 and args[0:1] in [['w'], ['weather']]:
-        return cmd_weather(' '.join(args[1:]))
+        return do_weather(' '.join(args[1:]))
     elif len(args) >= 2 and args[0:1] in [['you'], ['your'], ['youre'], ["you're"]]:
         return "No, you're " + ' '.join(args[1:]), None
     elif len(args) >= 2 and args[0:1] in [['binary'], ['bin']]:
@@ -133,7 +133,7 @@ def process_command(sr, text):
         return None, None
 
 
-def cmd_crypto_price(args):
+def do_crypto_price(args):
     cryptocoin = args[1].upper()
     prices = requests.get("https://min-api.cryptocompare.com/data/price",
                           params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
@@ -144,12 +144,12 @@ def cmd_crypto_price(args):
     return text
 
 
-def cmd_weather(place):
+def do_weather(place):
     weather = requests.get('http://wttr.in/' + place + '_p0.png')
     return weather.ok, {'image': weather.content}
 
 
-def cmd_do_conversion(value_text, currency_from, currency_to):
+def do_do_conversion(value_text, currency_from, currency_to):
     try:
         value = float(value_text)
     except ValueError:
@@ -180,7 +180,7 @@ def cmd_do_conversion(value_text, currency_from, currency_to):
     return text
 
 
-def cmd_usernotes(sr, args):
+def do_usernotes(sr, args):
     redditor_username = args[1]
     tb_notes = sr.wiki['usernotes']
     tb_notes_1 = json.loads(tb_notes.content_md)
@@ -206,18 +206,18 @@ def cmd_usernotes(sr, args):
         return f"user {redditor_username} not found"
 
 
-def cmd_modqueue_posts(sr):
+def do_modqueue_posts(sr):
     text = ''
     for s in sr.mod.modqueue(only='submissions'):
         text += s.title + '\n' + s.url + '\n'
     return text
 
 
-def cmd_fortune():
+def do_fortune():
     return subprocess.check_output('/usr/games/fortune').decode()
 
 
-def cmd_add_domain_tag(sr, url_text, color):
+def do_add_domain_tag(sr, url_text, color):
     toolbox_data = json.loads(sr.wiki['toolbox'].content_md)
     if re.match('<.*>', url_text):
         url_text = url_text[1:-1]
