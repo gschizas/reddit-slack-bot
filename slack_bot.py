@@ -145,6 +145,8 @@ def do_crypto_price(args):
 
 
 def do_weather(place):
+    if place.lower() == 'macedonia' or place.lower() == 'makedonia':
+        place = 'Thessaloniki'
     weather = requests.get('http://wttr.in/' + place + '_p0.png')
     return weather.ok, {'image': weather.content}
 
