@@ -195,6 +195,7 @@ class SlackbotShell(cmd.Cmd):
             place = 'Thessaloniki'
         weather = requests.get('http://wttr.in/' + place + '_p0.png')
         self._send_image(weather.content)
+    do_w = do_weather
 
 
     def do_do_conversion(self, arg):
