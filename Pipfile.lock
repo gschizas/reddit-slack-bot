@@ -18,10 +18,10 @@
     "default": {
         "certifi": {
             "hashes": [
-                "sha256:14131608ad2fd56836d33a71ee60fa1c82bc9d2c8d98b7bdbc631fe1b3cd1296",
-                "sha256:edbc3f203427eef571f79a7692bb160a2b0f7ccaa31953e99bd17e307cf63f7d"
+                "sha256:13e698f54293db9f89122b0581843a782ad0934a4fe0172d2a980ba77fc61bb7",
+                "sha256:9fa520c1bacfb634fa7af20a76bcbd3d5fb390481724c597da32c719a7dca4b0"
             ],
-            "version": "==2018.1.18"
+            "version": "==2018.4.16"
         },
         "chardet": {
             "hashes": [
@@ -70,10 +70,12 @@
                 "sha256:509842d96fb194f79b57483b76429f8956d8f7ade3cb49d1e5aeb5c5e9ef4918",
                 "sha256:656dcd3d30774ffe252e46db96f4cf24b284d42c904b93f9cbe6b234028f7d2e",
                 "sha256:6932e1ad63c805a41665a94e5d7b70808e9e25943f72afba6d327fede2aeb43d",
+                "sha256:6bbb0b9b8f1a18e845806de0d13ce0cb723a9987e7f0f38411358a51c6155b6a",
                 "sha256:759b485e8cda260bd87b7cdd2ad936a0ec359ee6154a9d856357446792b3faf5",
                 "sha256:766ee90985c667f77bf34950b1d945624c263ecb82d859961f78effb3355c946",
                 "sha256:7afefe5dab4381393a2aa7ccb585ffd6080d52e7cd05f1df3788e9d0e4dfcea9",
                 "sha256:882cacb8af5f7009780da75041ef131d0ec80d9e0b81d3cf8d4b49a0a33fe6ef",
+                "sha256:b692403020a936f5fc213d9fef8541ebec26f0035669fe6cf826d75c492c0651",
                 "sha256:b6bc5f434d72a672dbe48471e70771789d5d93603716c9e36963fe1dc7a35718",
                 "sha256:cea830caa479ae083f51ffdb55fe430a2763e853a7b06195f203db6d28bf5264",
                 "sha256:dc051cd1fe541e321f6846bddba8e2c0de8ca409d51a6d9917c7b970d8d89a3d",
@@ -92,6 +94,7 @@
         },
         "slackclient": {
             "hashes": [
+                "sha256:8eb643b97445631eccc1d8d4d8d7ac606dd0485c82e7d649b78b757ec7b92fdd",
                 "sha256:e9de0c893e8c5473107f5927ae1e543d35246f0c834f5e86470b22b762211577"
             ],
             "index": "pypi",
@@ -113,10 +116,10 @@
         },
         "websocket-client": {
             "hashes": [
-                "sha256:188b68b14fdb2d8eb1a111f21b9ffd2dbf1dbc4e4c1d28cf2c37cdbf1dd1cae6",
-                "sha256:a453dc4dfa6e0db3d8fd7738a308a88effe6240c59f3226eb93e8f020c216149"
+                "sha256:18f1170e6a1b5463986739d9fd45c4308b0d025c1b2f9b88788d8f69e8a5eb4a",
+                "sha256:db70953ae4a064698b27ae56dcad84d0ee68b7b43cb40940f537738f38f510c1"
             ],
-            "version": "==0.47.0"
+            "version": "==0.48.0"
         }
     },
     "develop": {}
