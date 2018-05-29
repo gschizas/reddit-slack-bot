@@ -45,17 +45,15 @@ def setup_logging():
 def init():
     global r
     global sc
-    global trigger_word
     global subreddit_name
     slack_api_token = os.environ['SLACK_API_TOKEN']
-    trigger_word = os.environ['BOT_NAME']
     subreddit_name = os.environ.get('SUBREDDIT_NAME')
     sc = SlackClient(slack_api_token)
     r = praw_wrapper()
 
 
 def main():
-    global logger, subreddit_name, trigger_word
+    global logger, subreddit_name
     setup_logging()
     init()
 
@@ -69,6 +67,8 @@ def main():
     shell = SlackbotShell()
     if subreddit_name:
         shell.sr = r.subreddit(subreddit_name)
+    shell.trigger_word = os.environ['BOT_NAME']
+
 
     while True:
         for msg in sc.rtm_read():
@@ -91,7 +91,7 @@ def main():
 
             text = msg['text']
 
-            if text.lower().startswith(trigger_word):
+            if text.lower().startswith(shell.trigger_word):
                 line = ' '.join(text.lower().split()[1:])
                 shell.channel_id = channel_id
                 shell.team_id = team_id
@@ -154,11 +154,13 @@ class SlackbotShell(cmd.Cmd):
             channel=self.channel_id,
             text=text,
             icon_emoji=':robot_face:',
-            username=trigger_word)
+            username=self.trigger_word)
 
     def _send_image(self, file_data):
         sc.api_call("files.upload",
             channels=self.channel_id,
+            icon_emoji=':robot_face:',
+            username=self.trigger_word,
             file=file_data)
 
     def postcmd(self, stop, line):
