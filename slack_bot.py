@@ -120,8 +120,10 @@ def process_command(sr, text):
     elif len(args) >= 2 and args[0:1] in [['w'], ['weather']]:
         return do_weather(' '.join(args[1:]))
     elif len(args) >= 2 and args[0:1] in [['you'], ['your'], ['youre'], ["you're"]]:
+        """Eurobot is as nice to you as you are to him"""
         return "No, you're " + ' '.join(args[1:]), None
     elif len(args) >= 2 and args[0:1] in [['binary'], ['bin']]:
+        """Convert binary to text"""
         rest_of_text = ' '.join(args[1:])
         try:
             decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
@@ -134,6 +136,7 @@ def process_command(sr, text):
 
 
 def do_crypto_price(args):
+    """Display the current exchange rate of currency"""
     cryptocoin = args[1].upper()
     prices = requests.get("https://min-api.cryptocompare.com/data/price",
                           params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
@@ -145,6 +148,7 @@ def do_crypto_price(args):
 
 
 def do_weather(place):
+    """Display the weather in place"""
     if place.lower() == 'macedonia' or place.lower() == 'makedonia':
         place = 'Thessaloniki'
     weather = requests.get('http://wttr.in/' + place + '_p0.png')
@@ -152,6 +156,7 @@ def do_weather(place):
 
 
 def do_do_conversion(value_text, currency_from, currency_to):
+    """Convert money from one currency to another"""
     try:
         value = float(value_text)
     except ValueError:
@@ -183,6 +188,7 @@ def do_do_conversion(value_text, currency_from, currency_to):
 
 
 def do_usernotes(sr, args):
+    """Display usernotes of a user"""
     redditor_username = args[1]
     tb_notes = sr.wiki['usernotes']
     tb_notes_1 = json.loads(tb_notes.content_md)
@@ -209,6 +215,7 @@ def do_usernotes(sr, args):
 
 
 def do_modqueue_posts(sr):
+    """Display posts from the modqueue"""
     text = ''
     for s in sr.mod.modqueue(only='submissions'):
         text += s.title + '\n' + s.url + '\n'
@@ -216,10 +223,12 @@ def do_modqueue_posts(sr):
 
 
 def do_fortune():
+    """Like a Chinese fortune cookie, but less yummy"""
     return subprocess.check_output('/usr/games/fortune').decode()
 
 
 def do_add_domain_tag(sr, url_text, color):
+    """Add a tag to a domain"""
     toolbox_data = json.loads(sr.wiki['toolbox'].content_md)
     if re.match('<.*>', url_text):
         url_text = url_text[1:-1]
