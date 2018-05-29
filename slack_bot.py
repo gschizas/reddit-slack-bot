@@ -97,7 +97,7 @@ def main():
                         result = sc.api_call("files.upload", channels=channel_id, file=extra_data['image'])
                         logger.info(result)
                     else:
-                        sc.api_call("chat.postMessage", channel=channel_id, text=reply_text)
+                        sc.api_call("chat.postMessage", channel=channel_id, text=reply_text, icon_emoji=':robot_face:', username=trigger_word)
         time.sleep(1)
 
 
