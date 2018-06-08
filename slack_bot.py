@@ -196,7 +196,7 @@ class SlackbotShell(cmd.Cmd):
     do_w = do_weather
 
 
-    def do_do_conversion(self, arg):
+    def do_convert(self, arg):
         """Convert money from one currency to another"""
         args = arg.split()
         if len(args) != 3:
