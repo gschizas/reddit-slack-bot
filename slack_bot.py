@@ -173,7 +173,7 @@ class SlackbotShell(cmd.Cmd):
         return stop
 
 
-    def do_crypto_price(self, arg):
+    def do_crypto(self, arg):
         """Display the current exchange rate of currency"""
         args = arg.split()
         cryptocoin = args[1].upper()
