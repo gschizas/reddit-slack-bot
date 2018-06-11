@@ -53,10 +53,20 @@ def init():
     sc = SlackClient(slack_api_token)
     r = praw_wrapper()
 
+def excepthook(type_, value, tb):
+    global shell
+    try:
+        logger.fatal(type_, value, tb, exc_info=True)
+        if shell:
+            shell._send_text('```\n:::Error:::\n{0!r}```\n'.format(value), is_error=True)
+    except:
+        sys.__excepthook__(type_, value, tb)
+
 
 def main():
-    global logger, subreddit_name, trigger_word
+    global logger, subreddit_name, trigger_word, shell
     setup_logging()
+    sys.excepthook = excepthook
     init()
 
     if sc.rtm_connect():
