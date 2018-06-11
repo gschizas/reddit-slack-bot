@@ -191,15 +191,13 @@ class SlackbotShell(cmd.Cmd):
 
     def do_crypto(self, arg):
         """Display the current exchange rate of currency"""
-        args = arg.split()
-        cryptocoin = args[1].upper()
+        cryptocoin = arg.strip().upper()
         prices = requests.get("https://min-api.cryptocompare.com/data/price",
                               params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
         if prices.get('Response') == 'Error':
-            text = prices['Message']
+            self._send_text('```' + prices['Message'] + '```\n', is_error=True)
         else:
-            text = f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}"
-        self._send_text(text)
+            self._send_text(f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}")
 
 
     def do_weather(self, arg):
