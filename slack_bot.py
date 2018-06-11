@@ -149,11 +149,12 @@ class SlackbotShell(cmd.Cmd):
         self.sr = None
         self.pos = 0
 
-    def _send_text(self, text):
+    def _send_text(self, text, is_error=False):
+        icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
         sc.api_call("chat.postMessage", 
             channel=self.channel_id,
             text=text,
-            icon_emoji=':robot_face:',
+            icon_emoji=icon_emoji,
             username=trigger_word)
 
     def _send_image(self, file_data):
