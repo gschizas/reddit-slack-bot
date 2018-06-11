@@ -257,8 +257,7 @@ class SlackbotShell(cmd.Cmd):
 
     def do_usernotes(self, arg):
         """Display usernotes of a user"""
-        args = arg.split()
-        redditor_username = args[1]
+        redditor_username = arg.strip()
         tb_notes = self.sr.wiki['usernotes']
         tb_notes_1 = json.loads(tb_notes.content_md)
         warnings = tb_notes_1['constants']['warnings']
