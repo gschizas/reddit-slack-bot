@@ -212,12 +212,12 @@ class SlackbotShell(cmd.Cmd):
 
     def do_convert(self, arg):
         """Convert money from one currency to another"""
-        args = arg.split()
-        if len(args) != 3:
+        arg_parts = arg.split()
+        if len(arg_parts) != 4:
             self._send_text(f"Argument count error.")
             return
 
-        value_text, currency_from, currency_to = arg_parts
+        value_text, currency_from, _, currency_to = arg_parts
 
         try:
             value = float(value_text)
