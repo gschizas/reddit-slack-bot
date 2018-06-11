@@ -184,6 +184,11 @@ class SlackbotShell(cmd.Cmd):
         return stop
 
 
+    def default(self, line):
+        self._send_text(f"```I don't know what to do with {line}.{chr(10)}I can understand the following commands:\n```", is_error=True)
+        self.do_help('')
+
+
     def do_crypto(self, arg):
         """Display the current exchange rate of currency"""
         args = arg.split()
