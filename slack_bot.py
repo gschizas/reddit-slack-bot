@@ -51,10 +51,20 @@ def init():
     sc = SlackClient(slack_api_token)
     r = praw_wrapper()
 
+def excepthook(type_, value, tb):
+    global shell
+    try:
+        logger.fatal(type_, value, tb, exc_info=True)
+        if shell:
+            shell._send_text('```\n:::Error:::\n{0!r}```\n'.format(value), is_error=True)
+    except:
+        sys.__excepthook__(type_, value, tb)
+
 
 def main():
-    global logger, subreddit_name
+    global logger, subreddit_name, trigger_word
     setup_logging()
+    sys.excepthook = excepthook
     init()
 
     if sc.rtm_connect():
@@ -149,11 +159,12 @@ class SlackbotShell(cmd.Cmd):
         self.sr = None
         self.pos = 0
 
-    def _send_text(self, text):
+    def _send_text(self, text, is_error=False):
+        icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
         sc.api_call("chat.postMessage", 
             channel=self.channel_id,
             text=text,
-            icon_emoji=':robot_face:',
+            icon_emoji=icon_emoji,
             username=self.trigger_word)
 
     def _send_image(self, file_data):
@@ -175,17 +186,20 @@ class SlackbotShell(cmd.Cmd):
         return stop
 
 
-    def do_crypto_price(self, arg):
+    def default(self, line):
+        self._send_text(f"```I don't know what to do with {line}.{chr(10)}I can understand the following commands:\n```", is_error=True)
+        self.do_help('')
+
+
+    def do_crypto(self, arg):
         """Display the current exchange rate of currency"""
-        args = arg.split()
-        cryptocoin = args[1].upper()
+        cryptocoin = arg.strip().upper()
         prices = requests.get("https://min-api.cryptocompare.com/data/price",
                               params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
         if prices.get('Response') == 'Error':
-            text = prices['Message']
+            self._send_text('```' + prices['Message'] + '```\n', is_error=True)
         else:
-            text = f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}"
-        self._send_text(text)
+            self._send_text(f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}")
 
 
     def do_weather(self, arg):
@@ -198,14 +212,14 @@ class SlackbotShell(cmd.Cmd):
     do_w = do_weather
 
 
-    def do_do_conversion(self, arg):
+    def do_convert(self, arg):
         """Convert money from one currency to another"""
-        args = arg.split()
-        if len(args) != 3:
+        arg_parts = arg.split()
+        if len(arg_parts) != 4:
             self._send_text(f"Argument count error.")
             return
 
-        value_text, currency_from, currency_to = arg_parts
+        value_text, currency_from, _, currency_to = arg_parts
 
         try:
             value = float(value_text)
@@ -243,8 +257,7 @@ class SlackbotShell(cmd.Cmd):
 
     def do_usernotes(self, arg):
         """Display usernotes of a user"""
-        args = arg.split()
-        redditor_username = args[1]
+        redditor_username = arg.strip()
         tb_notes = self.sr.wiki['usernotes']
         tb_notes_1 = json.loads(tb_notes.content_md)
         warnings = tb_notes_1['constants']['warnings']
