@@ -8,6 +8,7 @@ praw = "*"
 slackclient = "*"
 "ruamel.yaml" = "*"
 requests = "*"
+tqdm = "*"
 
 [dev-packages]
 
