@@ -293,6 +293,14 @@ class SlackbotShell(cmd.Cmd):
         self._send_text(text)
 
 
+    def do_modqueue_comments(self, arg):
+        """Display comments from the modqueue"""
+        text = ''
+        for c in self.sr.mod.modqueue(only='comments', limit=25):
+            text += s.content + '\n'
+        self._send_text(text)
+
+
     def do_fortune(self, args):
         """Like a Chinese fortune cookie, but less yummy"""
         self._send_text(subprocess.check_output('/usr/games/fortune').decode())
