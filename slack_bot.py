@@ -301,6 +301,21 @@ class SlackbotShell(cmd.Cmd):
         self._send_text(text)
 
 
+    def do_youtube_info(self, arg):
+        """Get YouTube media URL"""
+        global r, logger
+        logger.debug(arg)
+        post = r.submission(url=arg[1:-1])
+        post._fetch()
+        if 'media' not in post.__dict__:
+            self._send_text('Not a YouTube post', is_error=True)
+        try:
+            author_url = post.media['oembed']['author_url']
+            self._send_text(author_url)
+        except Exception as e:
+            self._send_text(repr(e), is_error=True)
+
+
     def do_fortune(self, args):
         """Like a Chinese fortune cookie, but less yummy"""
         self._send_text(subprocess.check_output('/usr/games/fortune').decode())
