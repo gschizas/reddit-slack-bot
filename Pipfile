@@ -9,6 +9,7 @@ slackclient = "*"
 "ruamel.yaml" = "*"
 requests = "*"
 tqdm = "*"
+tweepy = "*"
 
 [dev-packages]
 
