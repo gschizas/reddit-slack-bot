@@ -20,26 +20,8 @@ import prawcore
 import requests
 from slackclient import SlackClient
 
+from common import setup_logging
 from praw_wrapper import praw_wrapper
-
-
-def setup_logging():
-    global logger
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    log_name = os.environ['LOG_NAME']
-
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-    fh = logging.handlers.TimedRotatingFileHandler(f'logs/slack_bot-{log_name}.log', when='midnight')
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
 
 
 def init():
@@ -50,6 +32,7 @@ def init():
     subreddit_name = os.environ.get('SUBREDDIT_NAME')
     sc = SlackClient(slack_api_token)
     r = praw_wrapper()
+
 
 def excepthook(type_, value, tb):
     global shell
@@ -78,7 +61,6 @@ def main():
     if subreddit_name:
         shell.sr = r.subreddit(subreddit_name)
     shell.trigger_word = os.environ['BOT_NAME']
-
 
     while True:
         for msg in sc.rtm_read():
@@ -126,7 +108,7 @@ def process_command(sr, text):
 
     if args[0:2] == ['modqueue', 'post']:
         return do_modqueue_posts(sr), None
-    elif len(args) == 2 and args[0:1] == ['usernotes'] :
+    elif len(args) == 2 and args[0:1] == ['usernotes']:
         return do_usernotes(sr, args), None
     elif len(args) == 2 and args[0] == 'crypto':
         return do_crypto_price(args), None
@@ -153,6 +135,7 @@ def process_command(sr, text):
         logger.info(args)
         return None, None
 
+
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
         super().__init__(self, stdout=io.StringIO(), **kwargs)
@@ -161,18 +144,18 @@ class SlackbotShell(cmd.Cmd):
 
     def _send_text(self, text, is_error=False):
         icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
-        sc.api_call("chat.postMessage", 
-            channel=self.channel_id,
-            text=text,
-            icon_emoji=icon_emoji,
-            username=self.trigger_word)
+        sc.api_call("chat.postMessage",
+                    channel=self.channel_id,
+                    text=text,
+                    icon_emoji=icon_emoji,
+                    username=self.trigger_word)
 
     def _send_image(self, file_data):
         sc.api_call("files.upload",
-            channels=self.channel_id,
-            icon_emoji=':robot_face:',
-            username=self.trigger_word,
-            file=file_data)
+                    channels=self.channel_id,
+                    icon_emoji=':robot_face:',
+                    username=self.trigger_word,
+                    file=file_data)
 
     def postcmd(self, stop, line):
         self.stdout.flush()
@@ -185,11 +168,11 @@ class SlackbotShell(cmd.Cmd):
             self._send_text('```\n' + text.strip() + '```\n')
         return stop
 
-
     def default(self, line):
-        self._send_text(f"```I don't know what to do with {line}.{chr(10)}I can understand the following commands:\n```", is_error=True)
+        self._send_text(
+            f"```I don't know what to do with {line}.{chr(10)}I can understand the following commands:\n```",
+            is_error=True)
         self.do_help('')
-
 
     def do_crypto(self, arg):
         """Display the current exchange rate of currency"""
@@ -201,7 +184,6 @@ class SlackbotShell(cmd.Cmd):
         else:
             self._send_text(f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}")
 
-
     def do_weather(self, arg):
         """Display the weather in place"""
         place = arg.lower()
@@ -209,8 +191,8 @@ class SlackbotShell(cmd.Cmd):
             place = 'Thessaloniki'
         weather = requests.get('http://wttr.in/' + place + '_p0.png')
         self._send_image(weather.content)
-    do_w = do_weather
 
+    do_w = do_weather
 
     def do_convert(self, arg):
         """Convert money from one currency to another"""
@@ -227,11 +209,11 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"{value_text} is not a good number")
             return
 
-        if not(re.match(r'^\w+$', currency_from)):
+        if not (re.match(r'^\w+$', currency_from)):
             self._send_text(f"{currency_from} is not a real currency")
             return
 
-        if not(re.match(r'^\w+$', currency_to)):
+        if not (re.match(r'^\w+$', currency_to)):
             self._send_text(f"{currency_to} is not a real currency")
             return
 
@@ -243,7 +225,7 @@ class SlackbotShell(cmd.Cmd):
             return
 
         prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
-                              params={'fsym': currency_from, 'tsyms': currency_to})
+                                   params={'fsym': currency_from, 'tsyms': currency_to})
         logging.info(prices_page.url)
         prices = prices_page.json()
         if prices.get('Response') == 'Error':
@@ -253,7 +235,6 @@ class SlackbotShell(cmd.Cmd):
             new_value = value * price
             text = f"{value:.2f} {currency_from} is {new_value:.2f} {currency_to}"
         self._send_text(text)
-
 
     def do_usernotes(self, arg):
         """Display usernotes of a user"""
@@ -284,7 +265,6 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"user {redditor_username} not found")
             return
 
-
     def do_modqueue_posts(self, arg):
         """Display posts from the modqueue"""
         text = ''
@@ -292,14 +272,12 @@ class SlackbotShell(cmd.Cmd):
             text += s.title + '\n' + s.url + '\n'
         self._send_text(text)
 
-
     def do_modqueue_comments(self, arg):
         """Display comments from the modqueue"""
         text = ''
         for c in self.sr.mod.modqueue(only='comments', limit=25):
             text += s.content + '\n'
         self._send_text(text)
-
 
     def do_youtube_info(self, arg):
         """Get YouTube media URL"""
@@ -315,11 +293,9 @@ class SlackbotShell(cmd.Cmd):
         except Exception as e:
             self._send_text(repr(e), is_error=True)
 
-
     def do_fortune(self, args):
         """Like a Chinese fortune cookie, but less yummy"""
         self._send_text(subprocess.check_output('/usr/games/fortune').decode())
-
 
     def do_add_domain_tag(self, url_text, color):
         """Add a tag to a domain"""
@@ -340,7 +316,6 @@ class SlackbotShell(cmd.Cmd):
             toolbox_data['domainTags'].append({'name': final_url, 'color': color})
         self.sr.wiki['toolbox'].edit(json.dumps(toolbox_data), 'Updated by slack')
         self._send_text(f"Added color {color} for domain {final_url}")
-
 
     def do_nuke_thread(self, thread_id):
         """Nuke whole thread (except distinguished comments"""
