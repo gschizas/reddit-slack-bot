@@ -9,6 +9,9 @@ def setup_logging(extra_name=None):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
+    if extra_name:
+        extra_name = '-' + extra_name
+
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
     if not os.path.exists('logs'):
