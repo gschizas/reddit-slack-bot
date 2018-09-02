@@ -342,5 +342,20 @@ class SlackbotShell(cmd.Cmd):
         self._send_text(f"Added color {color} for domain {final_url}")
 
 
+    def do_nuke_thread(self, thread_id):
+        """Nuke whole thread (except distinguished comments"""
+        post = r.submission(thread_id)
+        post.comments.replace_more(limit=None)
+        comments = post.comments.list()
+        post.mod.remove()
+        for comment in comments:
+            if comment.distinguished:
+                continue
+            if comment.banned_by:
+                continue
+            comment.mod.remove()
+        post.mod.lock()
+
+
 if __name__ == '__main__':
     main()
