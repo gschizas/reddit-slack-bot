@@ -20,15 +20,16 @@ def setup_logging(extra_name=None):
     filename = os.path.basename(sys.argv[0])
     basename = os.path.splitext(filename)[0]
 
-    fh = logging.handlers.TimedRotatingFileHandler(f'logs/{filename}{extra_name}.log', when='W0')
+    fh = logging.handlers.TimedRotatingFileHandler(f'logs/{basename}{extra_name}.log', when='W0')
     fh.setLevel(logging.INFO)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    fh2 = logging.handlers.TimedRotatingFileHandler(f'logs/{basename}{extra_name}.debug.log', when='W0')
+    fh2.setLevel(logging.DEBUG)
+    fh2.setFormatter(formatter)
+    logger.addHandler(fh)
+
     return logger
 
 
