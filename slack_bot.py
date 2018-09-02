@@ -46,7 +46,7 @@ def excepthook(type_, value, tb):
 
 def main():
     global logger, subreddit_name, trigger_word
-    setup_logging()
+    setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
 
