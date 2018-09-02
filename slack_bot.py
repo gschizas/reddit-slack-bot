@@ -36,6 +36,7 @@ def init():
 
 def excepthook(type_, value, tb):
     global shell
+    global logger
     try:
         logger.fatal(type_, value, tb, exc_info=True)
         if shell:
@@ -46,7 +47,7 @@ def excepthook(type_, value, tb):
 
 def main():
     global logger, subreddit_name, trigger_word
-    setup_logging(os.environ.get('LOG_NAME', 'unknown'))
+    logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
 
