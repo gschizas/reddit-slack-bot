@@ -11,6 +11,8 @@ def setup_logging(extra_name=None):
 
     if extra_name:
         extra_name = '-' + extra_name
+    else:
+        extra_name = ''
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
