@@ -30,7 +30,7 @@ def setup_logging(extra_name=None):
     fh2 = logging.handlers.TimedRotatingFileHandler(f'logs/{basename}{extra_name}.debug.log', when='W0')
     fh2.setLevel(logging.DEBUG)
     fh2.setFormatter(formatter)
-    logger.addHandler(fh)
+    logger.addHandler(fh2)
 
     return logger
 
