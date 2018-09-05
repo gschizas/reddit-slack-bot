@@ -9,7 +9,7 @@ slackclient = "*"
 "ruamel.yaml" = "*"
 requests = "*"
 tqdm = "*"
-tweepy = "*"
+tweepy = {git = "https://github.com/tweepy/tweepy"}
 
 [dev-packages]
 

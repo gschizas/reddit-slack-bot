@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0576c0aef62eca1acc6b78dbcdf400efb3810fa822b1fe12c0ac63b6b501880d"
+            "sha256": "921aef3e2f3beba906dbe19d0f15ed93a03cca3791c4cdf5fc3fa7d0a1b6724a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -37,13 +37,6 @@
             ],
             "version": "==2.7"
         },
-        "oauthlib": {
-            "hashes": [
-                "sha256:ac35665a61c1685c56336bda97d5eefa246f1202618a1d6f34fccb1bdd404162",
-                "sha256:d883b36b21a6ad813953803edfa563b1b579d79ca758fe950d1bc9e8b326025b"
-            ],
-            "version": "==2.1.0"
-        },
         "praw": {
             "hashes": [
                 "sha256:ccd3463c838d912073c82cc226f7d62fb01aecf2f33dff3f0456afc688f45376",
@@ -59,12 +52,6 @@
             ],
             "version": "==1.0.0"
         },
-        "pysocks": {
-            "hashes": [
-                "sha256:3fe52c55890a248676fd69dc9e3c4e811718b777834bcaab7a8125cf9deac672"
-            ],
-            "version": "==1.6.8"
-        },
         "requests": {
             "hashes": [
                 "sha256:63b52e3c866428a224f97cab011de738c36aec0185aa91cfacd418b5d58911d1",
@@ -72,13 +59,6 @@
             ],
             "index": "pypi",
             "version": "==2.19.1"
-        },
-        "requests-oauthlib": {
-            "hashes": [
-                "sha256:8886bfec5ad7afb391ed5443b1f697c6f4ae98d0e5620839d8b4499c032ada3f",
-                "sha256:e21232e2465808c0e892e0e4dbb8c2faafec16ac6dc067dd546e9b466f3deac8"
-            ],
-            "version": "==1.0.0"
         },
         "ruamel.yaml": {
             "hashes": [
@@ -131,12 +111,8 @@
             "version": "==4.25.0"
         },
         "tweepy": {
-            "hashes": [
-                "sha256:0895e79fe98127787c8debb62c283cb876e8b65fbbcf90cb988dba2c606f6260",
-                "sha256:901500666de5e265d93e611dc05066bb020481c85550d6bcbf8030212938902c"
-            ],
-            "index": "pypi",
-            "version": "==3.6.0"
+            "git": "https://github.com/tweepy/tweepy",
+            "ref": "2efe385fc69385b57733f747ee62e6be12a1338b"
         },
         "update-checker": {
             "hashes": [
@@ -155,10 +131,10 @@
         },
         "websocket-client": {
             "hashes": [
-                "sha256:030bbfbf29ac9e315ffb207ed5ed42b6981b5038ea00d1e13b02b872cc95e8f6",
-                "sha256:a35bac3d9647c62c1ba3e8a7340385d92981f5486b033557d592138fd4b21b90"
+                "sha256:03763384c530b331ec3822d0b52ffdc28c3aeb8a900ac8c98b2ceea3128a7b4e",
+                "sha256:3c9924675eaf0b27ae22feeeab4741bb4149b94820bd3a143eeaf8b62f64d821"
             ],
-            "version": "==0.51.0"
+            "version": "==0.52.0"
         }
     },
     "develop": {}
