@@ -319,7 +319,15 @@ class SlackbotShell(cmd.Cmd):
         self._send_text(f"Added color {color} for domain {final_url}")
 
     def do_nuke_thread(self, thread_id):
-        """Nuke whole thread (except distinguished comments"""
+        """Nuke whole thread (except distinguished comments)
+        Thread ID should be either the submission URL or the submission id"""
+        if '/' in thread_id:
+            if thread_id.startswith('http://') or thread_id.startswith('https://'):
+                thread_id = thread_id.split('/')[6]
+            elif thread_id.startswith('/'):
+                thread_id = thread_id.split('/')[4]
+            else:
+                thread_id = thread_id.split('/')[3]
         post = r.submission(thread_id)
         post.comments.replace_more(limit=None)
         comments = post.comments.list()
