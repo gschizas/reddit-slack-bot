@@ -341,5 +341,62 @@ class SlackbotShell(cmd.Cmd):
         post.mod.lock()
 
 
+    def do_nuke_user(self, arg):
+        """Nuke the comments of a user. Append the timeframe to search.
+        Accepted values are 24 (default), 48, 72, A_MONTH, FOREVER_AND_EVER"""
+        global r
+        global sc
+        global subreddit_name
+        CUTOFF_AGES = {'24': 1, '48': 2, 'A_MONTH': 30, 'FOREVER_AND_EVER': 36525}
+        # FOREVER_AND_EVER is 100 years. Should be enough.
+
+        username, *rest_of_text = arg.split()
+        if rest_of_text:
+            timeframe = rest_of_text[0]
+        else:
+            timeframe = '24'
+        if timeframe not in CUTOFF_AGES:
+            self._send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
+            return
+        if re.match('[a-zA-Z-_]+', username):
+            self._send_text(f'{username} is not a valid username', is_error=True)
+            return
+        u = r.redditor(username)
+        all_comments = list(u.comments.new(limit=None))
+        removed_comments = 0
+        other_subreddits = 0
+        already_removed = 0
+        too_old = 0
+        other_subreddit_history = {}
+        cutoff_age = CUTOFF_AGES[timeframe]
+        now = datetime.datetime.utcnow()
+
+        for c in tqdm(all_comments, ncols=80):
+            comment_subreddit_name = c.subreddit.display_name.lower()
+            if comment_subreddit_name != subreddit_name:
+                other_subreddits += 1
+                other_subreddit_history[comment_subreddit_name] = other_subreddit_history.get(comment_subreddit_name, 0) + 1
+                continue
+            if c.banned_by and c.banned_by != 'AutoModerator':
+                already_removed += 1
+                continue
+            comment_created = datetime.datetime.fromtimestamp(c.created_utc)
+            comment_age = now - comment_created
+            if comment_age.days > cutoff_age:
+                too_old += 1
+                continue
+            c.mod.remove()
+            removed_comments += 1
+        result = (
+            f"Removed {removed_comments} comments.\n"
+            f"{other_subreddits} comments in other subreddits.\n"
+            f"{already_removed} comments were already removed.\n"
+            f"{too_old} comments were too old for the {timeframe} timeframe.\n"
+        )
+        self._send_text(result)
+
+
+
+
 if __name__ == '__main__':
     main()
