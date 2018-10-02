@@ -358,7 +358,7 @@ class SlackbotShell(cmd.Cmd):
         if timeframe not in CUTOFF_AGES:
             self._send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
             return
-        if re.match('[a-zA-Z-_]+', username):
+        if not re.match('[a-zA-Z-_]+', username):
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
         u = r.redditor(username)
