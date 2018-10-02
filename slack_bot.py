@@ -371,7 +371,7 @@ class SlackbotShell(cmd.Cmd):
         cutoff_age = CUTOFF_AGES[timeframe]
         now = datetime.datetime.utcnow()
 
-        for c in tqdm(all_comments, ncols=80):
+        for c in all_comments:
             comment_subreddit_name = c.subreddit.display_name.lower()
             if comment_subreddit_name != subreddit_name:
                 other_subreddits += 1
