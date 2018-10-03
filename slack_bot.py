@@ -341,6 +341,51 @@ class SlackbotShell(cmd.Cmd):
         post.mod.lock()
 
 
+    def _archive_page(url):
+        ARCHIVE_URL = 'http://archive.is'
+        
+        url = url.replace('www.reddit.com', 'old.reddit.com')
+        
+        start_page = requests.get(ARCHIVE_URL)
+        soup = BeautifulSoup(start_page.text, 'lxml')
+        main_form = soup.find('form', {'id': 'submiturl'})
+        submit_id = main_form.find('input', {'name': 'submitid'})['value']
+        p2 = requests.post(f'{ARCHIVE_URL}/submit/',
+                          data={
+                            'submitid': submit_id,
+                            'url': url
+                          })
+        if p2.url == f'{ARCHIVE_URL}/submit/':
+            return p2.headers['Refresh'][6:]
+        else:
+            return p2.url
+
+    def do_archive_user(self, arg):
+        username, *rest_of_text = arg.split()
+        if not re.match('[a-zA-Z-_]+', username):
+            self._send_text(f'{username} is not a valid username', is_error=True)
+            return
+        user = r.redditor(username)
+
+        urls_to_archive = []
+        urls_to_archive.append(f'{r.config.reddit_url}/user/{user.name}/submitted/')
+
+        submissions = list(user.submissions.new(limit=None))
+        for s in submissions:
+            urls_to_archive.append(r.config.reddit_url + s.permalink)
+
+        comments = list(user.comments.new(limit=None))
+        url_base = f'{r.config.reddit_url}/user/{user.name}/comments?sort=new'
+        urls_to_archive.append(url_base)
+        for c in comments[24::25]:
+            after = c.name
+            url = url_base + '&count=25&after=' + after
+            urls_to_archive.append(url)
+        self._send_text('\n'.join(urls_to_archive))
+        final_urls = [self._archive_page(url) for url in urls_to_archive]
+        self._send_text('\n'.join(final_urls))
+
+
     def do_nuke_user(self, arg):
         """Nuke the comments of a user. Append the timeframe to search.
         Accepted values are 24 (default), 48, 72, A_MONTH, FOREVER_AND_EVER"""
