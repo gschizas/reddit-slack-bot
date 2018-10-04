@@ -10,6 +10,7 @@ slackclient = "*"
 requests = "*"
 tqdm = "*"
 tweepy = {ref = "7ae8019cda4cbc3a16eeb8cc63c95f316290f109", git = "https://github.com/tweepy/tweepy"}
+"beautifulsoup4" = "*"
 
 [dev-packages]
 
