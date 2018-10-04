@@ -361,6 +361,11 @@ class SlackbotShell(cmd.Cmd):
             return p2.url
 
     def do_archive_user(self, arg):
+        """\
+        Archive all posts and comments of a user. This helps preserving the
+        account history when nuking the user's contribution (especially when
+        the user then deletes their account).
+        Only one argument, the username"""
         username, *rest_of_text = arg.split()
         if not re.match('[a-zA-Z-_]+', username):
             self._send_text(f'{username} is not a valid username', is_error=True)
