@@ -412,7 +412,7 @@ class SlackbotShell(cmd.Cmd):
 
         username, *rest_of_text = arg.split()
         if rest_of_text:
-            timeframe = upper(rest_of_text[0])
+            timeframe = rest_of_text[0].upper()
         else:
             timeframe = '24'
         if timeframe not in CUTOFF_AGES:
