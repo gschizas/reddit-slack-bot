@@ -341,6 +341,7 @@ class SlackbotShell(cmd.Cmd):
         post.mod.lock()
 
 
+    @staticmethod
     def _archive_page(url):
         ARCHIVE_URL = 'http://archive.is'
 
