@@ -343,9 +343,9 @@ class SlackbotShell(cmd.Cmd):
 
     def _archive_page(url):
         ARCHIVE_URL = 'http://archive.is'
-        
+
         url = url.replace('www.reddit.com', 'old.reddit.com')
-        
+
         start_page = requests.get(ARCHIVE_URL)
         soup = BeautifulSoup(start_page.text, 'lxml')
         main_form = soup.find('form', {'id': 'submiturl'})
