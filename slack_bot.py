@@ -344,18 +344,27 @@ class SlackbotShell(cmd.Cmd):
     @staticmethod
     def _archive_page(url):
         ARCHIVE_URL = 'http://archive.is'
+        USER_AGENT = (
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/69.0.3497.100 Safari/537.36')
+        #PROXY = 'http://45.250.226.14:8080'
 
-        url = url.replace('www.reddit.com', 'old.reddit.com')
+        url = url.replace('//www.reddit.com/', '//old.reddit.com/')
 
-        start_page = requests.get(ARCHIVE_URL)
-        soup = BeautifulSoup(start_page.text, 'lxml')
-        main_form = soup.find('form', {'id': 'submiturl'})
-        submit_id = main_form.find('input', {'name': 'submitid'})['value']
-        p2 = requests.post(f'{ARCHIVE_URL}/submit/',
-                          data={
-                            'submitid': submit_id,
-                            'url': url
-                          })
+        # start_page = requests.get(ARCHIVE_URL)
+        # soup = BeautifulSoup(start_page.text, 'lxml')
+        # main_form = soup.find('form', {'id': 'submiturl'})
+        # submit_id = main_form.find('input', {'name': 'submitid'})['value']
+        p2 = requests.post(
+            f'{ARCHIVE_URL}/submit/',
+            data={
+                'url': url
+            },
+            headers={
+                'Referer': 'http://archive.is',
+                'User-Agent': USER_AGENT})
+            # proxies={'http': PROXY, 'https': PROXY})
         if p2.url == f'{ARCHIVE_URL}/submit/':
             return p2.headers['Refresh'][6:]
         else:
