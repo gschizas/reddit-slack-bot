@@ -64,43 +64,39 @@ def main():
     shell.trigger_word = os.environ['BOT_NAME']
 
     while True:
-        for msg in sc.rtm_read():
-            if msg['type'] != 'message':
-                continue
-            if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message'):
-                continue
-            if 'message' in msg:
-                msg.update(msg['message'])
-                del msg['message']
+        try:
+            for msg in sc.rtm_read():
+                if msg['type'] != 'message':
+                    continue
+                if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message'):
+                    continue
+                if 'message' in msg:
+                    msg.update(msg['message'])
+                    del msg['message']
 
-            channel_id = msg['channel']
-            team_id = msg.get('source_team', '')
+                channel_id = msg['channel']
+                team_id = msg.get('source_team', '')
 
-            response = sc.api_call('team.info')
-            if response['ok']:
-                teams[team_id] = response['team']
+                response = sc.api_call('team.info')
+                if response['ok']:
+                    teams[team_id] = response['team']
 
-            teaminfo = teams.get(team_id, {'name': 'Unknown - ' + team_id, 'domain': ''})
+                teaminfo = teams.get(team_id, {'name': 'Unknown - ' + team_id, 'domain': ''})
 
-            text = msg['text']
+                text = msg['text']
 
-            if text.lower().startswith(shell.trigger_word):
-                line = ' '.join(text.lower().split()[1:])
-                shell.channel_id = channel_id
-                shell.team_id = team_id
-                line = shell.precmd(line)
-                stop = shell.onecmd(line)
-                stop = shell.postcmd(stop, line)
-                if stop:
-                    sys.exit()
-                # reply_text, extra_data = process_command(sr, text)
-                # if reply_text:
-                #     if extra_data and 'image' in extra_data:
-                #         
-                #         logger.info(result)
-                #     else:
-                #         
-        time.sleep(1)
+                if text.lower().startswith(shell.trigger_word):
+                    line = ' '.join(text.lower().split()[1:])
+                    shell.channel_id = channel_id
+                    shell.team_id = team_id
+                    line = shell.precmd(line)
+                    stop = shell.onecmd(line)
+                    stop = shell.postcmd(stop, line)
+                    if stop:
+                        sys.exit()
+            time.sleep(1)
+        except Exception as ex:
+            logging.critical(ex)
 
 
 def process_command(sr, text):
