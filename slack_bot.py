@@ -70,9 +70,9 @@ def main():
         try:
             for msg in sc.rtm_read():
                 handle_message(msg)
+            time.sleep(0.5)
 
 
-            time.sleep(1)
         except Exception as ex:
             logging.critical(ex)
 
