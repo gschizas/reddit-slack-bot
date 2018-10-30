@@ -38,7 +38,11 @@ def excepthook(type_, value, tb):
     try:
         logger.fatal(type_, value, tb, exc_info=True)
         if shell:
-            shell._send_text('```\n:::Error:::\n{0!r}```\n'.format(value), is_error=True)
+            try:
+                error_text = f"```\n:::Error:::\n{value!r}```\n"
+            except Exception:
+                error_text = "???"
+            shell._send_text(error_text, is_error=True)
     except:
         sys.__excepthook__(type_, value, tb)
 
