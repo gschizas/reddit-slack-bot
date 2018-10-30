@@ -48,7 +48,7 @@ def excepthook(type_, value, tb):
 
 
 def main():
-    global logger, subreddit_name, trigger_word
+    global logger, subreddit_name, trigger_word, shell, teams
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
@@ -64,6 +64,7 @@ def main():
     if subreddit_name:
         shell.sr = r.subreddit(subreddit_name)
     shell.trigger_word = os.environ['BOT_NAME']
+    logger.debug(f"Listening for {shell.trigger_word}")
 
     while True:
         try:
@@ -78,8 +79,10 @@ def main():
 def handle_message(msg):
     global shell, sc, logger
     if msg['type'] != 'message':
+        logger.debug(f"Found message of type {msg['type']}")
         return
     if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message'):
+        logger.debug(f"Found message of subtype {msg.get('subtype')}")
         return
     if 'message' in msg:
         msg.update(msg['message'])
