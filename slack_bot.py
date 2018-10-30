@@ -71,10 +71,14 @@ def main():
             for msg in sc.rtm_read():
                 handle_message(msg)
             time.sleep(0.5)
+        except Exception as ex: #slackclient.server.SlackConnectionResetError as ex:
+            logger.warning(f"{ex}")
+            if sc.rtm_connect():
+                logger.info("Connection established")
+            else:
+                logger.critical("Connection failed. Waiting 5 seconds")
+                time.sleep(5)
 
-
-        except Exception as ex:
-            logging.critical(ex)
 
 def handle_message(msg):
     global shell, sc, logger
