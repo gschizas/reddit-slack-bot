@@ -16,7 +16,7 @@ import zlib
 
 import prawcore
 import requests
-from slackclient import SlackClient
+import slackclient
 
 from common import setup_logging
 from praw_wrapper import praw_wrapper
@@ -28,7 +28,7 @@ def init():
     global subreddit_name
     slack_api_token = os.environ['SLACK_API_TOKEN']
     subreddit_name = os.environ.get('SUBREDDIT_NAME')
-    sc = SlackClient(slack_api_token)
+    sc = slackclient.SlackClient(slack_api_token)
     r = praw_wrapper()
 
 
