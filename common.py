@@ -25,10 +25,11 @@ def setup_logging(extra_name=None):
     filename = os.path.basename(sys.argv[0])
     basename = os.path.splitext(filename)[0]
 
-    ch = colorlog.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    ch.setFormatter(colorlog.ColoredFormatter('%(log_color)s%(levelname)s\t%(name)s\t%(message)s'))
-    logger.addHandler(ch)
+    if sys.stdout.isatty():
+        ch = colorlog.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        ch.setFormatter(colorlog.ColoredFormatter('%(log_color)s%(levelname)s\t%(name)s\t%(message)s'))
+        logger.addHandler(ch)
 
     fh = logging.handlers.TimedRotatingFileHandler(f'logs/{basename}{extra_name}.log', when='W0')
     fh.setLevel(logging.INFO)
