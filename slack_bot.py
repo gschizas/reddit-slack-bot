@@ -6,8 +6,6 @@ import cmd
 import datetime
 import io
 import json
-import logging
-import logging.handlers
 import os
 import re
 import subprocess
@@ -223,7 +221,7 @@ class SlackbotShell(cmd.Cmd):
 
         prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
                                    params={'fsym': currency_from, 'tsyms': currency_to})
-        logging.info(prices_page.url)
+        logger.info(prices_page.url)
         prices = prices_page.json()
         if prices.get('Response') == 'Error':
             text = prices['Message']
