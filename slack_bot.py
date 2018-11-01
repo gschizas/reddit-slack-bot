@@ -81,7 +81,7 @@ def main():
 
 
 def handle_message(msg):
-    global shell, sc, logger
+    global shell, sc, logger, teams
     if msg['type'] != 'message':
         logger.debug(f"Found message of type {msg['type']}")
         return
