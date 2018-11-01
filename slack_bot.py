@@ -413,7 +413,8 @@ class SlackbotShell(cmd.Cmd):
 
 
     def do_nuke_user(self, arg):
-        """Nuke the comments of a user. Append the timeframe to search.
+        """\
+        Nuke the comments of a user. Append the timeframe to search.
         Accepted values are 24 (default), 48, 72, A_MONTH, FOREVER_AND_EVER"""
         global r
         global sc
