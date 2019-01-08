@@ -371,7 +371,7 @@ class SlackbotShell(cmd.Cmd):
         new_content = f'\r\n{today_text}|{title}|[Slack]({permalink})'
         content = content.strip() + new_content
         existing_page.edit(content)
-        self._send_text(f"Policy recorded: `{new_content}`")
+        self._send_text(f"Policy recorded: `{new_content.strip()}`")
 
 
     @staticmethod
