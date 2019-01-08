@@ -105,7 +105,7 @@ def handle_message(msg):
 
     if text.lower().startswith(shell.trigger_word):
         logger.debug(f"Triggerred by {text}")
-        line = ' '.join(text.lower().split()[1:])
+        line = ' '.join(text.split()[1:])
         shell.channel_id = channel_id
         shell.team_id = team_id
         line = shell.precmd(line)
