@@ -366,7 +366,7 @@ class SlackbotShell(cmd.Cmd):
         existing_page = sr.wiki[policy_page]
         content = existing_page.content_md
         today_text = datetime.datetime.strftime(datetime.datetime.utcnow(), '%d/%m/%Y')
-        title = re.sub(r'\s', title, ' ')
+        title = re.sub(r'\s', ' ', title)
         title = title.replace('|', '\xa6')
         content = content.strip() + f'\r\n{today_text}|{title}|[Slack]({permalink})'
         existing_page.edit(content)
