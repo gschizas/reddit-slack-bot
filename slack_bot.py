@@ -108,6 +108,7 @@ def handle_message(msg):
         line = ' '.join(text.split()[1:])
         shell.channel_id = channel_id
         shell.team_id = team_id
+        shell.message = msg
         line = shell.precmd(line)
         stop = shell.onecmd(line)
         stop = shell.postcmd(stop, line)
@@ -350,6 +351,26 @@ class SlackbotShell(cmd.Cmd):
                 continue
             comment.mod.remove()
         post.mod.lock()
+
+
+    def do_add_policy(self, title):
+        """Add a minor policy change done via Slack's #modpolicy channel"""
+        global r, subreddit_name
+        permalink_response = sc.api_call('chat.getPermalink',
+                    channel=self.channel_id,
+                    message_ts=self.message['ts'])
+        permalink = permalink_response['permalink']
+        policy_subreddit = os.environ.get('REDDIT_POLICY_SUBREDDIT', subreddit_name)
+        policy_page = os.environ.get('REDDIT_POLICY_PAGE', 'mod_policy_votes')
+        sr = r.subreddit(policy_subreddit)
+        existing_page = sr.wiki[policy_page]
+        content = existing_page.content_md
+        today_text = datetime.datetime.strftime(datetime.datetime.utcnow(), '%d/%m/%Y')
+        title = re.sub(r'\s', title, ' ')
+        title = title.replace('|', '\xa6')
+        content = content.strip() + f'\r\n{today_text}|{title}|[Slack]({permalink})'
+        existing_page.edit(content)
+        self._send_text("Policy recorded")
 
 
     @staticmethod
