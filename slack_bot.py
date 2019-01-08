@@ -368,9 +368,10 @@ class SlackbotShell(cmd.Cmd):
         today_text = datetime.datetime.strftime(datetime.datetime.utcnow(), '%d/%m/%Y')
         title = re.sub(r'\s', ' ', title)
         title = title.replace('|', '\xa6')
-        content = content.strip() + f'\r\n{today_text}|{title}|[Slack]({permalink})'
+        new_content = f'\r\n{today_text}|{title}|[Slack]({permalink})'
+        content = content.strip() + new_content
         existing_page.edit(content)
-        self._send_text("Policy recorded")
+        self._send_text(f"Policy recorded: `{new_content}`")
 
 
     @staticmethod
