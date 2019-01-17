@@ -179,3 +179,7 @@ setup_fiddler.sh
 usernotes/
 modmail_to_slack.yml
 logs/
+*.env
+logs-*.7z
+logs-*.tar.gz
+usernotes-*.yml
