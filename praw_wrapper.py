@@ -5,8 +5,8 @@ from urllib.parse import urlparse, parse_qs
 
 import praw
 
-DEFAULT_CLIENT_ID = 'XXXXXXXXXXXXXX'
-DEFAULT_CLIENT_SECRET = 'YYYYYYYYYYYYYYYYYYYYYYYYYYYE'
+DEFAULT_CLIENT_ID = os.environ.get('REDDIT_CLIENT_ID')
+DEFAULT_CLIENT_SECRET = os.environ.get('REDDIT_CLIENT_SECRET')
 
 
 def praw_wrapper(config=None, user_agent=None, client_id=None, client_secret=None, redirect_url=None, scopes=None):
