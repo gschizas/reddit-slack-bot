@@ -29,8 +29,8 @@ def init():
     slack_api_token = os.environ['SLACK_API_TOKEN']
     subreddit_name = os.environ.get('SUBREDDIT_NAME')
     sc = slackclient.SlackClient(slack_api_token)
-    r = praw_wrapper()
-
+    user_agent = 'python:gr.terrasoft.reddit.slackmodbot:v0.1 (by /u/gschizas)'
+    r = praw_wrapper(user_agent=user_agent, scopes=['*'])
 
 def excepthook(type_, value, tb):
     global shell
