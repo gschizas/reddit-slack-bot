@@ -48,3 +48,18 @@ def change_to_local_dir():
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     os.chdir(dname)
+
+
+def send_to_slack(url, channel, title, main_text, color, username, emoji):
+    payload = {
+        'channel': channel,
+        'username': username,
+        'color': color,
+        'unfurl_links': True,
+        'pretext': title,
+        'icon_emoji': emoji,
+        'text': main_text
+    }
+    doit = requests.post(url, json=payload)
+    logger.debug(doit)
+    logger.debug(doit.text)
