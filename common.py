@@ -5,6 +5,7 @@ import os.path
 import sys
 
 import colorlog
+import requests
 
 
 def setup_logging(extra_name=None):
@@ -50,7 +51,7 @@ def change_to_local_dir():
     os.chdir(dname)
 
 
-def send_to_slack(url, channel, title, main_text, color, username, emoji):
+def send_to_slack(url, channel, title, main_text, color, username, emoji, logger):
     payload = {
         'channel': channel,
         'username': username,
