@@ -182,3 +182,4 @@ logs/
 logs-*.7z
 logs-*.tar.gz
 usernotes-*.yml
+.env.d/
