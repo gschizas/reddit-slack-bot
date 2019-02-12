@@ -410,7 +410,7 @@ class SlackbotShell(cmd.Cmd):
         the user then deletes their account).
         Only one argument, the username"""
         username, *rest_of_text = arg.split()
-        if not re.match('[a-zA-Z-_]+', username):
+        if not re.match('[a-zA-Z0-9-_]+', username):
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
         user = r.redditor(username)
