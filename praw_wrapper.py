@@ -30,7 +30,7 @@ def praw_wrapper(config=None, user_agent=None, client_id=None, client_secret=Non
 
     user_agent_key = user_agent.split(':')[1]
 
-    refresh_token_file = user_agent_key + '.refresh_token'
+    refresh_token_file = os.path.join('.refreshtoken', user_agent_key + '.refresh_token')
 
     if not config:
         if os.path.exists(refresh_token_file):
