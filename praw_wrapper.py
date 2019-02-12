@@ -30,9 +30,11 @@ def praw_wrapper(config=None, user_agent=None, client_id=None, client_secret=Non
 
     user_agent_key = user_agent.split(':')[1]
 
+    refresh_token_file = user_agent_key + '.refresh_token'
+
     if not config:
-        if os.path.exists(user_agent_key + '.refresh_token'):
-            with open(user_agent_key + '.refresh_token', 'r') as f:
+        if os.path.exists(refresh_token_file):
+            with open(refresh_token_file, 'r') as f:
                 refresh_token = f.read()
         else:
             refresh_token = None
@@ -61,6 +63,6 @@ def praw_wrapper(config=None, user_agent=None, client_id=None, client_secret=Non
         if config:
             config['main']['refresh_token'] = refresh_token
         else:
-            with open(user_agent_key + '.refresh_token', 'w') as f:
+            with open(refresh_token_file, 'w') as f:
                 f.write(refresh_token)
     return praw_instance
