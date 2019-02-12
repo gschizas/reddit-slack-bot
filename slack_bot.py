@@ -410,7 +410,7 @@ class SlackbotShell(cmd.Cmd):
         the user then deletes their account).
         Only one argument, the username"""
         username, *rest_of_text = arg.split()
-        if not re.match('[a-zA-Z0-9-_]+', username):
+        if not re.match('[a-zA-Z0-9_-]+', username):
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
         user = r.redditor(username)
@@ -452,7 +452,7 @@ class SlackbotShell(cmd.Cmd):
         if timeframe not in CUTOFF_AGES:
             self._send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
             return
-        if not re.match('[a-zA-Z-_]+', username):
+        if not re.match('[a-zA-Z0-9_-]+', username):
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
         u = r.redditor(username)
