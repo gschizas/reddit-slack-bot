@@ -170,6 +170,14 @@ class SlackbotShell(cmd.Cmd):
                     username=self.trigger_word,
                     file=file_data)
 
+    def _send_fields(self, text, fields):
+        sc.api_call("chat.postMessage",
+                    channel=self.channel_id,
+                    icon_emoji=':robot_face:',
+                    text=text,
+                    username=self.trigger_word,
+                    attachments=fields)
+
     def postcmd(self, stop, line):
         self.stdout.flush()
         self.stdout.seek(self.pos, io.SEEK_SET)
