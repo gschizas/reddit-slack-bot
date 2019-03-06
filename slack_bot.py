@@ -7,6 +7,7 @@ import datetime
 import io
 import json
 import os
+import random
 import re
 import subprocess
 import sys
@@ -417,6 +418,39 @@ class SlackbotShell(cmd.Cmd):
         content = content.strip() + new_content
         existing_page.edit(content)
         self._send_text(f"Policy recorded: `{new_content.strip()}`")
+
+
+    def do_cointoss(self, args):
+        """Toss a coin"""
+        toss = random.randrange(2)
+        toss_text = ['Heads', 'Tails'][toss]
+        self._send_text(toss_text)
+
+
+    def do_roll(self, arg):
+        """Roll a dice. Optional sides argument (e.g. roll 1d20+5, roll 1d6+2, d20 etc.)"""
+        sides = 6
+        times = 1
+        add = 0
+        args = arg.split()
+        if len(args) > 0:
+            dice_spec = re.match('^(?P<Times>\d)d(?P<Sides>\d{1,2})(?:\+(?P<Add>\d))?$', args[0])
+            if dice_spec:
+                if dice_spec.group('Times'):
+                    times = int(dice_spec.group('Times'))
+                if dice_spec.group('Add'):
+                    add = int(dice_spec.group('Add'))
+                if dice_spec.group('Sides'):
+                    sides = int(dice_spec.group('Sides'))
+        if sides < 2: sides = 6
+        if times < 1: times = 1
+        rolls = []
+        for roll_index in range(times):
+            rolls.append(random.randrange(sides))
+        final_roll = sum(rolls) + add
+        roll_text = ', '.join(map(str, rolls))
+        times_text = 'time' if times == 1 else 'times'
+        self._send_text(f"You rolled a {sides}-sided dice {times} {times_text} with a bonus of +{add}. You got {roll_text}. Final roll: *{final_roll}*")
 
 
     @staticmethod
