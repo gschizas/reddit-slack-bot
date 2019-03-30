@@ -334,7 +334,7 @@ class SlackbotShell(cmd.Cmd):
     def do_modqueue_comments(self, arg):
         """Display comments from the modqueue"""
         text = ''
-        for c in self.sr.mod.modqueue(only='comments', limit=25):
+        for c in self.sr.mod.modqueue(only='comments', limit=10):
             text += r.config.reddit_url + c.permalink + '\n```\n' + c.body[:80] + '\n```\n'
         self._send_text(text)
 
