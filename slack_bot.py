@@ -335,7 +335,7 @@ class SlackbotShell(cmd.Cmd):
         """Display comments from the modqueue"""
         text = ''
         for c in self.sr.mod.modqueue(only='comments', limit=25):
-            text += s.content + '\n'
+            text += r.config.reddit_url + c.permalink + '\n```\n' + c.body[:80] + '\n```\n'
         self._send_text(text)
 
     def do_youtube_info(self, arg):
