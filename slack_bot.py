@@ -140,14 +140,6 @@ def process_command(sr, text):
     elif len(args) >= 2 and args[0:1] in [['you'], ['your'], ['youre'], ["you're"]]:
         """Eurobot is as nice to you as you are to him"""
         return "No, you're " + ' '.join(args[1:]), None
-    elif len(args) >= 2 and args[0:1] in [['binary'], ['bin']]:
-        """Convert binary to text"""
-        rest_of_text = ' '.join(args[1:])
-        try:
-            decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
-        except Exception as e:
-            decoded_text = e.message
-        return decoded_text, None
     else:
         logger.info(args)
         return None, None
@@ -631,6 +623,17 @@ order by 4 desc"""}
             f"{too_old} comments were too old for the {timeframe} timeframe.\n"
         )
         self._send_text(result)
+
+    def do_binary(self, arg):
+        """Convert binary to text"""
+        rest_of_text = ' '.join(arg.split())
+        try:
+            decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
+        except Exception as e:
+            decoded_text = str(e)
+        self._send_text('\n'.join(decoded_text))
+
+    do_bin = do_binary
 
 
 if __name__ == '__main__':
