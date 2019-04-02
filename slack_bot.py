@@ -119,32 +119,6 @@ def handle_message(msg):
             sys.exit()
 
 
-def process_command(sr, text):
-    global r, sc
-    args = text.lower().split()[1:]
-
-    if args[0:2] == ['modqueue', 'post']:
-        return do_modqueue_posts(sr), None
-    elif len(args) == 2 and args[0:1] == ['usernotes']:
-        return do_usernotes(sr, args), None
-    elif len(args) == 2 and args[0] == 'crypto':
-        return do_crypto_price(args), None
-    elif args[0:1] == ['fortune']:
-        return do_fortune(), None
-    elif args[0:2] == ['domaintag', 'add'] and len(args) == 4:
-        return do_add_domain_tag(sr, args[2], args[3]), None
-    elif len(args) == 4 and args[2] == 'in':
-        return do_do_conversion(args[0], args[1], args[3]), None
-    elif len(args) >= 2 and args[0:1] in [['w'], ['weather']]:
-        return do_weather(' '.join(args[1:]))
-    elif len(args) >= 2 and args[0:1] in [['you'], ['your'], ['youre'], ["you're"]]:
-        """Eurobot is as nice to you as you are to him"""
-        return "No, you're " + ' '.join(args[1:]), None
-    else:
-        logger.info(args)
-        return None, None
-
-
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
         super().__init__(self, stdout=io.StringIO(), **kwargs)
