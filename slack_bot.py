@@ -25,6 +25,12 @@ from common import setup_logging
 from praw_wrapper import praw_wrapper
 from yaml_wrapper import yaml
 
+SQL_SURVEY_MULTIPLE_ANSWERS = """select answer[3] AS answer_value, count(vote_id)
+from (select regexp_split_to_array(code, '_') AS answer_parts, *
+      from "Answers"
+      where code like 'q\_{0}\_%') AS dt(answer)
+group by 1, 2
+order by 3 desc"""
 SURVEY_MOD_QUERY = """\
 select code, answer_value, 
     case answer_value
@@ -494,6 +500,17 @@ class SlackbotShell(cmd.Cmd):
             sql = SURVEY_MOD_QUERY
             result_type = 'table'
             cols, rows = self._database_query(sql)
+        elif args[0] in question_ids:
+            result_type = 'table'
+            question_id = int(args[0].split('_')[-1])
+            question = questions[question_id-1]
+            if question['kind'] in ('checktree', 'checkbox'):
+                cols, rows = self._database_query(SQL_SURVEY_MULTIPLE_ANSWERS.format(question_id))
+                for row in rows:
+                    row['code'] = ''
+            else:
+                cols = ['Message']
+                rows = [('Not implemented',)]
         else:
             valid_queries = ['count', 'questions', 'mods', 'q_1', '...', f'q_{str(len(questions))}']
             valid_queries_as_code = [f"`{q}`" for q in valid_queries]
