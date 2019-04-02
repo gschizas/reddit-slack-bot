@@ -426,15 +426,15 @@ class SlackbotShell(cmd.Cmd):
     def do_survey(self, arg):
         """Get results from survey"""
         if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ:
-            self._send_text('No questionnaire found', error=True)
+            self._send_text('No questionnaire found', is_error=True)
             return
         if 'QUESTIONNAIRE_FILE' not in os.environ:
-            self._send_text('No questionnaire file defined', error=True)
+            self._send_text('No questionnaire file defined', is_error=True)
             return
         questionnaire_file = os.path('config') / os.environ['QUESTIONNAIRE_FILE']
         if not questionnaire_file.exists():
-            self._send_text('No questionnaire file found', error=True)
-            return 
+            self._send_text('No questionnaire file found', is_error=True)
+            return
         import psycopg2
         DATABASE_URL = os.environ['QUESTIONNAIRE_DATABASE_URL']
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
