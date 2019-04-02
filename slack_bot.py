@@ -122,6 +122,8 @@ def handle_message(msg):
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
         super().__init__(self, stdout=io.StringIO(), **kwargs)
+        self.trigger_word = None
+        self.channel_id = None
         self.sr = None
         self.pos = 0
 
