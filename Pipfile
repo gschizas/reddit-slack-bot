@@ -3,6 +3,11 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
+[[source]]
+name = "home"
+url = "https://nexus.terrasoft.gr/repository/pypi-all/simple"
+verify_ssl = true
+
 [packages]
 praw = "*"
 slackclient = "*"
