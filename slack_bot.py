@@ -23,6 +23,40 @@ from tabulate import tabulate
 
 from common import setup_logging
 from praw_wrapper import praw_wrapper
+from yaml_wrapper import yaml
+
+SURVEY_MOD_QUERY = """\
+select code, answer_value, 
+    case answer_value
+         when 'A000' then 'gschizas'
+         when 'A001' then 'SaltySolomon'
+         when 'A002' then 'robbit42'
+         when 'A003' then 'zurfer75'
+         when 'A004' then 'Greekball'
+         when 'A005' then 'aalp234'
+         when 'A006' then 'MarktpLatz'
+         when 'A007' then 'rEvolutionTU'
+         when 'A008' then 'HugodeGroot'
+         when 'A009' then 'MarlinMr'
+         when 'A010' then 'BkkGrl'
+         when 'A011' then 'H0agh'
+         when 'A013' then 'SlyScorpion'
+         when 'A014' then 'Tetizeraz'
+         when 'A016' then 'Blackfire853'
+         when 'A017' then 'MariMada'
+         when 'A018' then 'RifleSoldier'
+         when 'A019' then 'svaroz1c'
+         when 'A020' then 'EtKEnn'
+         when 'A021' then 'jtalin'
+         when 'A022' then 'kinmix'
+         when 'A023' then 'Sejani'
+         when 'A024' then 'Mortum1'
+         when 'A025' then 'Paxan' end as moderator,
+       count(*)
+from "Answers"
+where code like 'q\_60'
+group by code, answer_value
+order by 4 desc"""
 
 
 def init():
@@ -441,62 +475,49 @@ class SlackbotShell(cmd.Cmd):
         if not questionnaire_file.exists():
             self._send_text('No questionnaire file found', is_error=True)
             return
+        with questionnaire_file.open(encoding='utf8') as qf:
+            questionnaire_data = list(yaml.round_trip_load_all(qf))
+        questions = [q for q in questionnaire_data if q['kind'] not in ('config', 'header')]
+        args = arg.lower().split()
+        if len(args) == 0:
+            args = ['']
+        question_ids = [f'q_{1+i}' for i in range(len(questions))]
+        if args[0] == 'count':
+            sql = 'SELECT COUNT(*) FROM "Votes"'
+            result_type = 'single'
+            _, rows = self._database_query(sql)
+        elif args[0] == 'questions':
+            result_type = 'table'
+            cols = ['Question Code', 'Title']
+            rows = [(f'q_{1+i}', q['title']) for i, q in enumerate(questions)]
+        elif args[0] == 'mods':
+            sql = SURVEY_MOD_QUERY
+            result_type = 'table'
+            cols, rows = self._database_query(sql)
+        else:
+            valid_queries = ['count', 'questions', 'mods']
+            valid_queries.extend(question_ids)
+            valid_queries_as_code = [f"`{q}`" for q in valid_queries]
+            self._send_text(f"You need to specify a query from {', '.join(valid_queries_as_code)}")
+            return
+
+        if result_type == 'single':
+            self._send_text(f"*Result*: `{rows[0][0]}`")
+        elif result_type == 'table':
+            table = tabulate(rows, headers=cols, tablefmt='pipe')
+            self._send_file(table)
+
+    def _database_query(self, sql):
         import psycopg2
         database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
         conn = psycopg2.connect(database_url, sslmode='require')
         cur = conn.cursor()
-        queries = {
-            'count': {'result': 'single', 'query': 'SELECT COUNT(*) FROM "Votes"'},
-            'mods': {'result': 'table', 'query': """\
-select code, answer_value, 
-    case answer_value
-         when 'A000' then 'gschizas'
-         when 'A001' then 'SaltySolomon'
-         when 'A002' then 'robbit42'
-         when 'A003' then 'zurfer75'
-         when 'A004' then 'Greekball'
-         when 'A005' then 'aalp234'
-         when 'A006' then 'MarktpLatz'
-         when 'A007' then 'rEvolutionTU'
-         when 'A008' then 'HugodeGroot'
-         when 'A009' then 'MarlinMr'
-         when 'A010' then 'BkkGrl'
-         when 'A011' then 'H0agh'
-         when 'A013' then 'SlyScorpion'
-         when 'A014' then 'Tetizeraz'
-         when 'A016' then 'Blackfire853'
-         when 'A017' then 'MariMada'
-         when 'A018' then 'RifleSoldier'
-         when 'A019' then 'svaroz1c'
-         when 'A020' then 'EtKEnn'
-         when 'A021' then 'jtalin'
-         when 'A022' then 'kinmix'
-         when 'A023' then 'Sejani'
-         when 'A024' then 'Mortum1'
-         when 'A025' then 'Paxan' end as moderator,
-       count(*)
-from "Answers"
-where code like 'q\_60'
-group by code, answer_value
-order by 4 desc"""}
-        }
-        query_info = queries.get(arg)
-        if not query_info:
-            self._send_text(f"You need to specify a query from {','.join(list(queries.keys()))}")
-            return
-        sql = query_info['query']
         cur.execute(sql)
         rows = cur.fetchall()
+        cols = [col.name for col in cur.description]
         cur.close()
         conn.close()
-        result_type = query_info['result']
-        if result_type == 'single':
-            self._send_text(f"*Result*: `{rows[0][0]}`")
-        elif result_type == 'table':
-            cols = [col.name for col in cur.description]
-            table = tabulate(rows, headers=cols, tablefmt='pipe')
-            self._send_file(table)
-
+        return cols, rows
 
     @staticmethod
     def _archive_page(url):
