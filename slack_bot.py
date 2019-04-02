@@ -34,6 +34,7 @@ def init():
     user_agent = f'python:gr.terrasoft.reddit.slackmodbot-{subreddit_name}:v0.1 (by /u/gschizas)'
     r = praw_wrapper(user_agent=user_agent, scopes=['*'])
 
+
 def excepthook(type_, value, tb):
     global shell
     global logger
@@ -453,7 +454,6 @@ class SlackbotShell(cmd.Cmd):
         times_text = 'time' if times == 1 else 'times'
         self._send_text(f"You rolled a {sides}-sided dice {times} {times_text} with a bonus of +{add}. You got {roll_text}. Final roll: *{final_roll}*")
 
-
     def do_survey(self, arg):
         """Get results from survey"""
         if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ:
@@ -630,8 +630,6 @@ order by 4 desc"""}
             f"{too_old} comments were too old for the {timeframe} timeframe.\n"
         )
         self._send_text(result)
-
-
 
 
 if __name__ == '__main__':
