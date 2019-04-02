@@ -270,7 +270,9 @@ class SlackbotShell(cmd.Cmd):
                     if len(link_parts) == 2:
                         link_href = f'{r.config.reddit_url}/r/{self.sr.display_name}/comments/{link_parts[1]}'
                     elif len(link_parts) == 3:
-                        link_href = f'{r.config.reddit_url}/r/{self.sr.display_name}/comments/{link_parts[1]}/-/{link_parts[2]}'
+                        link_href = (
+                            f'{r.config.reddit_url}/r/{self.sr.display_name}/comments/'
+                            f'{link_parts[1]}/-/{link_parts[2]}')
                 else:
                     link_href = note['l']
                 mod_name = tb_notes_1['constants']['users'][note['m']]
@@ -282,13 +284,16 @@ class SlackbotShell(cmd.Cmd):
                 elif verbose == 'long':
                     fields.append({
                         'color': color,
-                        'text': (f"{warning_text} at <!date^{int(when.timestamp())}^{{date_short}} {{time}}|{when.isoformat()}>:"
+                        'text': (f"{warning_text} at <!date^{int(when.timestamp())}"
+                                 f"^{{date_short}} {{time}}|{when.isoformat()}>:"
                                  f"`{note_text}` for <{link_href}> by {mod_name}\n")
                     })
                 else:
                     fields.append({
                         'color': color,
-                        'text': f"{warning_text} at <!date^{int(when.timestamp())}^{{date_short}} {{time}}|{when.isoformat()}>: `{note_text}`\n"
+                        'text': (
+                            f"{warning_text} at <!date^{int(when.timestamp())}^{{date_short}} {{time}}|"
+                            f"{when.isoformat()}>: `{note_text}`\n")
                     })
             self._send_fields(text, fields)
             return
@@ -370,13 +375,13 @@ class SlackbotShell(cmd.Cmd):
             comment.mod.remove()
         post.mod.lock()
 
-
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
         global r, subreddit_name
-        permalink_response = sc.api_call('chat.getPermalink',
-                    channel=self.channel_id,
-                    message_ts=self.message['ts'])
+        permalink_response = sc.api_call(
+            'chat.getPermalink',
+            channel=self.channel_id,
+            message_ts=self.message['ts'])
         permalink = permalink_response['permalink']
         policy_subreddit = os.environ.get('REDDIT_POLICY_SUBREDDIT', subreddit_name)
         policy_page = os.environ.get('REDDIT_POLICY_PAGE', 'mod_policy_votes')
@@ -391,13 +396,11 @@ class SlackbotShell(cmd.Cmd):
         existing_page.edit(content)
         self._send_text(f"Policy recorded: `{new_content.strip()}`")
 
-
     def do_cointoss(self, args):
         """Toss a coin"""
         toss = random.randrange(2)
         toss_text = ['Heads', 'Tails'][toss]
         self._send_text(toss_text)
-
 
     def do_roll(self, arg):
         """Roll a dice. Optional sides argument (e.g. roll 1d20+5, roll 1d6+2, d20 etc.)"""
@@ -422,7 +425,9 @@ class SlackbotShell(cmd.Cmd):
         final_roll = sum(rolls) + add
         roll_text = ', '.join(map(str, rolls))
         times_text = 'time' if times == 1 else 'times'
-        self._send_text(f"You rolled a {sides}-sided dice {times} {times_text} with a bonus of +{add}. You got {roll_text}. Final roll: *{final_roll}*")
+        self._send_text((
+            f"You rolled a {sides}-sided dice {times} {times_text} with a bonus of +{add}."
+            f" You got {roll_text}. Final roll: *{final_roll}*"))
 
     def do_survey(self, arg):
         """Get results from survey"""
@@ -551,7 +556,6 @@ order by 4 desc"""}
         self._send_text('\n'.join(urls_to_archive))
         final_urls = [self._archive_page(url) for url in urls_to_archive]
         self._send_text('\n'.join(final_urls))
-
 
     def do_nuke_user(self, arg):
         """\
