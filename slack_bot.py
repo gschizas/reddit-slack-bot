@@ -18,6 +18,7 @@ import zlib
 import prawcore
 import requests
 import slackclient
+from tabulate import tabulate
 
 from common import setup_logging
 from praw_wrapper import praw_wrapper
@@ -451,6 +452,68 @@ class SlackbotShell(cmd.Cmd):
         roll_text = ', '.join(map(str, rolls))
         times_text = 'time' if times == 1 else 'times'
         self._send_text(f"You rolled a {sides}-sided dice {times} {times_text} with a bonus of +{add}. You got {roll_text}. Final roll: *{final_roll}*")
+
+
+    def do_survey(self, arg):
+        """Get results from survey"""
+        if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ:
+            self._send_text('No questionnaire found')
+            return
+        import psycopg2
+        DATABASE_URL = os.environ['QUESTIONNAIRE_DATABASE_URL']
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        cur = conn.cursor()
+        queries = {
+            'count': {'result': 'single', 'query': 'SELECT COUNT(*) FROM "Votes"'},
+            'mods': {'result': 'table', 'query': """\
+select code, answer_value, 
+    case answer_value
+         when 'A000' then 'gschizas'
+         when 'A001' then 'SaltySolomon'
+         when 'A002' then 'robbit42'
+         when 'A003' then 'zurfer75'
+         when 'A004' then 'Greekball'
+         when 'A005' then 'aalp234'
+         when 'A006' then 'MarktpLatz'
+         when 'A007' then 'rEvolutionTU'
+         when 'A008' then 'HugodeGroot'
+         when 'A009' then 'MarlinMr'
+         when 'A010' then 'BkkGrl'
+         when 'A011' then 'H0agh'
+         when 'A013' then 'SlyScorpion'
+         when 'A014' then 'Tetizeraz'
+         when 'A016' then 'Blackfire853'
+         when 'A017' then 'MariMada'
+         when 'A018' then 'RifleSoldier'
+         when 'A019' then 'svaroz1c'
+         when 'A020' then 'EtKEnn'
+         when 'A021' then 'jtalin'
+         when 'A022' then 'kinmix'
+         when 'A023' then 'Sejani'
+         when 'A024' then 'Mortum1'
+         when 'A025' then 'Paxan' end as moderator,
+       count(*)
+from "Answers"
+where code like 'q\_60'
+group by code, answer_value
+order by 4 desc"""}
+        }
+        query_info = queries.get(arg)
+        if not query_info:
+            self._send_text(f"You need to specify a query from {','.join(list(queries.keys()))}")
+            return
+        sql = query_info['query']
+        cur.execute(sql)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        result_type = query_info['result']
+        if result_type == 'single':
+            self._send_text(f"*Result*: `{rows[0][0]}`")
+        elif result_type == 'table':
+            cols = [col.name for col in cur.description]
+            table = tabulate(rows, headers=cols, tablefmt='pipe')
+            self._send_image(table)
 
 
     @staticmethod
