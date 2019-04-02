@@ -19,6 +19,7 @@ tweepy = "*"
 "beautifulsoup4" = "*"
 colorlog = "*"
 psycopg2 = {index = "home",version = "*"}
+soupsieve = "==1.9"
 
 [dev-packages]
 
