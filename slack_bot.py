@@ -506,8 +506,6 @@ class SlackbotShell(cmd.Cmd):
             question = questions[question_id-1]
             if question['kind'] in ('checktree', 'checkbox'):
                 cols, rows = self._database_query(SQL_SURVEY_MULTIPLE_ANSWERS.format(question_id))
-                for row in rows:
-                    row['code'] = ''
             else:
                 cols = ['Message']
                 rows = [('Not implemented',)]
