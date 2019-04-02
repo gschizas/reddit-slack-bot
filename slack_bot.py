@@ -426,7 +426,7 @@ class SlackbotShell(cmd.Cmd):
     def do_survey(self, arg):
         """Get results from survey"""
         if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ:
-            self._send_text('No questionnaire found')
+            self._send_text('No questionnaire found', error=True)
             return
         import psycopg2
         DATABASE_URL = os.environ['QUESTIONNAIRE_DATABASE_URL']
