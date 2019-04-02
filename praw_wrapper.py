@@ -63,6 +63,8 @@ def praw_wrapper(config=None, user_agent=None, client_id=None, client_secret=Non
         if config:
             config['main']['refresh_token'] = refresh_token
         else:
+            if not os.path.exists('.refreshtoken'):
+                os.mkdir('.refreshtoken')
             with open(refresh_token_file, 'w') as f:
                 f.write(refresh_token)
     return praw_instance
