@@ -7,6 +7,7 @@ import datetime
 import io
 import json
 import os
+import pathlib
 import random
 import re
 import subprocess
@@ -431,7 +432,7 @@ class SlackbotShell(cmd.Cmd):
         if 'QUESTIONNAIRE_FILE' not in os.environ:
             self._send_text('No questionnaire file defined', is_error=True)
             return
-        questionnaire_file = os.path('config') / os.environ['QUESTIONNAIRE_FILE']
+        questionnaire_file = pathlib.Path('data') / os.environ['QUESTIONNAIRE_FILE']
         if not questionnaire_file.exists():
             self._send_text('No questionnaire file found', is_error=True)
             return
