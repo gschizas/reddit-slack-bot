@@ -437,8 +437,8 @@ class SlackbotShell(cmd.Cmd):
             self._send_text('No questionnaire file found', is_error=True)
             return
         import psycopg2
-        DATABASE_URL = os.environ['QUESTIONNAIRE_DATABASE_URL']
-        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
+        conn = psycopg2.connect(database_url, sslmode='require')
         cur = conn.cursor()
         queries = {
             'count': {'result': 'single', 'query': 'SELECT COUNT(*) FROM "Votes"'},
