@@ -135,7 +135,7 @@ class SlackbotShell(cmd.Cmd):
                     icon_emoji=icon_emoji,
                     username=self.trigger_word)
 
-    def _send_image(self, file_data):
+    def _send_file(self, file_data):
         sc.api_call("files.upload",
                     channels=self.channel_id,
                     icon_emoji=':robot_face:',
@@ -183,7 +183,7 @@ class SlackbotShell(cmd.Cmd):
         if place == 'macedonia' or place == 'makedonia':
             place = 'Thessaloniki'
         weather = requests.get('http://wttr.in/' + place + '_p0.png')
-        self._send_image(weather.content)
+        self._send_file(weather.content)
 
     do_w = do_weather
 
@@ -482,7 +482,7 @@ order by 4 desc"""}
         elif result_type == 'table':
             cols = [col.name for col in cur.description]
             table = tabulate(rows, headers=cols, tablefmt='pipe')
-            self._send_image(table)
+            self._send_file(table)
 
 
     @staticmethod
