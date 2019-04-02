@@ -429,8 +429,12 @@ class SlackbotShell(cmd.Cmd):
             self._send_text('No questionnaire found', error=True)
             return
         if 'QUESTIONNAIRE_FILE' not in os.environ:
-            self._send_text('No questionnaire file found', error=True)
+            self._send_text('No questionnaire file defined', error=True)
             return
+        questionnaire_file = os.path('config') / os.environ['QUESTIONNAIRE_FILE']
+        if not questionnaire_file.exists():
+            self._send_text('No questionnaire file found', error=True)
+            return 
         import psycopg2
         DATABASE_URL = os.environ['QUESTIONNAIRE_DATABASE_URL']
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
