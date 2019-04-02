@@ -495,10 +495,9 @@ class SlackbotShell(cmd.Cmd):
             result_type = 'table'
             cols, rows = self._database_query(sql)
         else:
-            valid_queries = ['count', 'questions', 'mods']
-            valid_queries.extend(question_ids)
+            valid_queries = ['count', 'questions', 'mods', 'q_1', '...', f'q_{str(len(questions))}']
             valid_queries_as_code = [f"`{q}`" for q in valid_queries]
-            self._send_text(f"You need to specify a query from {', '.join(valid_queries_as_code)}")
+            self._send_text(f"You need to specify a query from {', '.join(valid_queries_as_code)}", is_error=True)
             return
 
         if result_type == 'single':
