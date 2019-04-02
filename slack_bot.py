@@ -29,8 +29,8 @@ SQL_SURVEY_MULTIPLE_ANSWERS = """select answer[3] AS answer_value, count(vote_id
 from (select regexp_split_to_array(code, '_') AS answer_parts, *
       from "Answers"
       where code like 'q\_{0}\_%') AS dt(answer)
-group by 1, 2
-order by 3 desc"""
+group by 1
+order by 2 desc"""
 SURVEY_MOD_QUERY = """\
 select code, answer_value, 
     case answer_value
