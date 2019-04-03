@@ -186,12 +186,16 @@ class SlackbotShell(cmd.Cmd):
                     icon_emoji=icon_emoji,
                     username=self.trigger_word)
 
-    def _send_file(self, file_data):
+    def _send_file(self, file_data, title=None, filetype=None):
+        if filetype is None:
+            filetype = 'auto'
         sc.api_call("files.upload",
                     channels=self.channel_id,
                     icon_emoji=':robot_face:',
                     username=self.trigger_word,
-                    file=file_data)
+                    file=file_data,
+                    title=title,
+                    filetype=filetype)
 
     def _send_fields(self, text, fields):
         sc.api_call("chat.postMessage",
@@ -234,7 +238,7 @@ class SlackbotShell(cmd.Cmd):
         if place == 'macedonia' or place == 'makedonia':
             place = 'Thessaloniki'
         weather = requests.get('http://wttr.in/' + place + '_p0.png')
-        self._send_file(weather.content)
+        self._send_file(weather.content, title=arg, filetype='png')
 
     do_w = do_weather
 
