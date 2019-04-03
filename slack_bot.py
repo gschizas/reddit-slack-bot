@@ -25,13 +25,14 @@ from common import setup_logging
 from praw_wrapper import praw_wrapper
 from yaml_wrapper import yaml
 
-SQL_SURVEY_PREFILLED_ANSWERS = """select answer[3] AS answer_code, answer_value, count(vote_id)
+SQL_SURVEY_PREFILLED_ANSWERS = """select answer[3] AS Code, answer_value as Answer, count(*) AS VoteCount
 from (select regexp_split_to_array(code, '_') AS answer_parts, *
       from "Answers"
       where  code = 'q_{0}' or code like 'q\_{0}\_%') AS dt(answer)
 group by 1, 2
 order by 3 desc"""
-SQL_SURVEY_TEXT = """select answer_value, count(*) from "Answers"
+SQL_SURVEY_TEXT = """select answer_value as Answer, count(*) AS VoteCount 
+from "Answers"
 where code = 'q_{0}'
 group by 1
 order by 2 desc"""
