@@ -25,24 +25,19 @@ from common import setup_logging
 from praw_wrapper import praw_wrapper
 from yaml_wrapper import yaml
 
-SQL_SURVEY_MULTIPLE_ANSWERS = """select answer[3] AS answer_code, answer_value, count(vote_id)
+SQL_SURVEY_PREFILLED_ANSWERS = """select answer[3] AS answer_code, answer_value, count(vote_id)
 from (select regexp_split_to_array(code, '_') AS answer_parts, *
       from "Answers"
-      where code like 'q\_{0}\_%') AS dt(answer)
+      where  code = 'q_{0}' or code like 'q\_{0}\_%') AS dt(answer)
 group by 1, 2
 order by 3 desc"""
-SQL_SURVEY_SINGLE_ANSWER = """select answer_value, count(*)
-from "Answers"
-      where code = 'q_{0}' or code='q_{0}_text'
-group by 1
-order by 2 desc"""
 SQL_SURVEY_TEXT = """select answer_value, count(*) from "Answers"
 where code = 'q_{0}'
 group by 1
 order by 2 desc"""
 
 SURVEY_MOD_QUERY = """\
-select code, answer_value, 
+select  
     case answer_value
          when 'A000' then 'gschizas'
          when 'A001' then 'SaltySolomon'
@@ -520,22 +515,14 @@ class SlackbotShell(cmd.Cmd):
             question_id = int(args[0].split('_')[-1])
             question = questions[question_id-1]
             title = question['title']
-            if question['kind'] in ('checktree1', 'checkbox'):
-                cols, rows = self._database_query(SQL_SURVEY_MULTIPLE_ANSWERS.format(question_id))
+            if question['kind'] in ('checktree1', 'checkbox', 'tree1', 'radio'):
+                cols, rows = self._database_query(SQL_SURVEY_PREFILLED_ANSWERS.format(question_id))
                 choices = {}
-                if question['kind'] == 'checktree':
+                if question['kind'] in ('tree', 'checktree'):
                     # flatten choices tree
                     choices = self._flatten_choices(question['choices'], {})
-                elif question['kind'] == 'checkbox':
+                elif question['kind'] in ('radio', 'checkbox'):
                     choices = question['choices']
-                rows = [self._translate_choice(choices, row) for row in rows]
-            elif question['kind'] in ('tree1', 'radio'):
-                if question['kind'] == 'tree':
-                    # flatten choices tree
-                    choices = self._flatten_choices(question['choices'], {})
-                elif question['kind'] == 'radio':
-                    choices = question['choices']
-                cols, rows = self._database_query(SQL_SURVEY_SINGLE_ANSWER.format(question_id))
                 rows = [self._translate_choice(choices, row) for row in rows]
             elif question['kind'] in ('text', 'textarea'):
                 cols, rows = self._database_query(SQL_SURVEY_TEXT.format(question_id))
@@ -554,21 +541,19 @@ class SlackbotShell(cmd.Cmd):
             table = tabulate(rows, headers=cols, tablefmt='pipe')
             if title:
                 table = f"## *{title}*\n\n" + table
-            self._send_file(table)
+            self._send_file(table, title=title, filetype='markdown')
 
     @staticmethod
     def _translate_choice(choices, row):
-        if len(row) == 3:
-            choice_value = row[0]
-            choice_other = row[1]
-            choice_count = row[2]
-            if choice_value == 'text':
-                choice_value = 'Other:' + choice_other
-            else:
-                choice_value = choices.get(choice_value)
-        elif len(row) == 2:
-            choice_value = choices.get(row[0])
-            choice_count = row[1]
+        choice_value = row[0]
+        choice_other = row[1]
+        choice_count = row[2]
+        if choice_value == 'text':
+            choice_value = 'Other:' + choice_other
+        elif choice_value is None:
+            choice_value = choices.get(choice_other)
+        else:
+            choice_value = choices.get(choice_value)
         return choice_value, choice_count
 
     @staticmethod
