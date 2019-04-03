@@ -25,12 +25,18 @@ from common import setup_logging
 from praw_wrapper import praw_wrapper
 from yaml_wrapper import yaml
 
-SQL_SURVEY_MULTIPLE_ANSWERS = """select answer[3] AS answer_value, count(vote_id)
+SQL_SURVEY_MULTIPLE_ANSWERS = """select answer[3] AS answer_code, answer_value, count(vote_id)
 from (select regexp_split_to_array(code, '_') AS answer_parts, *
       from "Answers"
       where code like 'q\_{0}\_%') AS dt(answer)
+group by 1, 2
+order by 3 desc"""
+SQL_SURVEY_SINGLE_ANSWER = """select answer_value, count(vote_id)
+from "Answers"
+      where code = 'q_{0}' or code='q_{0}_text'
 group by 1
 order by 2 desc"""
+
 SURVEY_MOD_QUERY = """\
 select code, answer_value, 
     case answer_value
@@ -494,8 +500,8 @@ class SlackbotShell(cmd.Cmd):
             _, rows = self._database_query(sql)
         elif args[0] == 'questions':
             result_type = 'table'
-            cols = ['Question Code', 'Title']
-            rows = [(f'q_{1+i}', q['title']) for i, q in enumerate(questions)]
+            cols = ['Question Code', 'Type', 'Title']
+            rows = [(f'q_{1 + i}', q['kind'], q['title']) for i, q in enumerate(questions)]
         elif args[0] == 'mods':
             sql = SURVEY_MOD_QUERY
             result_type = 'table'
@@ -506,6 +512,13 @@ class SlackbotShell(cmd.Cmd):
             question = questions[question_id-1]
             if question['kind'] in ('checktree', 'checkbox'):
                 cols, rows = self._database_query(SQL_SURVEY_MULTIPLE_ANSWERS.format(question_id))
+                choices = {}
+                if question['kind'] == 'checktree':
+                    # flatten choices tree
+                    choices = self._flatten_choices(question['choices'], {})
+                elif question['kind'] == 'checkbox':
+                    choices = question['choices']
+                rows = [self._translate_choice(choices, row) for row in rows]
             else:
                 cols = ['Message']
                 rows = [('Not implemented',)]
@@ -522,6 +535,17 @@ class SlackbotShell(cmd.Cmd):
             self._send_file(table)
 
     @staticmethod
+    def _translate_choice(choices, row):
+        choice_value = row[0]
+        choice_other = row[1]
+        choice_count = row[2]
+        if choice_value == 'text':
+            choice_value = 'Other:' + choice_other
+        else:
+            choice_value = choices.get(choice_value)
+        return choice_value, choice_count
+
+    @staticmethod
     def _database_query(sql):
         import psycopg2
         database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
@@ -533,6 +557,12 @@ class SlackbotShell(cmd.Cmd):
         cur.close()
         conn.close()
         return cols, rows
+
+    @staticmethod
+    def _flatten_choices(self, choices, parent):
+        #parent
+        return {}
+
 
     @staticmethod
     def _archive_page(url):
