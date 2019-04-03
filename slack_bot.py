@@ -501,10 +501,11 @@ class SlackbotShell(cmd.Cmd):
             sql = 'SELECT COUNT(*) FROM "Votes"'
             result_type = 'single'
             _, rows = self._database_query(sql)
-        elif args[0] == 'questions':
+        elif args[0] in ('questions', 'questions_full'):
+            trunc_length = 60 if args[0] == 'questions' else 200
             result_type = 'table'
-            cols = ['Question Code', 'Type', 'Title']
-            rows = [(f'q_{1 + i}', q['kind'], q['title']) for i, q in enumerate(questions)]
+            cols = ['Question Number', 'Type', 'Title']
+            rows = [(f"\u266f{1 + i}", q['kind'], self._truncate(q['title'], trunc_length)) for i, q in enumerate(questions)]
         elif args[0] == 'mods':
             sql = SURVEY_MOD_QUERY
             result_type = 'table'
@@ -529,7 +530,8 @@ class SlackbotShell(cmd.Cmd):
                 cols = ['Message']
                 rows = [('Not implemented',)]
         else:
-            valid_queries = ['count', 'questions', 'mods', 'q_1', '...', f'q_{str(len(questions))}']
+            valid_queries = ['count', 'questions', 'questions_full', 'mods'] + \
+                            ['q_1', '...', f'q_{str(len(questions))}']
             valid_queries_as_code = [f"`{q}`" for q in valid_queries]
             self._send_text(f"You need to specify a query from {', '.join(valid_queries_as_code)}", is_error=True)
             return
@@ -541,6 +543,13 @@ class SlackbotShell(cmd.Cmd):
             if title:
                 table = f"## *{title}*\n\n" + table
             self._send_file(table, title=title, filetype='markdown')
+
+    @staticmethod
+    def _truncate(text, length):
+        if len(text) <= length:
+            return text
+        else:
+            return text[:length-3] + '...'
 
     @staticmethod
     def _translate_choice(choices, row):
