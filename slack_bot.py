@@ -549,7 +549,7 @@ class SlackbotShell(cmd.Cmd):
         elif result_type == 'table':
             table = tabulate(rows, headers=cols, tablefmt='pipe')
             if title:
-                table = f"## *{title}\n" + table
+                table = f"## *{title}*\n\n" + table
             self._send_file(table)
 
     @staticmethod
