@@ -521,7 +521,8 @@ class SlackbotShell(cmd.Cmd):
             table = tabulate(rows, headers=cols, tablefmt='pipe')
             self._send_file(table)
 
-    def _database_query(self, sql):
+    @staticmethod
+    def _database_query(sql):
         import psycopg2
         database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
         conn = psycopg2.connect(database_url, sslmode='require')
