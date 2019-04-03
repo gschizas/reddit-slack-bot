@@ -498,6 +498,7 @@ class SlackbotShell(cmd.Cmd):
         if len(args) == 0:
             args = ['']
         question_ids = [f'q_{1+i}' for i in range(len(questions))]
+        title = None
         if args[0] == 'count':
             sql = 'SELECT COUNT(*) FROM "Votes"'
             result_type = 'single'
@@ -514,6 +515,7 @@ class SlackbotShell(cmd.Cmd):
             result_type = 'table'
             question_id = int(args[0].split('_')[-1])
             question = questions[question_id-1]
+            title = question['title']
             if question['kind'] in ('checktree1', 'checkbox'):
                 cols, rows = self._database_query(SQL_SURVEY_MULTIPLE_ANSWERS.format(question_id))
                 choices = {}
@@ -546,6 +548,8 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"*Result*: `{rows[0][0]}`")
         elif result_type == 'table':
             table = tabulate(rows, headers=cols, tablefmt='pipe')
+            if title:
+                table = f"## *{title}\n" + table
             self._send_file(table)
 
     @staticmethod
