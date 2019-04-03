@@ -31,9 +31,13 @@ from (select regexp_split_to_array(code, '_') AS answer_parts, *
       where code like 'q\_{0}\_%') AS dt(answer)
 group by 1, 2
 order by 3 desc"""
-SQL_SURVEY_SINGLE_ANSWER = """select answer_value, count(vote_id)
+SQL_SURVEY_SINGLE_ANSWER = """select answer_value, count(*)
 from "Answers"
       where code = 'q_{0}' or code='q_{0}_text'
+group by 1
+order by 2 desc"""
+SQL_SURVEY_TEXT = """select answer_value, count(*) from "Answers"
+where code = 'q_{0}'
 group by 1
 order by 2 desc"""
 
@@ -510,7 +514,7 @@ class SlackbotShell(cmd.Cmd):
             result_type = 'table'
             question_id = int(args[0].split('_')[-1])
             question = questions[question_id-1]
-            if question['kind'] in ('checktree', 'checkbox'):
+            if question['kind'] in ('checktree1', 'checkbox'):
                 cols, rows = self._database_query(SQL_SURVEY_MULTIPLE_ANSWERS.format(question_id))
                 choices = {}
                 if question['kind'] == 'checktree':
@@ -519,6 +523,16 @@ class SlackbotShell(cmd.Cmd):
                 elif question['kind'] == 'checkbox':
                     choices = question['choices']
                 rows = [self._translate_choice(choices, row) for row in rows]
+            elif question['kind'] in ('tree1', 'radio'):
+                if question['kind'] == 'tree':
+                    # flatten choices tree
+                    choices = self._flatten_choices(question['choices'], {})
+                elif question['kind'] == 'radio':
+                    choices = question['choices']
+                cols, rows = self._database_query(SQL_SURVEY_SINGLE_ANSWER.format(question_id))
+                rows = [self._translate_choice(choices, row) for row in rows]
+            elif question['kind'] in ('text', 'textarea'):
+                cols, rows = self._database_query(SQL_SURVEY_TEXT.format(question_id))
             else:
                 cols = ['Message']
                 rows = [('Not implemented',)]
@@ -536,13 +550,17 @@ class SlackbotShell(cmd.Cmd):
 
     @staticmethod
     def _translate_choice(choices, row):
-        choice_value = row[0]
-        choice_other = row[1]
-        choice_count = row[2]
-        if choice_value == 'text':
-            choice_value = 'Other:' + choice_other
-        else:
-            choice_value = choices.get(choice_value)
+        if len(row) == 3:
+            choice_value = row[0]
+            choice_other = row[1]
+            choice_count = row[2]
+            if choice_value == 'text':
+                choice_value = 'Other:' + choice_other
+            else:
+                choice_value = choices.get(choice_value)
+        elif len(row) == 2:
+            choice_value = choices.get(row[0])
+            choice_count = row[1]
         return choice_value, choice_count
 
     @staticmethod
