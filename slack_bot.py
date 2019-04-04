@@ -36,6 +36,13 @@ from "Answers"
 where code = 'q_{0}'
 group by 1
 order by 2 desc"""
+SQL_SURVEY_SCALE_MATRIX = """select answer[3] AS AnswerCode, answer_value AS AnswerValue, count(vote_id) AS VoteCount
+from (select regexp_split_to_array(code, '_') AS answer_parts, *
+      from "Answers"
+      where code like 'q\_{0}\_%') AS dt(answer)
+group by 1, 2
+order by 1, 3 desc
+"""
 
 SURVEY_MOD_QUERY = """\
 select  
@@ -526,6 +533,9 @@ class SlackbotShell(cmd.Cmd):
                 rows = [self._translate_choice(choices, row) for row in rows]
             elif question['kind'] in ('text', 'textarea'):
                 cols, rows = self._database_query(SQL_SURVEY_TEXT.format(question_id))
+            elif question['kind'] in ('scale-matrix',):
+                cols, rows = self._database_query(SQL_SURVEY_SCALE_MATRIX.format(question_id))
+                rows = [self._translate_matrix(question['choices'], question['lines'], row) for row in rows]
             else:
                 cols = ['Message']
                 rows = [('Not implemented',)]
