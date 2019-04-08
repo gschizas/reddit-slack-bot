@@ -523,12 +523,12 @@ class SlackbotShell(cmd.Cmd):
             question_id = int(args[0].split('_')[-1])
             question = questions[question_id - 1]
             title = question['title']
-            if question['kind'] in ('checktree1', 'checkbox', 'tree1', 'radio'):
+            if question['kind'] in ('checktree', 'checkbox', 'tree', 'radio'):
                 cols, rows = self._database_query(SQL_SURVEY_PREFILLED_ANSWERS.format(question_id))
                 choices = {}
                 if question['kind'] in ('tree', 'checktree'):
                     # flatten choices tree
-                    choices = self._flatten_choices(question['choices'], {})
+                    choices = self._flatten_choices(question['choices'])
                 elif question['kind'] in ('radio', 'checkbox'):
                     choices = question['choices']
                 rows = [self._translate_choice(choices, row) for row in rows]
@@ -597,9 +597,16 @@ class SlackbotShell(cmd.Cmd):
         return cols, rows
 
     @staticmethod
-    def _flatten_choices(self, choices, parent):
+    def _flatten_choices(choices):
         # parent
-        return {}
+        result = dict([(k, choices[k]['title']) for k in list(choices.keys())])
+        for choice_name, choice in choices.items():
+            if 'choices' not in choice:
+                continue
+            children = SlackbotShell._flatten_choices(choice['choices'])
+            for child_name, child_title in children.items():
+                result[child_name] = child_title
+        return result
 
     @staticmethod
     def _archive_page(url):
