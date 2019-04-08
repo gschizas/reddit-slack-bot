@@ -502,7 +502,7 @@ class SlackbotShell(cmd.Cmd):
         args = arg.lower().split()
         if len(args) == 0:
             args = ['']
-        question_ids = [f'q_{1+i}' for i in range(len(questions))]
+        question_ids = [f'q_{1 + i}' for i in range(len(questions))]
         title = None
         if args[0] == 'count':
             sql = 'SELECT COUNT(*) FROM "Votes"'
@@ -512,7 +512,8 @@ class SlackbotShell(cmd.Cmd):
             trunc_length = 60 if args[0] == 'questions' else 200
             result_type = 'table'
             cols = ['Question Number', 'Type', 'Title']
-            rows = [(f"\u266f{1 + i}", q['kind'], self._truncate(q['title'], trunc_length)) for i, q in enumerate(questions)]
+            rows = [(f"\u266f{1 + i}", q['kind'], self._truncate(q['title'], trunc_length)) for i, q in
+                    enumerate(questions)]
         elif args[0] == 'mods':
             sql = SURVEY_MOD_QUERY
             result_type = 'table'
@@ -520,7 +521,7 @@ class SlackbotShell(cmd.Cmd):
         elif args[0] in question_ids:
             result_type = 'table'
             question_id = int(args[0].split('_')[-1])
-            question = questions[question_id-1]
+            question = questions[question_id - 1]
             title = question['title']
             if question['kind'] in ('checktree1', 'checkbox', 'tree1', 'radio'):
                 cols, rows = self._database_query(SQL_SURVEY_PREFILLED_ANSWERS.format(question_id))
@@ -559,7 +560,7 @@ class SlackbotShell(cmd.Cmd):
         if len(text) <= length:
             return text
         else:
-            return text[:length-3] + '...'
+            return text[:length - 3] + '...'
 
     @staticmethod
     def _translate_choice(choices, row):
@@ -597,9 +598,8 @@ class SlackbotShell(cmd.Cmd):
 
     @staticmethod
     def _flatten_choices(self, choices, parent):
-        #parent
+        # parent
         return {}
-
 
     @staticmethod
     def _archive_page(url):
@@ -608,7 +608,7 @@ class SlackbotShell(cmd.Cmd):
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64)  '
             'AppleWebKit/537.36 (KHTML, like Gecko) '
             'Chrome/73.0.3683.86 Safari/537.36')
-        #PROXY = 'http://45.250.226.14:8080'
+        # PROXY = 'http://45.250.226.14:8080'
 
         url = url.replace('//www.reddit.com/', '//old.reddit.com/')
 
@@ -624,7 +624,7 @@ class SlackbotShell(cmd.Cmd):
             headers={
                 'Referer': 'http://archive.is',
                 'User-Agent': USER_AGENT})
-            # proxies={'http': PROXY, 'https': PROXY})
+        # proxies={'http': PROXY, 'https': PROXY})
         if p2.url == f'{ARCHIVE_URL}/submit/':
             return p2.headers['Refresh'][6:]
         else:
@@ -695,7 +695,8 @@ class SlackbotShell(cmd.Cmd):
             comment_subreddit_name = c.subreddit.display_name.lower()
             if comment_subreddit_name != subreddit_name:
                 other_subreddits += 1
-                other_subreddit_history[comment_subreddit_name] = other_subreddit_history.get(comment_subreddit_name, 0) + 1
+                other_subreddit_history[comment_subreddit_name] = \
+                    other_subreddit_history.get(comment_subreddit_name, 0) + 1
                 continue
             if c.banned_by and c.banned_by != 'AutoModerator':
                 already_removed += 1
