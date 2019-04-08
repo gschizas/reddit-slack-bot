@@ -605,9 +605,9 @@ class SlackbotShell(cmd.Cmd):
     def _archive_page(url):
         ARCHIVE_URL = 'http://archive.is'
         USER_AGENT = (
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) '
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64)  '
             'AppleWebKit/537.36 (KHTML, like Gecko) '
-            'Chrome/69.0.3497.100 Safari/537.36')
+            'Chrome/73.0.3683.86 Safari/537.36')
         #PROXY = 'http://45.250.226.14:8080'
 
         url = url.replace('//www.reddit.com/', '//old.reddit.com/')
