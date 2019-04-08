@@ -128,7 +128,7 @@ def main():
             for msg in sc.rtm_read():
                 handle_message(msg)
             time.sleep(0.5)
-        except Exception as ex: #slackclient.server.SlackConnectionResetError as ex:
+        except Exception as ex:  # slackclient.server.SlackConnectionResetError as ex:
             logger.warning(f"{ex}")
             if sc.rtm_connect():
                 logger.info("Connection established")
