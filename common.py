@@ -8,7 +8,7 @@ import colorlog
 import requests
 
 
-def setup_logging(extra_name=None):
+def setup_logging(extra_name=None, disable_tty=False):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
@@ -26,7 +26,7 @@ def setup_logging(extra_name=None):
     filename = os.path.basename(sys.argv[0])
     basename = os.path.splitext(filename)[0]
 
-    if sys.stdout.isatty():
+    if sys.stdout.isatty() and not disable_tty:
         ch = colorlog.StreamHandler()
         ch.setLevel(logging.DEBUG)
         ch.setFormatter(colorlog.ColoredFormatter('%(log_color)s%(levelname)s\t%(name)s\t%(message)s'))
