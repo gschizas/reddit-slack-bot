@@ -575,6 +575,14 @@ class SlackbotShell(cmd.Cmd):
         return choice_value, choice_count
 
     @staticmethod
+    def _translate_matrix(choices, lines, row):
+        line = int(row[0])
+        answer = int(row[1])
+        count = row[2]
+        answer_key = list(choices.keys())[answer - 1]
+        return lines[line - 1] or '<empty>', choices[answer_key], count
+
+    @staticmethod
     def _database_query(sql):
         import psycopg2
         database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
