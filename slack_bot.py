@@ -239,13 +239,15 @@ class SlackbotShell(cmd.Cmd):
         place = arg.lower()
         if place == 'macedonia' or place == 'makedonia':
             place = 'Thessaloniki'
-        if place == 'brexit':
-            with open('data/brexit.png', 'rb') as f:
+        if place in ('brexit', 'pompeii'):
+            title = 'the floor is lava'
+            with open('img/lava.png', 'rb') as f:
                 file_data = f.read()
         else:
             weather = requests.get('http://wttr.in/' + place + '_p0.png')
             file_data = weather.content
-        self._send_file(file_data , title=arg, filetype='png')
+            title = arg
+        self._send_file(file_data, title=title, filetype='png')
 
     do_w = do_weather
 
