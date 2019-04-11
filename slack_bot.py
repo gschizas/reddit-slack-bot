@@ -159,6 +159,7 @@ def handle_message(msg):
     teaminfo = teams.get(team_id, {'name': 'Unknown - ' + team_id, 'domain': ''})
 
     text = msg['text']
+    text = re.sub(r'\u043e|\u03bf', 'o', text)
 
     if any([text.lower().startswith(trigger_word) for trigger_word in shell.trigger_words]):
         logger.debug(f"Triggerred by {text}")
