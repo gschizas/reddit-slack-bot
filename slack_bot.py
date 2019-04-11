@@ -105,7 +105,7 @@ def excepthook(type_, value, tb):
 
 
 def main():
-    global logger, subreddit_name, trigger_word, shell, teams
+    global logger, subreddit_name, shell, teams
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
@@ -120,8 +120,8 @@ def main():
     shell = SlackbotShell()
     if subreddit_name:
         shell.sr = r.subreddit(subreddit_name)
-    shell.trigger_word = os.environ['BOT_NAME']
-    logger.debug(f"Listening for {shell.trigger_word}")
+    shell.trigger_words = os.environ['BOT_NAME'].split()
+    logger.debug(f"Listening for {','.join(shell.trigger_words)}")
 
     while True:
         try:
@@ -160,7 +160,7 @@ def handle_message(msg):
 
     text = msg['text']
 
-    if text.lower().startswith(shell.trigger_word):
+    if any([text.lower().startswith(trigger_word) for trigger_word in shell.trigger_words]):
         logger.debug(f"Triggerred by {text}")
         line = ' '.join(text.split()[1:])
         shell.channel_id = channel_id
@@ -176,7 +176,7 @@ def handle_message(msg):
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
         super().__init__(self, stdout=io.StringIO(), **kwargs)
-        self.trigger_word = None
+        self.trigger_words = []
         self.channel_id = None
         self.sr = None
         self.pos = 0
@@ -187,13 +187,13 @@ class SlackbotShell(cmd.Cmd):
                     channel=self.channel_id,
                     text=text,
                     icon_emoji=icon_emoji,
-                    username=self.trigger_word)
+                    username=self.trigger_words[0])
 
     def _send_file(self, file_data, title=None, filetype=None):
         sc.api_call("files.upload",
                     channels=self.channel_id,
                     icon_emoji=':robot_face:',
-                    username=self.trigger_word,
+                    username=self.trigger_words[0],
                     file=file_data,
                     title=title,
                     filetype=filetype or 'auto')
@@ -203,7 +203,7 @@ class SlackbotShell(cmd.Cmd):
                     channel=self.channel_id,
                     icon_emoji=':robot_face:',
                     text=text,
-                    username=self.trigger_word,
+                    username=self.trigger_words[0],
                     attachments=fields)
 
     def postcmd(self, stop, line):
