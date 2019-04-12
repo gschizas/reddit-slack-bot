@@ -76,6 +76,9 @@ from "Answers"
 where code like 'q\_60'
 group by code, answer_value
 order by 4 desc"""
+SQL_SURVEY_PARTICIPATION = """select count(*), date(datestamp) from "Votes"
+group by date(datestamp)
+order by date(datestamp);"""
 
 
 def init():
@@ -526,6 +529,10 @@ class SlackbotShell(cmd.Cmd):
             sql = SQL_SURVEY_MOD_QUERY
             result_type = 'table'
             cols, rows = self._database_query(sql)
+        elif args[0] == 'votes_per_day':
+            sql = SQL_SURVEY_PARTICIPATION
+            result_type = 'table'
+            cols, rows = self._database_query(sql)
         elif args[0] in question_ids:
             result_type = 'table'
             question_id = int(args[0].split('_')[-1])
@@ -549,7 +556,7 @@ class SlackbotShell(cmd.Cmd):
                 cols = ['Message']
                 rows = [('Not implemented',)]
         else:
-            valid_queries = ['count', 'questions', 'questions_full', 'mods'] + \
+            valid_queries = ['count', 'questions', 'questions_full', 'mods', 'votes_per_day'] + \
                             ['q_1', '...', f'q_{str(len(questions))}']
             valid_queries_as_code = [f"`{q}`" for q in valid_queries]
             self._send_text(f"You need to specify a query from {', '.join(valid_queries_as_code)}", is_error=True)
