@@ -44,7 +44,7 @@ group by 1, 2
 order by 1, 3 desc
 """
 
-SURVEY_MOD_QUERY = """\
+SQL_SURVEY_MOD_QUERY = """\
 select  
     case answer_value
          when 'A000' then 'gschizas'
@@ -523,7 +523,7 @@ class SlackbotShell(cmd.Cmd):
             rows = [(f"\u266f{1 + i}", q['kind'], self._truncate(q['title'], trunc_length)) for i, q in
                     enumerate(questions)]
         elif args[0] == 'mods':
-            sql = SURVEY_MOD_QUERY
+            sql = SQL_SURVEY_MOD_QUERY
             result_type = 'table'
             cols, rows = self._database_query(sql)
         elif args[0] in question_ids:
