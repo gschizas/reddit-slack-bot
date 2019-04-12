@@ -44,38 +44,6 @@ group by 1, 2
 order by 1, 3 desc
 """
 
-SQL_SURVEY_MOD_QUERY = """\
-select  
-    case answer_value
-         when 'A000' then 'gschizas'
-         when 'A001' then 'SaltySolomon'
-         when 'A002' then 'robbit42'
-         when 'A003' then 'zurfer75'
-         when 'A004' then 'Greekball'
-         when 'A005' then 'aalp234'
-         when 'A006' then 'MarktpLatz'
-         when 'A007' then 'rEvolutionTU'
-         when 'A008' then 'HugodeGroot'
-         when 'A009' then 'MarlinMr'
-         when 'A010' then 'BkkGrl'
-         when 'A011' then 'H0agh'
-         when 'A013' then 'SlyScorpion'
-         when 'A014' then 'Tetizeraz'
-         when 'A016' then 'Blackfire853'
-         when 'A017' then 'MariMada'
-         when 'A018' then 'RifleSoldier'
-         when 'A019' then 'svaroz1c'
-         when 'A020' then 'EtKEnn'
-         when 'A021' then 'jtalin'
-         when 'A022' then 'kinmix'
-         when 'A023' then 'Sejani'
-         when 'A024' then 'Mortum1'
-         when 'A025' then 'Paxan' end as moderator,
-       count(*)
-from "Answers"
-where code like 'q\_60'
-group by code, answer_value
-order by 4 desc"""
 SQL_SURVEY_PARTICIPATION = """select count(*), date(datestamp) from "Votes"
 group by date(datestamp)
 order by date(datestamp);"""
@@ -515,6 +483,8 @@ class SlackbotShell(cmd.Cmd):
             args = ['']
         question_ids = [f'q_{1 + i}' for i in range(len(questions))]
         title = None
+        if args[0] == 'mods':
+            args[0] = 'q_60'
         if args[0] == 'count':
             sql = 'SELECT COUNT(*) FROM "Votes"'
             result_type = 'single'
@@ -525,10 +495,6 @@ class SlackbotShell(cmd.Cmd):
             cols = ['Question Number', 'Type', 'Title']
             rows = [(f"\u266f{1 + i}", q['kind'], self._truncate(q['title'], trunc_length)) for i, q in
                     enumerate(questions)]
-        elif args[0] == 'mods':
-            sql = SQL_SURVEY_MOD_QUERY
-            result_type = 'table'
-            cols, rows = self._database_query(sql)
         elif args[0] == 'votes_per_day':
             sql = SQL_SURVEY_PARTICIPATION
             result_type = 'table'
