@@ -131,6 +131,7 @@ def handle_message(msg):
 
     text = msg['text']
     text = re.sub(r'\u043e|\u03bf', 'o', text)
+    text = re.sub(r'\u0435', 'e', text)
 
     if any([text.lower().startswith(trigger_word) for trigger_word in shell.trigger_words]):
         logger.debug(f"Triggerred by {text}")
