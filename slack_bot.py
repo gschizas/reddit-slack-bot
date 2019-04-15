@@ -367,6 +367,10 @@ class SlackbotShell(cmd.Cmd):
         """Like a Chinese fortune cookie, but less yummy"""
         self._send_text(subprocess.check_output('/usr/games/fortune').decode())
 
+    def do_uptime(self, args):
+        """Show uptime"""
+        self._send_text(subprocess.check_output('/usr/bin/uptime').decode())
+
     def do_add_domain_tag(self, url_text, color):
         """Add a tag to a domain"""
         toolbox_data = json.loads(self.sr.wiki['toolbox'].content_md)
