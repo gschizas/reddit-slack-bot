@@ -732,6 +732,10 @@ class SlackbotShell(cmd.Cmd):
 
     do_bin = do_binary
 
+    def do_kudos(self, arg):
+        """Add kudos to user"""
+        self._send_text('`' + arg + '`')
+
 
 if __name__ == '__main__':
     main()
