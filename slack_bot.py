@@ -56,8 +56,9 @@ def init():
     slack_api_token = os.environ['SLACK_API_TOKEN']
     subreddit_name = os.environ.get('SUBREDDIT_NAME')
     sc = slackclient.SlackClient(slack_api_token)
-    user_agent = f'python:gr.terrasoft.reddit.slackmodbot-{subreddit_name}:v0.1 (by /u/gschizas)'
-    r = praw_wrapper(user_agent=user_agent, scopes=['*'])
+    if subreddit_name:
+        user_agent = f'python:gr.terrasoft.reddit.slackmodbot-{subreddit_name}:v0.1 (by /u/gschizas)'
+        r = praw_wrapper(user_agent=user_agent, scopes=['*'])
 
 
 def excepthook(type_, value, tb):
@@ -88,6 +89,17 @@ def main():
         sys.exit(1)
 
     teams = {}
+    if not subreddit_name:
+        del SlackbotShell.do_add_domain_tag
+        del SlackbotShell.do_add_policy
+        del SlackbotShell.do_archive_user
+        del SlackbotShell.do_modqueue_comments
+        del SlackbotShell.do_modqueue_posts
+        del SlackbotShell.do_nuke_thread
+        del SlackbotShell.do_nuke_user
+        del SlackbotShell.do_survey
+        del SlackbotShell.do_usernotes
+        del SlackbotShell.do_youtube_info
     shell = SlackbotShell()
     if subreddit_name:
         shell.sr = r.subreddit(subreddit_name)
