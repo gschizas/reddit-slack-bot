@@ -512,7 +512,7 @@ class SlackbotShell(cmd.Cmd):
         if args[0] == 'count':
             sql = 'SELECT COUNT(*) FROM "Votes"'
             result_type = 'single'
-            _, rows = self._database_query(sql)
+            _, rows = self._survey_database_query(sql)
         elif args[0] in ('questions', 'questions_full'):
             trunc_length = 60 if args[0] == 'questions' else 200
             result_type = 'table'
@@ -522,14 +522,14 @@ class SlackbotShell(cmd.Cmd):
         elif args[0] == 'votes_per_day':
             sql = SQL_SURVEY_PARTICIPATION
             result_type = 'table'
-            cols, rows = self._database_query(sql)
+            cols, rows = self._survey_database_query(sql)
         elif args[0] in question_ids:
             result_type = 'table'
             question_id = int(args[0].split('_')[-1])
             question = questions[question_id - 1]
             title = question['title']
             if question['kind'] in ('checktree', 'checkbox', 'tree', 'radio'):
-                cols, rows = self._database_query(SQL_SURVEY_PREFILLED_ANSWERS.format(question_id))
+                cols, rows = self._survey_database_query(SQL_SURVEY_PREFILLED_ANSWERS.format(question_id))
                 choices = {}
                 if question['kind'] in ('tree', 'checktree'):
                     # flatten choices tree
@@ -538,9 +538,9 @@ class SlackbotShell(cmd.Cmd):
                     choices = question['choices']
                 rows = [self._translate_choice(choices, row) for row in rows]
             elif question['kind'] in ('text', 'textarea'):
-                cols, rows = self._database_query(SQL_SURVEY_TEXT.format(question_id))
+                cols, rows = self._survey_database_query(SQL_SURVEY_TEXT.format(question_id))
             elif question['kind'] in ('scale-matrix',):
-                cols, rows = self._database_query(SQL_SURVEY_SCALE_MATRIX.format(question_id))
+                cols, rows = self._survey_database_query(SQL_SURVEY_SCALE_MATRIX.format(question_id))
                 rows = [self._translate_matrix(question['choices'], question['lines'], row) for row in rows]
             else:
                 cols = ['Message']
@@ -589,7 +589,7 @@ class SlackbotShell(cmd.Cmd):
         return lines[line - 1] or '<empty>', choices[answer_key], count
 
     @staticmethod
-    def _database_query(sql):
+    def _survey_database_query(sql):
         import psycopg2
         database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
         conn = psycopg2.connect(database_url, sslmode='require')
