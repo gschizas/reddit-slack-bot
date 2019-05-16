@@ -89,6 +89,9 @@ def main():
         sys.exit(1)
 
     teams = {}
+
+    # Disable features according to environment
+
     if not subreddit_name:
         del SlackbotShell.do_add_domain_tag
         del SlackbotShell.do_add_policy
@@ -100,6 +103,10 @@ def main():
         del SlackbotShell.do_survey
         del SlackbotShell.do_usernotes
         del SlackbotShell.do_youtube_info
+
+    if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ or 'QUESTIONNAIRE_FILE' not in os.environ:
+        del SlackbotShell.do_survey
+
     shell = SlackbotShell()
     if subreddit_name:
         shell.sr = r.subreddit(subreddit_name)
