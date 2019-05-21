@@ -77,7 +77,7 @@ def excepthook(type_, value, tb):
 
 
 def main():
-    global logger, subreddit_name, shell, teams
+    global logger, subreddit_name, shell, teams, users
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
@@ -89,6 +89,7 @@ def main():
         sys.exit(1)
 
     teams = {}
+    users = {}
 
     # Disable features according to environment
 
@@ -142,13 +143,12 @@ def handle_message(msg):
         del msg['message']
 
     channel_id = msg['channel']
-    team_id = msg.get('source_team', '')
+    team_id = msg.get('team', '')
+    user_id = msg.get('user', '')
 
-    response = sc.api_call('team.info')
-    if response['ok']:
-        teams[team_id] = response['team']
+    get_team_info(team_id)
 
-    teaminfo = teams.get(team_id, {'name': 'Unknown - ' + team_id, 'domain': ''})
+    get_user_info(user_id)
 
     text = msg['text']
     text = re.sub(r'\u043e|\u03bf', 'o', text)
@@ -160,6 +160,7 @@ def handle_message(msg):
         shell.channel_id = channel_id
         shell.team_id = team_id
         shell.message = msg
+        shell.user_id = user_id
         line = shell.precmd(line)
         stop = shell.onecmd(line)
         stop = shell.postcmd(stop, line)
@@ -167,11 +168,29 @@ def handle_message(msg):
             sys.exit()
 
 
+def get_user_info(user_id):
+    global sc, users
+    if user_id not in users:
+        response_user = sc.api_call('users.info', user=user_id)
+        if response_user['ok']:
+            users[user_id] = response_user['user']
+
+
+def get_team_info(team_id):
+    global sc, teams
+    if team_id not in teams:
+        response_team = sc.api_call('team.info')
+        if response_team['ok']:
+            teams[team_id] = response_team['team']
+
+
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
         super().__init__(self, stdout=io.StringIO(), **kwargs)
         self.trigger_words = []
         self.channel_id = None
+        self.team_id = None
+        self.user_id = None
         self.sr = None
         self.pos = 0
 
