@@ -762,7 +762,20 @@ class SlackbotShell(cmd.Cmd):
 
     def do_kudos(self, arg):
         """Add kudos to user"""
-        self._send_text('`' + arg + '`')
+        global users
+        if re.match(r'<@\w+>', arg):
+            recipient_user_id = arg[2:-1]
+            get_user_info(recipient_user_id)
+            recipient_name = users[recipient_user_id]['name']
+            sender_name = users[self.user_id]['name']
+            self._send_text(f"`INSERT INTO KUDOS (from_user, to_user) VALUES ('{sender_name}', '{recipient_name}')`")
+        elif arg == '':
+            # SELECT FROM KUDOS
+            pass
+        else:
+            self._send_text(("You need to specify a user "
+                             "(i.e. @pikos_apikos) or "
+                             "'view' to see leaderboard"), is_error=True)
 
 
 if __name__ == '__main__':
