@@ -107,6 +107,9 @@ def main():
     if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ or 'QUESTIONNAIRE_FILE' not in os.environ:
         del SlackbotShell.do_survey
 
+    if 'KUDOS_DATABASE_URL' not in os.environ:
+        del SlackbotShell.do_kudos
+
     shell = SlackbotShell()
     if subreddit_name:
         shell.sr = r.subreddit(subreddit_name)
