@@ -17,6 +17,7 @@ import urllib.parse
 import zlib
 
 import prawcore
+import psycopg2
 import requests
 import slackclient
 from tabulate import tabulate
@@ -41,12 +42,12 @@ from (select regexp_split_to_array(code, '_') AS answer_parts, *
       from "Answers"
       where code like 'q\_{0}\_%') AS dt(answer)
 group by 1, 2
-order by 1, 3 desc
-"""
-
+order by 1, 3 desc"""
 SQL_SURVEY_PARTICIPATION = """select count(*), date(datestamp) from "Votes"
 group by date(datestamp)
 order by date(datestamp);"""
+SQL_KUDOS_INSERT = """"""
+SQL_KUDOS_VIEW = """"""
 
 
 def init():
@@ -611,7 +612,6 @@ class SlackbotShell(cmd.Cmd):
 
     @staticmethod
     def _survey_database_query(sql):
-        import psycopg2
         database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
         conn = psycopg2.connect(database_url, sslmode='require')
         cur = conn.cursor()
@@ -768,10 +768,32 @@ class SlackbotShell(cmd.Cmd):
             get_user_info(recipient_user_id)
             recipient_name = users[recipient_user_id]['name']
             sender_name = users[self.user_id]['name']
-            self._send_text(f"`INSERT INTO KUDOS (from_user, to_user) VALUES ('{sender_name}', '{recipient_name}')`")
-        elif arg == '':
-            # SELECT FROM KUDOS
-            pass
+
+            database_url = os.environ['KUDOS_DATABASE_URL']
+            conn = psycopg2.connect(database_url)
+            conn.autocommit = True
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO kudos (from_user, to_user) VALUES (%(sender_name)s, %(recipient_name)s)",
+                vars={'sender_name': sender_name, 'recipient_name':recipient_name})
+            success = cur.rowcount > 0
+            cur.close()
+            conn.close()
+            if success:
+                self._send_text(f"Kudos from {sender_name} to {recipient_name}")
+            else:
+                self._send_text("Kudos not recorded")
+        elif arg.lower() == 'view':
+            database_url = os.environ['KUDOS_DATABASE_URL']
+            conn = psycopg2.connect(database_url)
+            cur = conn.cursor()
+            cur.execute("select to_user as User, count(*) as Kudos FROM kudos GROUP BY to_user;")
+            rows = cur.fetchall()
+            cols = [col.name for col in cur.description]
+            cur.close()
+            conn.close()
+            table = tabulate(rows, headers=cols, tablefmt='pipe')
+            self._send_file(table, title="Kudos", filetype='markdown')
         else:
             self._send_text(("You need to specify a user "
                              "(i.e. @pikos_apikos) or "
