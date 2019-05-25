@@ -796,8 +796,11 @@ class SlackbotShell(cmd.Cmd):
             cols = [col.name for col in cur.description]
             cur.close()
             conn.close()
-            table = tabulate(rows, headers=cols, tablefmt='pipe')
-            self._send_file(table, title="Kudos", filetype='markdown')
+            if len(rows) == 0:
+                self._send_text("No kudos yet!")
+            else:
+                table = tabulate(rows, headers=cols, tablefmt='pipe')
+                self._send_file(table, title="Kudos", filetype='markdown')
         else:
             self._send_text(("You need to specify a user "
                              "(i.e. @pikos_apikos) or "
