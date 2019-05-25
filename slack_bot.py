@@ -769,13 +769,17 @@ class SlackbotShell(cmd.Cmd):
             recipient_name = users[recipient_user_id]['name']
             sender_name = users[self.user_id]['name']
 
+            if recipient_user_id == self.user_id:
+                self._send_text("You can't give kudos to yourself, silly!", is_error=True)
+                return
+
             database_url = os.environ['KUDOS_DATABASE_URL']
             conn = psycopg2.connect(database_url)
             conn.autocommit = True
             cur = conn.cursor()
             cur.execute(
                 "INSERT INTO kudos (from_user, to_user) VALUES (%(sender_name)s, %(recipient_name)s)",
-                vars={'sender_name': sender_name, 'recipient_name':recipient_name})
+                vars={'sender_name': sender_name, 'recipient_name': recipient_name})
             success = cur.rowcount > 0
             cur.close()
             conn.close()
