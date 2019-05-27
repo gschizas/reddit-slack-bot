@@ -46,7 +46,20 @@ order by 1, 3 desc"""
 SQL_SURVEY_PARTICIPATION = """select count(*), date(datestamp) from "Votes"
 group by date(datestamp)
 order by date(datestamp);"""
-SQL_KUDOS_INSERT = """"""
+SQL_KUDOS_INSERT = """\
+INSERT INTO kudos (
+   from_user, from_user_id,
+   to_user, to_user_id,
+   team_name, team_id,
+   channel_name, channel_id,
+   permalink)
+VALUES (
+   %(sender_name)s, %(sender_id)s,
+   %(recipient_name)s, %(recipient_id)s, 
+   %(team_name)s, %(team_id)s,
+   %(channel_name)s, %(channel_id)s,
+   %(permalink)s);
+"""
 SQL_KUDOS_VIEW = """"""
 
 
@@ -801,9 +814,13 @@ class SlackbotShell(cmd.Cmd):
             conn = psycopg2.connect(database_url)
             conn.autocommit = True
             cur = conn.cursor()
-            cur.execute(
-                "INSERT INTO kudos (from_user, to_user) VALUES (%(sender_name)s, %(recipient_name)s)",
-                vars={'sender_name': sender_name, 'recipient_name': recipient_name})
+            cmd_vars = {
+                'sender_name': sender_name, 'sender_id': self.user_id,
+                'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
+                'team_name': teams[self.team_id]['name'], 'team_id': self.team_id,
+                'channel_name': channels[self.team_id][self.channel_id], 'channel_id': self.channel_id,
+                'permalink': self.permalink['permalink']}
+            cur.execute(SQL_KUDOS_INSERT, vars=cmd_vars)
             success = cur.rowcount > 0
             cur.close()
             conn.close()
