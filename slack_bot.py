@@ -147,6 +147,7 @@ def handle_message(msg):
     team_id = msg.get('team', '')
     user_id = msg.get('user', '')
 
+    permalink = sc.api_call('chat.getPermalink', channel=channel_id, message_ts=msg['ts'])
     get_team_info(team_id)
 
     get_user_info(user_id)
@@ -162,6 +163,7 @@ def handle_message(msg):
         shell.team_id = team_id
         shell.message = msg
         shell.user_id = user_id
+        shell.permalink = permalink
         line = shell.precmd(line)
         stop = shell.onecmd(line)
         stop = shell.postcmd(stop, line)
@@ -194,6 +196,7 @@ class SlackbotShell(cmd.Cmd):
         self.user_id = None
         self.sr = None
         self.pos = 0
+        self.permalink = None
 
     def _send_text(self, text, is_error=False):
         icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
