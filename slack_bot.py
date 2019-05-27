@@ -217,7 +217,7 @@ def get_channel_info(team_id, channel_id):
             response_members = sc.api_call('conversations.members', channel=channel_id)
             for user_id in response_members['members']:
                 get_user_info(user_id)
-            participants = [f"{users[user_id]} <@{user_id}>" for user_id in response_members['members']]
+            participants = [f"{users[user_id]['real_name']} <{users[user_id]['name']}@{user_id}>" for user_id in response_members['members']]
             channels[team_id][channel_id] = '🧑' + ' '.join(participants)
 
 
