@@ -78,7 +78,7 @@ def excepthook(type_, value, tb):
 
 
 def main():
-    global logger, subreddit_name, shell, teams, users
+    global logger, subreddit_name, shell, teams, users, channels
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
@@ -91,6 +91,7 @@ def main():
 
     teams = {}
     users = {}
+    channels = {}
 
     # Disable features according to environment
 
@@ -151,6 +152,7 @@ def handle_message(msg):
     get_team_info(team_id)
 
     get_user_info(user_id)
+    get_channel_info(team_id, channel_id)
 
     text = msg['text']
     text = re.sub(r'\u043e|\u03bf', 'o', text)
@@ -185,6 +187,25 @@ def get_team_info(team_id):
         response_team = sc.api_call('team.info')
         if response_team['ok']:
             teams[team_id] = response_team['team']
+
+
+def get_channel_info(team_id, channel_id):
+    global sc, channels
+    if team_id not in channels:
+        channels[team_id] = {}
+    if channel_id not in channels[team_id]:
+        response_channel = sc.api_call('conversations.info', channel=channel_id)
+        if response_channel['ok']:
+            channel_info = response_channel['channel']
+        if channel_info.get('is_group'):
+            priv = '🔒' if channel_info.get('is_private') else '#'
+            channels[team_id][channel_id] = priv + channel_info['name_normalized']
+        elif channel_info.get('is_im'):
+            response_members = sc.api_call('conversations.members', channel=channel_id)
+            for user_id in response_members['members']:
+                get_user_info(user_id)
+            participants = [f"{users[user_id]} <@{user_id}>" for user_id in response_members['members']]
+            channels[team_id][channel_id] = '🧑' + ' '.join(participants)
 
 
 class SlackbotShell(cmd.Cmd):
@@ -765,7 +786,7 @@ class SlackbotShell(cmd.Cmd):
 
     def do_kudos(self, arg):
         """Add kudos to user"""
-        global users
+        global users, teams, channels
         if re.match(r'<@\w+>', arg):
             recipient_user_id = arg[2:-1]
             get_user_info(recipient_user_id)
