@@ -210,7 +210,7 @@ def get_channel_info(team_id, channel_id):
         response_channel = sc.api_call('conversations.info', channel=channel_id)
         if response_channel['ok']:
             channel_info = response_channel['channel']
-        if channel_info.get('is_group'):
+        if channel_info.get('is_group') or channel_info.get('is_channel'):
             priv = '🔒' if channel_info.get('is_private') else '#'
             channels[team_id][channel_id] = priv + channel_info['name_normalized']
         elif channel_info.get('is_im'):
