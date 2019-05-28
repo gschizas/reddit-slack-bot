@@ -733,11 +733,11 @@ class SlackbotShell(cmd.Cmd):
     def do_nuke_user(self, arg):
         """\
         Nuke the comments of a user. Append the timeframe to search.
-        Accepted values are 24 (default), 48, 72, A_MONTH, FOREVER_AND_EVER"""
+        Accepted values are 24 (default), 48, 72, A_WEEK, TWO_WEEKS, A_MONTH, FOREVER_AND_EVER"""
         global r
         global sc
         global subreddit_name
-        CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_MONTH': 30, 'FOREVER_AND_EVER': 36525}
+        CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH': 30, 'FOREVER_AND_EVER': 36525}
         # FOREVER_AND_EVER is 100 years. Should be enough.
 
         username, *rest_of_text = arg.split()
