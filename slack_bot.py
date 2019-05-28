@@ -803,6 +803,7 @@ class SlackbotShell(cmd.Cmd):
         if re.match(r'<@\w+>', arg):
             recipient_user_id = arg[2:-1]
             get_user_info(recipient_user_id)
+            get_channel_info(self.team_id, self.channel_id)
             recipient_name = users[recipient_user_id]['name']
             sender_name = users[self.user_id]['name']
 
