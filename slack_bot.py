@@ -60,7 +60,11 @@ VALUES (
    %(channel_name)s, %(channel_id)s,
    %(permalink)s);
 """
-SQL_KUDOS_VIEW = """"""
+SQL_KUDOS_VIEW = """\
+SELECT to_user as "User", COUNT(*) as Kudos
+FROM kudos
+GROUP BY to_user
+ORDER BY 2 DESC;"""
 
 
 def init():
@@ -835,7 +839,7 @@ class SlackbotShell(cmd.Cmd):
             database_url = os.environ['KUDOS_DATABASE_URL']
             conn = psycopg2.connect(database_url)
             cur = conn.cursor()
-            cur.execute("select to_user as User, count(*) as Kudos FROM kudos GROUP BY to_user;")
+            cur.execute(SQL_KUDOS_VIEW)
             rows = cur.fetchall()
             cols = [col.name for col in cur.description]
             cur.close()
