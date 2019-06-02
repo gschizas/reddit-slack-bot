@@ -596,7 +596,8 @@ class SlackbotShell(cmd.Cmd):
         elif args[0] == 'full_replies':
             result_type = 'full_table'
             result = []
-            for question_id in question_ids:
+            for question_text_id in question_ids:
+                question_id = int(question_text_id.split('_')[-1])
                 title, cols, rows = self._survey_question(questions, question_id)
                 result.append({'title': title, 'cols': cols, 'rows': rows})
         else:
