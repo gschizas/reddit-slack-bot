@@ -589,29 +589,17 @@ class SlackbotShell(cmd.Cmd):
             result_type = 'table'
             cols, rows = self._survey_database_query(sql)
         elif args[0] in question_ids:
-            result_type = 'table'
             question_id = int(args[0].split('_')[-1])
-            question = questions[question_id - 1]
-            title = question['title']
-            if question['kind'] in ('checktree', 'checkbox', 'tree', 'radio'):
-                cols, rows = self._survey_database_query(SQL_SURVEY_PREFILLED_ANSWERS.format(question_id))
-                choices = {}
-                if question['kind'] in ('tree', 'checktree'):
-                    # flatten choices tree
-                    choices = self._flatten_choices(question['choices'])
-                elif question['kind'] in ('radio', 'checkbox'):
-                    choices = question['choices']
-                rows = [self._translate_choice(choices, row) for row in rows]
-            elif question['kind'] in ('text', 'textarea'):
-                cols, rows = self._survey_database_query(SQL_SURVEY_TEXT.format(question_id))
-            elif question['kind'] in ('scale-matrix',):
-                cols, rows = self._survey_database_query(SQL_SURVEY_SCALE_MATRIX.format(question_id))
-                rows = [self._translate_matrix(question['choices'], question['lines'], row) for row in rows]
-            else:
-                cols = ['Message']
-                rows = [('Not implemented',)]
+            result_type = 'table'
+            title, cols, rows = self._survey_question(questions, question_id)
+        elif args[0] == 'full_replies':
+            result_type = 'full_table'
+            result = []
+            for question_id in question_ids:
+                title, cols, rows = self._survey_question(questions, question_id)
+                result.append({'title': title, 'cols': cols, 'rows': rows})
         else:
-            valid_queries = ['count', 'questions', 'questions_full', 'mods', 'votes_per_day'] + \
+            valid_queries = ['count', 'questions', 'questions_full', 'mods', 'votes_per_day', 'full_replies'] + \
                             ['q_1', '...', f'q_{str(len(questions))}']
             valid_queries_as_code = [f"`{q}`" for q in valid_queries]
             self._send_text(f"You need to specify a query from {', '.join(valid_queries_as_code)}", is_error=True)
@@ -620,10 +608,45 @@ class SlackbotShell(cmd.Cmd):
         if result_type == 'single':
             self._send_text(f"*Result*: `{rows[0][0]}`")
         elif result_type == 'table':
-            table = tabulate(rows, headers=cols, tablefmt='pipe')
-            if title:
-                table = f"## *{title}*\n\n" + table
+            table = self.make_table(title, cols, rows)
             self._send_file(table, title=title, filetype='markdown')
+        elif result_type == 'full_table':
+            full_table = ''
+            for question_response in result:
+                title = question_response['title']
+                cols = question_response['cols']
+                rows = question_response['rows']
+                table = self.make_table(title, cols, rows)
+                full_table += table + '\n\n'
+            self._send_file(full_table, title=title, filetype='markdown')
+
+    def make_table(self, title, cols, rows):
+        table = tabulate(rows, headers=cols, tablefmt='pipe')
+        if title:
+            table = f"## *{title}*\n\n" + table
+        return table
+
+    def _survey_question(self, questions, question_id):
+        question = questions[question_id - 1]
+        title = question['title']
+        if question['kind'] in ('checktree', 'checkbox', 'tree', 'radio'):
+            cols, rows = self._survey_database_query(SQL_SURVEY_PREFILLED_ANSWERS.format(question_id))
+            choices = {}
+            if question['kind'] in ('tree', 'checktree'):
+                # flatten choices tree
+                choices = self._flatten_choices(question['choices'])
+            elif question['kind'] in ('radio', 'checkbox'):
+                choices = question['choices']
+            rows = [self._translate_choice(choices, row) for row in rows]
+        elif question['kind'] in ('text', 'textarea'):
+            cols, rows = self._survey_database_query(SQL_SURVEY_TEXT.format(question_id))
+        elif question['kind'] in ('scale-matrix',):
+            cols, rows = self._survey_database_query(SQL_SURVEY_SCALE_MATRIX.format(question_id))
+            rows = [self._translate_matrix(question['choices'], question['lines'], row) for row in rows]
+        else:
+            cols = ['Message']
+            rows = [('Not implemented',)]
+        return title, rows, cols
 
     @staticmethod
     def _truncate(text, length):
