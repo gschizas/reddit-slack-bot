@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 import time
+import traceback
 import urllib.parse
 import zlib
 
@@ -143,7 +144,7 @@ def main():
         except Exception as ex:  # slackclient.server.SlackConnectionResetError as ex:
             exx = sys.exc_info()
             tb = sys.exc_info()[2]
-            logger.warning(f"{exx.with_traceback(tb)}")
+            logger.warning(''.join(traceback.format_exception(None, ex, tb)))
             if sc.rtm_connect():
                 logger.info("Connection established")
             else:
