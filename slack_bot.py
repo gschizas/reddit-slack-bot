@@ -681,7 +681,7 @@ class SlackbotShell(cmd.Cmd):
     @staticmethod
     def _survey_database_query(sql):
         database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
-        conn = psycopg2.connect(database_url, sslmode='require')
+        conn = psycopg2.connect(database_url)
         cur = conn.cursor()
         cur.execute(sql)
         rows = cur.fetchall()
