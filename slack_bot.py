@@ -648,7 +648,7 @@ class SlackbotShell(cmd.Cmd):
         else:
             cols = ['Message']
             rows = [('Not implemented',)]
-        return title, rows, cols
+        return title, cols, rows
 
     @staticmethod
     def _truncate(text, length):
