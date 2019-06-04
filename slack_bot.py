@@ -178,7 +178,11 @@ def handle_message(msg):
     text = re.sub(r'\u043e|\u03bf', 'o', text)
     text = re.sub(r'\u0435', 'e', text)
 
-    if any([text.lower().startswith(trigger_word) for trigger_word in shell.trigger_words]):
+    typed_text = text.strip().lower().split()
+    if not typed_text:
+        return
+    first_word = typed_text[0]
+    if any([first_word == trigger_word for trigger_word in shell.trigger_words]):
         logger.debug(f"Triggerred by {text}")
         line = ' '.join(text.split()[1:])
         shell.channel_id = channel_id
