@@ -12,6 +12,7 @@ import random
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 import urllib.parse
@@ -21,6 +22,7 @@ import prawcore
 import psycopg2
 import requests
 import slackclient
+import xlsxwriter
 from tabulate import tabulate
 
 from common import setup_logging
@@ -605,7 +607,7 @@ class SlackbotShell(cmd.Cmd):
             for question_text_id in question_ids:
                 question_id = int(question_text_id.split('_')[-1])
                 title, cols, rows = self._survey_question(questions, question_id)
-                result.append({'title': title, 'cols': cols, 'rows': rows})
+                result.append({'title': title, 'question_code': question_text_id, 'cols': cols, 'rows': rows})
         else:
             valid_queries = ['count', 'questions', 'questions_full', 'mods', 'votes_per_day', 'full_replies'] + \
                             ['q_1', '...', f'q_{str(len(questions))}']
@@ -619,14 +621,29 @@ class SlackbotShell(cmd.Cmd):
             table = self.make_table(title, cols, rows)
             self._send_file(table, title=title, filetype='markdown')
         elif result_type == 'full_table':
-            full_table = ''
-            for question_response in result:
-                title = question_response['title']
-                cols = question_response['cols']
-                rows = question_response['rows']
-                table = self.make_table(title, cols, rows)
-                full_table += table + '\n\n'
-            self._send_file(full_table, title=title, filetype='markdown')
+            filedata = b''
+            with tempfile.TemporaryFile() as tmpfile:
+                workbook = xlsxwriter.Workbook(tmpfile)
+                for question_response in result:
+                    worksheet = workbook.add_worksheet()
+                    worksheet.name = question_response['question_code']
+                    title = question_response['title']
+                    cols = question_response['cols']
+                    rows = question_response['rows']
+
+                    worksheet.write('A1', title)
+                    for col_number, col in enumerate(cols[1:]):
+                        worksheet.write(2, col_number, col)
+                    for row_number, row in enumerate(rows):
+                        for col_number, col in enumerate(cols[1:]):
+                            worksheet.write(3 + row_number, col_number, row[col_number])
+                    # table = self.make_table(title, cols, rows)
+                    # full_table += table + '\n\n'
+                workbook.close()
+                tmpfile.flush()
+                tmpfile.seek(0, io.SEEK_SET)
+                filedata = tmpfile.read()
+            self._send_file(filedata, filename="Survey_Results.xlsx", title="Survey Results", filetype='xlsx')
 
     def make_table(self, title, cols, rows):
         table = tabulate(rows, headers=cols, tablefmt='pipe')

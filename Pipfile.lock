@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "61116649e6119733948ec757f7bb435782b304af16789445cc98deabce7e8ff3"
+            "sha256": "862fcb40957b30aa4a935fe5bc94271da988507e1213785373a8c78bc92c17a8"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -43,6 +43,14 @@
                 "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"
             ],
             "version": "==3.0.4"
+        },
+        "colorama": {
+            "hashes": [
+                "sha256:05eed71e2e327246ad6b38c540c4a3117230b19679b875190486ddd2d721422d",
+                "sha256:f8ac84de7840f5b9c4e3347b3c1eaa50f7e49c2b07596221daec5edaabbd7c48"
+            ],
+            "markers": "sys_platform == 'win32'",
+            "version": "==0.4.1"
         },
         "colorlog": {
             "hashes": [
@@ -199,10 +207,10 @@
         },
         "urllib3": {
             "hashes": [
-                "sha256:a53063d8b9210a7bdec15e7b272776b9d42b2fd6816401a0d43006ad2f9902db",
-                "sha256:d363e3607d8de0c220d31950a8f38b18d5ba7c0830facd71a1c6b1036b7ce06c"
+                "sha256:b246607a25ac80bedac05c6f282e3cdaf3afb65420fd024ac94435cabe6e18d1",
+                "sha256:dbe59173209418ae49d485b87d1681aefa36252ee85884c31346debd19463232"
             ],
-            "version": "==1.25.2"
+            "version": "==1.25.3"
         },
         "websocket-client": {
             "hashes": [
@@ -210,6 +218,14 @@
                 "sha256:e51562c91ddb8148e791f0155fdb01325d99bb52c4cdbb291aee7a3563fd0849"
             ],
             "version": "==0.54.0"
+        },
+        "xlsxwriter": {
+            "hashes": [
+                "sha256:5ec6aa71f6ae4b6298376d8b6a56ca9cdcb8b80323a444212226447aed4fa10f",
+                "sha256:ec51d99c0cc5d95ec8d8e9c8de7c8fbbf461988bec01a8c86b5155a6716b0a5a"
+            ],
+            "index": "pypi",
+            "version": "==1.1.8"
         }
     },
     "develop": {}
