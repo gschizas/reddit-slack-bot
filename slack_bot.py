@@ -252,12 +252,13 @@ class SlackbotShell(cmd.Cmd):
                     icon_emoji=icon_emoji,
                     username=self.trigger_words[0])
 
-    def _send_file(self, file_data, title=None, filetype=None):
+    def _send_file(self, file_data, title=None, filename=None, filetype=None):
         sc.api_call("files.upload",
                     channels=self.channel_id,
                     icon_emoji=':robot_face:',
                     username=self.trigger_words[0],
                     file=file_data,
+                    filename=filename,
                     title=title,
                     filetype=filetype or 'auto')
 
