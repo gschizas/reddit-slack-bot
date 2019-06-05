@@ -228,7 +228,8 @@ def get_channel_info(team_id, channel_id):
             response_members = sc.api_call('conversations.members', channel=channel_id)
             for user_id in response_members['members']:
                 get_user_info(user_id)
-            participants = [f"{users[user_id]['real_name']} <{users[user_id]['name']}@{user_id}>" for user_id in response_members['members']]
+            participants = [f"{users[user_id]['real_name']} <{users[user_id]['name']}@{user_id}>" for user_id in
+                            response_members['members']]
             channels[team_id][channel_id] = '🧑' + ' '.join(participants)
 
 
@@ -772,7 +773,8 @@ class SlackbotShell(cmd.Cmd):
         global r
         global sc
         global subreddit_name
-        CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH': 30, 'FOREVER_AND_EVER': 36525}
+        CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH': 30,
+                       'FOREVER_AND_EVER': 36525}
         # FOREVER_AND_EVER is 100 years. Should be enough.
 
         username, *rest_of_text = arg.split()
