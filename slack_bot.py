@@ -603,6 +603,8 @@ class SlackbotShell(cmd.Cmd):
             title, cols, rows = self._survey_question(questions, question_id)
         elif args[0] == 'full_replies':
             result_type = 'full_table'
+            if len(args) > 1 and args[1] == 'json':
+                result_type= 'full_table_json'
             result = []
             for question_text_id in question_ids:
                 question_id = int(question_text_id.split('_')[-1])
@@ -644,6 +646,9 @@ class SlackbotShell(cmd.Cmd):
                 tmpfile.seek(0, io.SEEK_SET)
                 filedata = tmpfile.read()
             self._send_file(filedata, filename="Survey_Results.xlsx", title="Survey Results", filetype='xlsx')
+        elif result_type == 'full_table_json':
+            filedata = json.dumps(result)
+            self._send_file(filedata, filename='Survey_Results.json', title="Survey Results", filetype="json")
 
     def make_table(self, title, cols, rows):
         table = tabulate(rows, headers=cols, tablefmt='pipe')
