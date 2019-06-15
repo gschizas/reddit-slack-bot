@@ -792,7 +792,9 @@ class SlackbotShell(cmd.Cmd):
     def do_nuke_user(self, arg):
         """\
         Nuke the comments of a user. Append the timeframe to search.
-        Accepted values are 24 (default), 48, 72, A_WEEK, TWO_WEEKS, A_MONTH, FOREVER_AND_EVER"""
+        Accepted values are 24 (default), 48, 72, A_WEEK, TWO_WEEKS, A_MONTH, FOREVER_AND_EVER
+        Add SUBMISSIONS or POSTS to remove submissions as well.
+        """
         global r
         global sc
         global subreddit_name
@@ -801,8 +803,16 @@ class SlackbotShell(cmd.Cmd):
         # FOREVER_AND_EVER is 100 years. Should be enough.
 
         username, *rest_of_text = arg.split()
+
+        rest_of_text = [t.upper() for t in rest_of_text]
+
+        remove_submissions_as_well = False
+        for arg_text in ('POSTS', 'SUBMISSIONS'):
+            if arg_text in rest_of_text:
+                rest_of_text.remove(arg_text)
+                remove_submissions_as_well = True
         if rest_of_text:
-            timeframe = rest_of_text[0].upper()
+            timeframe = rest_of_text[0]
         else:
             timeframe = '24'
         if timeframe not in CUTOFF_AGES:
@@ -844,6 +854,35 @@ class SlackbotShell(cmd.Cmd):
             f"{already_removed} comments were already removed.\n"
             f"{too_old} comments were too old for the {timeframe} timeframe.\n"
         )
+        if remove_submissions_as_well:
+            all_submissions = u.posts.new(limit=None)
+            already_removed_submissions = 0
+            removed_submissions = 0
+            other_subreddit_submissions = 0
+            too_old_submissions = 0
+            for s in all_submissions:
+                submission_subreddit_name = s.subreddit.display_name.lower()
+                if submission_subreddit_name != subreddit_name:
+                    other_subreddits += 1
+                    other_subreddit_history[submission_subreddit_name] = \
+                        other_subreddit_history.get(submission_subreddit_name, 0) + 1
+                    continue
+                if s.banned_by and s.banned_by != 'AutoModerator':
+                    already_removed += 1
+                    continue
+                submission_created = datetime.datetime.fromtimestamp(c.created_utc)
+                submission_age = now - submission_created
+                if submission_age.days > cutoff_age:
+                    too_old += 1
+                    continue
+                c.mod.remove()
+                removed_submissions += 1
+            result += (
+                f"Removed {removed_submissions} submissions.\n"
+                f"{other_subreddit_submissions} submissions in other subreddits.\n"
+                f"{already_removed_submissions} submissions were already removed.\n"
+                f"{too_old_submissions} submissions were too old for the {timeframe} timeframe.\n"
+            )
         self._send_text(result)
 
     def do_binary(self, arg):
