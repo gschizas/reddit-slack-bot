@@ -604,7 +604,7 @@ class SlackbotShell(cmd.Cmd):
         elif args[0] == 'full_replies':
             result_type = 'full_table'
             if len(args) > 1 and args[1] == 'json':
-                result_type= 'full_table_json'
+                result_type = 'full_table_json'
             result = []
             for question_text_id in question_ids:
                 question_id = int(question_text_id.split('_')[-1])
