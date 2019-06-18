@@ -25,9 +25,9 @@ import slackclient
 import xlsxwriter
 from tabulate import tabulate
 
-from common import setup_logging
-from praw_wrapper import praw_wrapper
-from yaml_wrapper import yaml
+from bot_framework.common import setup_logging
+from bot_framework.praw_wrapper import praw_wrapper
+from bot_framework.yaml_wrapper import yaml
 
 SQL_SURVEY_PREFILLED_ANSWERS = """select answer[3] AS Code, answer_value as Answer, count(*) AS VoteCount
 from (select regexp_split_to_array(code, '_') AS answer_parts, *
