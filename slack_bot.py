@@ -66,6 +66,7 @@ VALUES (
 SQL_KUDOS_VIEW = """\
 SELECT to_user as "User", COUNT(*) as Kudos
 FROM kudos
+WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
 GROUP BY to_user
 ORDER BY 2 DESC;"""
 
@@ -894,13 +895,19 @@ class SlackbotShell(cmd.Cmd):
         except Exception as e:
             error_text = f"```\n:::Error:::\n{value!r}```\n"
             self._send_text(error_text, is_error=True)
-        
 
     do_bin = do_binary
 
     def do_kudos(self, arg):
-        """Add kudos to user"""
+        """Add kudos to user.
+
+        Syntax:
+        kudos @username to give kudos to username
+        kudos view to see all kudos so far
+        kudos view 15 to see kudos given last 15 days
+        """
         global users, teams, channels
+        args = arg.split()
         if re.match(r'<@\w+>', arg):
             recipient_user_id = arg[2:-1]
             get_user_info(recipient_user_id)
@@ -930,11 +937,15 @@ class SlackbotShell(cmd.Cmd):
                 self._send_text(f"Kudos from {sender_name} to {recipient_name}")
             else:
                 self._send_text("Kudos not recorded")
-        elif arg.lower() == 'view':
+        elif args[0].lower() == 'view':
+            if len(args) > 1 and re.match(r'\d{1,3}', args[1]):
+                days_to_check = int(args[1])
+            else:
+                days_to_check = 365 * 100
             database_url = os.environ['KUDOS_DATABASE_URL']
             conn = psycopg2.connect(database_url)
             cur = conn.cursor()
-            cur.execute(SQL_KUDOS_VIEW)
+            cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check})
             rows = cur.fetchall()
             cols = [col.name for col in cur.description]
             cur.close()
