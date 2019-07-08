@@ -500,13 +500,25 @@ class SlackbotShell(cmd.Cmd):
         post.comments.replace_more(limit=None)
         comments = post.comments.list()
         post.mod.remove()
+        comments_removed = 0
+        comments_distinguished = 0
+        comments_already_removed = 0
         for comment in comments:
             if comment.distinguished:
+                comments_distinguished += 1
                 continue
             if comment.banned_by:
+                comments_already_removed += 1
                 continue
             comment.mod.remove()
+            comments_removed += 1
         post.mod.lock()
+        result = (
+                f"{comments_removed} comments were removed.\n"
+                f"{comments_distinguished} distinguished comments were kept.\n"
+                f"{comments_already_removed} comments were already removed.\n"
+                "Submission was locked")
+        self._send_text(result)
 
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
