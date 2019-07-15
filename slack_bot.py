@@ -200,7 +200,11 @@ def handle_message(msg):
             if stop:
                 sys.exit()
         except Exception as e:
-            error_text = f"```\n:::Error:::\n{e!r}```\n"
+            if 'DEBUG' in os.environ:
+                exception_full_text = ''.join(traceback.format_exception(*sys.exc_info()))
+                error_text = f"```\n:::Error:::\n{exception_full_text}```\n"
+            else:
+                error_text = f"```\n:::Error:::\n{e}```\n"
             shell._send_text(error_text, is_error=True)
 
 
@@ -905,12 +909,8 @@ class SlackbotShell(cmd.Cmd):
     def do_binary(self, arg):
         """Convert binary to text"""
         rest_of_text = ' '.join(arg.split())
-        try:
-            decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
-            self._send_text(''.join(decoded_text))
-        except Exception as e:
-            error_text = f"```\n:::Error:::\n{e}```\n"
-            self._send_text(error_text, is_error=True)
+        decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
+        self._send_text(''.join(decoded_text))
 
     do_bin = do_binary
 
