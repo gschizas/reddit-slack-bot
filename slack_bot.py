@@ -193,11 +193,15 @@ def handle_message(msg):
         shell.message = msg
         shell.user_id = user_id
         shell.permalink = permalink
-        line = shell.precmd(line)
-        stop = shell.onecmd(line)
-        stop = shell.postcmd(stop, line)
-        if stop:
-            sys.exit()
+        try:
+            line = shell.precmd(line)
+            stop = shell.onecmd(line)
+            stop = shell.postcmd(stop, line)
+            if stop:
+                sys.exit()
+        except Exception as e:
+            error_text = f"```\n:::Error:::\n{e!r}```\n"
+            shell._send_text(error_text, is_error=True)
 
 
 def get_user_info(user_id):
