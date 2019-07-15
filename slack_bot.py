@@ -905,7 +905,7 @@ class SlackbotShell(cmd.Cmd):
             decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
             self._send_text(''.join(decoded_text))
         except Exception as e:
-            error_text = f"```\n:::Error:::\n{value!r}```\n"
+            error_text = f"```\n:::Error:::\n{e}```\n"
             self._send_text(error_text, is_error=True)
 
     do_bin = do_binary
