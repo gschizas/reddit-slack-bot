@@ -655,10 +655,10 @@ class SlackbotShell(cmd.Cmd):
                     rows = question_response['rows']
 
                     worksheet.write('A1', title)
-                    for col_number, col in enumerate(cols[1:]):
+                    for col_number, col in enumerate(cols):
                         worksheet.write(2, col_number, col)
                     for row_number, row in enumerate(rows):
-                        for col_number, col in enumerate(cols[1:]):
+                        for col_number, col in enumerate(cols):
                             worksheet.write(3 + row_number, col_number, row[col_number])
                     # table = self.make_table(title, cols, rows)
                     # full_table += table + '\n\n'
@@ -689,6 +689,7 @@ class SlackbotShell(cmd.Cmd):
             elif question['kind'] in ('radio', 'checkbox'):
                 choices = question['choices']
             rows = [self._translate_choice(choices, row) for row in rows]
+            cols = ["Vote Value", "Vote Count"]
         elif question['kind'] in ('text', 'textarea'):
             cols, rows = self._survey_database_query(SQL_SURVEY_TEXT.format(question_id))
         elif question['kind'] in ('scale-matrix',):
