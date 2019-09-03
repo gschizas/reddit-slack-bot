@@ -321,7 +321,11 @@ class SlackbotShell(cmd.Cmd):
 
         if place == 'macedonia' or place == 'makedonia':
             place = 'Thessaloniki'
-        if place in ('brexit', 'pompeii', ''):
+        if place == '':
+            self._send_text(
+                ('You need to first set a default location\n'
+                f'Try {shell.trigger_words[0]} weather LOCATION'), is_error=True)
+        if place in ('brexit', 'pompeii'):
             title = 'the floor is lava'
             with open('img/lava.png', 'rb') as f:
                 file_data = f.read()
