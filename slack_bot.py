@@ -10,6 +10,7 @@ import os
 import pathlib
 import random
 import re
+import shelve
 import subprocess
 import sys
 import tempfile
@@ -311,9 +312,16 @@ class SlackbotShell(cmd.Cmd):
     def do_weather(self, arg):
         """Display the weather in place"""
         place = arg.lower()
+
+        with shelve.open('weather_preferences.db') as db:
+            if place == '':
+                place = db.get(self.user_id, '')
+            else:
+                db[self.user_id] = place
+
         if place == 'macedonia' or place == 'makedonia':
             place = 'Thessaloniki'
-        if place in ('brexit', 'pompeii'):
+        if place in ('brexit', 'pompeii', ''):
             title = 'the floor is lava'
             with open('img/lava.png', 'rb') as f:
                 file_data = f.read()
