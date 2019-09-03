@@ -476,7 +476,7 @@ class SlackbotShell(cmd.Cmd):
 
     def do_fortune(self, args):
         """Like a Chinese fortune cookie, but less yummy"""
-        self._send_text(subprocess.check_output(['/usr/games/fortune', '-s']).decode())
+        self._send_text(subprocess.check_output(['/usr/games/fortune']).decode())
 
     def do_uptime(self, args):
         """Show uptime"""
