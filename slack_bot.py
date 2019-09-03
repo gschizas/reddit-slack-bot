@@ -313,7 +313,7 @@ class SlackbotShell(cmd.Cmd):
         """Display the weather in place"""
         place = arg.lower()
 
-        with shelve.open('weather_preferences.db') as db:
+        with shelve.open('data/weather_preferences.db') as db:
             if place == '':
                 place = db.get(self.user_id, '')
             else:
