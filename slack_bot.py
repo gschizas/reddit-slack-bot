@@ -991,6 +991,14 @@ class SlackbotShell(cmd.Cmd):
                              "(i.e. @pikos_apikos) or "
                              "'view' to see leaderboard"), is_error=True)
 
+    def do_joke(self, arg):
+        """Tell a joke"""
+        joke_page = requests.get('https://icanhazdadjoke.com/', headers={
+            'Accept': 'text/plain',
+            'User-Agent': 'Slack Bot for Reddit (https://github.com/gschizas/slack-bot)'})
+        joke_text = joke_page.content
+        self._send_text(joke_text.decode())
+
 
 if __name__ == '__main__':
     main()
