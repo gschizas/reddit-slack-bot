@@ -294,10 +294,16 @@ class SlackbotShell(cmd.Cmd):
         return stop
 
     def default(self, line):
-        self._send_text(
-            f"```I don't know what to do with {line}.{chr(10)}I can understand the following commands:\n```",
-            is_error=True)
-        self.do_help('')
+        instant_answer = requests.get("https://api.duckduckgo.com/", params={'q': line, "format": "json"}).json()
+        if isinstance(instant_answer["Answer"], str) and instant_answer["Answer"]:
+            self._send_text(instant_answer["Answer"])
+        elif instant_answer["AbstractText"]:
+            self._send_text(instant_answer["AbstractText"])
+        else:
+            self._send_text(
+                f"```I don't know what to do with {line}.{chr(10)}Try one of the following commands:\n```",
+                is_error=True)
+            self.do_help('')
 
     def do_crypto(self, arg):
         """Display the current exchange rate of currency"""
