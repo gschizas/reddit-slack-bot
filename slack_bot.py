@@ -294,7 +294,9 @@ class SlackbotShell(cmd.Cmd):
         return stop
 
     def default(self, line):
-        instant_answer = requests.get("https://api.duckduckgo.com/", params={'q': line, "format": "json"}).json()
+        instant_answer_page = requests.get("https://api.duckduckgo.com/", params={'q': line, "format": "json"})
+        instant_answer = instant_answer_page.json()
+        # self._send_file(instant_answer_page.content, filename='duckduckgo.json', filetype='application/json')
         if isinstance(instant_answer["Answer"], str) and instant_answer["Answer"]:
             self._send_text(instant_answer["Answer"])
         elif instant_answer["AbstractText"]:
