@@ -572,15 +572,15 @@ class SlackbotShell(cmd.Cmd):
         """Roll a dice. Optional sides argument (e.g. roll 1d20+5, roll 1d6+2, d20 etc.)"""
         sides = 6
         times = 1
-        add = 0
+        bonus = 0
         args = arg.split()
         if len(args) > 0:
-            dice_spec = re.match('^(?P<Times>\d)d(?P<Sides>\d{1,2})(?:\+(?P<Add>\d))?$', args[0])
+            dice_spec = re.match(r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})(?:\+(?P<Bonus>\d))?$', args[0])
             if dice_spec:
                 if dice_spec.group('Times'):
                     times = int(dice_spec.group('Times'))
                 if dice_spec.group('Add'):
-                    add = int(dice_spec.group('Add'))
+                    bonus = int(dice_spec.group('Bonus'))
                 if dice_spec.group('Sides'):
                     sides = int(dice_spec.group('Sides'))
         if sides < 2: sides = 6
@@ -588,11 +588,11 @@ class SlackbotShell(cmd.Cmd):
         rolls = []
         for roll_index in range(times):
             rolls.append(random.randint(1, sides))
-        final_roll = sum(rolls) + add
+        final_roll = sum(rolls) + bonus
         roll_text = ', '.join(map(str, rolls))
         times_text = 'time' if times == 1 else 'times'
         self._send_text((
-            f"You rolled a {sides}-sided dice {times} {times_text} with a bonus of +{add}."
+            f"You rolled a {sides}-sided dice {times} {times_text} with a bonus of +{bonus}."
             f" You got {roll_text}. Final roll: *{final_roll}*"))
 
     def do_survey(self, arg):
