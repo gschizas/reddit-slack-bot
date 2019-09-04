@@ -587,7 +587,7 @@ class SlackbotShell(cmd.Cmd):
         if times < 1: times = 1
         rolls = []
         for roll_index in range(times):
-            rolls.append(random.randrange(sides))
+            rolls.append(random.randint(sides))
         final_roll = sum(rolls) + add
         roll_text = ', '.join(map(str, rolls))
         times_text = 'time' if times == 1 else 'times'
