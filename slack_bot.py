@@ -828,9 +828,15 @@ class SlackbotShell(cmd.Cmd):
             after = c.name
             url = url_base + '&count=25&after=' + after
             urls_to_archive.append(url)
-        self._send_text('\n'.join(urls_to_archive))
+        self._send_file(
+            file_data='\n'.join(urls_to_archive).encode(),
+            filename=f'archive-{user}-request.txt',
+            filetype='text/plain')
         final_urls = [self._archive_page(url) for url in urls_to_archive]
-        self._send_text('\n'.join(final_urls))
+        self._send_file(
+            file_data='\n'.join(final_urls).encode(),
+            filename=f'archive-{user}-response.txt',
+            filetype='text/plain')
 
     def do_nuke_user(self, arg):
         """\
