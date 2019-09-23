@@ -333,7 +333,7 @@ class SlackbotShell(cmd.Cmd):
         if place == '':
             self._send_text(
                 ('You need to first set a default location\n'
-                f'Try `{shell.trigger_words[0]} weather LOCATION`'), is_error=True)
+                 f'Try `{shell.trigger_words[0]} weather LOCATION`'), is_error=True)
             return
         if place in ('brexit', 'pompeii'):
             title = 'the floor is lava'
@@ -544,10 +544,10 @@ class SlackbotShell(cmd.Cmd):
             comments_removed += 1
         post.mod.lock()
         result = (
-                f"{comments_removed} comments were removed.\n"
-                f"{comments_distinguished} distinguished comments were kept.\n"
-                f"{comments_already_removed} comments were already removed.\n"
-                "Submission was locked")
+            f"{comments_removed} comments were removed.\n"
+            f"{comments_distinguished} distinguished comments were kept.\n"
+            f"{comments_already_removed} comments were already removed.\n"
+            "Submission was locked")
         self._send_text(result)
 
     def do_add_policy(self, title):
