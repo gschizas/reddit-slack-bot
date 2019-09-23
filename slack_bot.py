@@ -127,6 +127,7 @@ def main():
         del SlackbotShell.do_nuke_user
         del SlackbotShell.do_usernotes
         del SlackbotShell.do_youtube_info
+        del SlackbotShell.do_history
 
     if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ or 'QUESTIONNAIRE_FILE' not in os.environ:
         del SlackbotShell.do_survey
@@ -1017,6 +1018,28 @@ class SlackbotShell(cmd.Cmd):
             'User-Agent': 'Slack Bot for Reddit (https://github.com/gschizas/slack-bot)'})
         joke_text = joke_page.content
         self._send_text(joke_text.decode())
+
+    def do_history(self, arg):
+        """\
+        Return full user comment history, including deleted comments
+        This should work for deleted users as well
+        Data comes from pushshift.io"""
+        global subreddit_name
+        username, *rest_of_text = arg.split()
+        comments = requests.get(
+            "http://api.pushshift.io/reddit/comment/search",
+            params={
+                'limit': 40,
+                'author': username,
+                'subreddit': subreddit_name}).json()
+        if not comments['data']:
+            self._send_text(f"User u/{username} has no comments in r/{subreddit_name}")
+            return
+        comment_full_body = [comment['body'] for comment in comments['data']]
+        self._send_file(
+            file_data='\n'.join(comment_full_body).encode(),
+            filename=f'comment_history-{username}.txt',
+            filetype='text/plain')
 
 
 if __name__ == '__main__':
