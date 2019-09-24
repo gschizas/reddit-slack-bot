@@ -24,6 +24,7 @@ import psycopg2
 import requests
 import slackclient
 import xlsxwriter
+from requests.adapters import HTTPAdapter
 from tabulate import tabulate
 
 from bot_framework.common import setup_logging
@@ -70,12 +71,20 @@ FROM kudos
 WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
 GROUP BY to_user
 ORDER BY 2 DESC;"""
+ARCHIVE_URL = 'http://archive.is'
+CHROME_USER_AGENT = (
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+    'AppleWebKit/537.36 (KHTML, like Gecko) '
+    'Chrome/77.0.3865.90 Safari/537.36')
 
 
 def init():
     global r
     global sc
     global subreddit_name
+    global archive_session
+    archive_session = requests.Session()
+    archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
     slack_api_token = os.environ['SLACK_API_TOKEN']
     subreddit_name = os.environ.get('SUBREDDIT_NAME')
     sc = slackclient.SlackClient(slack_api_token)
@@ -776,28 +785,20 @@ class SlackbotShell(cmd.Cmd):
 
     @staticmethod
     def _archive_page(url):
-        ARCHIVE_URL = 'http://archive.is'
-        USER_AGENT = (
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-            'AppleWebKit/537.36 (KHTML, like Gecko) '
-            'Chrome/77.0.3865.90 Safari/537.36')
-        # PROXY = 'http://45.250.226.14:8080'
-
         url = url.replace('//www.reddit.com/', '//old.reddit.com/')
 
         # start_page = requests.get(ARCHIVE_URL)
         # soup = BeautifulSoup(start_page.text, 'lxml')
         # main_form = soup.find('form', {'id': 'submiturl'})
         # submit_id = main_form.find('input', {'name': 'submitid'})['value']
-        p2 = requests.post(
+        p2 = archive_session.post(
             f'{ARCHIVE_URL}/submit/',
             data={
                 'url': url
             },
             headers={
                 'Referer': 'http://archive.is',
-                'User-Agent': USER_AGENT})
-        # proxies={'http': PROXY, 'https': PROXY})
+                'User-Agent': CHROME_USER_AGENT})
         if p2.url == f'{ARCHIVE_URL}/submit/':
             return p2.headers['Refresh'][6:]
         else:
