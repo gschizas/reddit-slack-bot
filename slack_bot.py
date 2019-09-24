@@ -848,7 +848,7 @@ class SlackbotShell(cmd.Cmd):
         global r
         global sc
         global subreddit_name
-        CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH': 30,
+        CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH': 30, 'THREE_MONTHS': 90,
                        'FOREVER_AND_EVER': 36525}
         # FOREVER_AND_EVER is 100 years. Should be enough.
 
