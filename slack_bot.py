@@ -945,6 +945,7 @@ class SlackbotShell(cmd.Cmd):
     def do_binary(self, arg):
         """Convert binary to text"""
         rest_of_text = ' '.join(arg.split())
+        rest_of_text = re.sub(r'(\S{8})\s?', r'\1 ', rest_of_text)
         decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
         self._send_text(''.join(decoded_text))
 
