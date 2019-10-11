@@ -57,13 +57,13 @@ INSERT INTO kudos (
    to_user, to_user_id,
    team_name, team_id,
    channel_name, channel_id,
-   permalink)
+   permalink, reason)
 VALUES (
    %(sender_name)s, %(sender_id)s,
    %(recipient_name)s, %(recipient_id)s, 
    %(team_name)s, %(team_id)s,
    %(channel_name)s, %(channel_id)s,
-   %(permalink)s);
+   %(permalink)s, %(reason)s);
 """
 SQL_KUDOS_VIEW = """\
 SELECT to_user as "User", COUNT(*) as Kudos
@@ -960,12 +960,18 @@ class SlackbotShell(cmd.Cmd):
         """
         global users, teams, channels
         args = arg.split()
-        if re.match(r'<@\w+>', arg):
-            recipient_user_id = arg[2:-1]
+        if len(args) == 0:
+            self._send_text(("You need to specify a user "
+                             "(i.e. @pikos_apikos) or "
+                             "'view' to see leaderboard"), is_error=True)
+            return
+        if re.match(r'<@\w+>', args[0]):
+            recipient_user_id = args[0][2:-1]
             get_user_info(recipient_user_id)
             get_channel_info(self.team_id, self.channel_id)
             recipient_name = users[recipient_user_id]['name']
             sender_name = users[self.user_id]['name']
+            reason = ' '.join(args[1:])
 
             if recipient_user_id == self.user_id:
                 self._send_text("You can't give kudos to yourself, silly!", is_error=True)
@@ -980,7 +986,7 @@ class SlackbotShell(cmd.Cmd):
                 'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
                 'team_name': teams[self.team_id]['name'], 'team_id': self.team_id,
                 'channel_name': channels[self.team_id][self.channel_id], 'channel_id': self.channel_id,
-                'permalink': self.permalink['permalink']}
+                'permalink': self.permalink['permalink'], 'reason': reason}
             cur.execute(SQL_KUDOS_INSERT, vars=cmd_vars)
             success = cur.rowcount > 0
             cur.close()
