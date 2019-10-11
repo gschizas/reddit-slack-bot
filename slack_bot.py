@@ -313,7 +313,7 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(instant_answer["AbstractText"])
         else:
             self._send_text(
-                f"```I don't know what to do with {line}.{chr(10)}Try one of the following commands:\n```",
+                f"```I don't know what to do with {line}.\nTry one of the following commands:\n```",
                 is_error=True)
             self.do_help('')
 
