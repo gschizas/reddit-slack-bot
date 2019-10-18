@@ -993,7 +993,10 @@ class SlackbotShell(cmd.Cmd):
             cur.close()
             conn.close()
             if success:
-                self._send_text(f"Kudos from {sender_name} to {recipient_name}")
+                text_to_send = f"Kudos from {sender_name} to {recipient_name}"
+                if reason.strip():
+                    text_to_send += ' ' + reason
+                self._send_text(text_to_send)
             else:
                 self._send_text("Kudos not recorded")
         elif args[0].lower() == 'view':
