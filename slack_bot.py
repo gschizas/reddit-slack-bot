@@ -317,6 +317,10 @@ class SlackbotShell(cmd.Cmd):
                 is_error=True)
             self.do_help('')
 
+    def emptyline(self):
+        self._send_text("```You need to provide a command. Try these:```\n", is_error=True)
+        self.do_help('')
+
     def do_crypto(self, arg):
         """Display the current exchange rate of currency"""
         cryptocoin = arg.strip().upper()
