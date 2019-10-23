@@ -27,7 +27,7 @@ import xlsxwriter
 from requests.adapters import HTTPAdapter
 from tabulate import tabulate
 
-from bot_framework.common import setup_logging
+from bot_framework.common import setup_logging, normalize_text
 from bot_framework.praw_wrapper import praw_wrapper
 from bot_framework.yaml_wrapper import yaml
 
@@ -189,10 +189,8 @@ def handle_message(msg):
     get_channel_info(team_id, channel_id)
 
     text = msg['text']
-    text = re.sub(r'\u043e|\u03bf', 'o', text)
-    text = re.sub(r'\u0435', 'e', text)
 
-    typed_text = text.strip().lower().split()
+    typed_text = normalize_text(text).strip().lower().split()
     if not typed_text:
         return
     first_word = typed_text[0]
