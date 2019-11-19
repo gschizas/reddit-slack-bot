@@ -839,7 +839,7 @@ class SlackbotShell(cmd.Cmd):
     def do_disk_space(self, arg):
         """\
         Display free disk space"""
-        self._send_text(self.diskfree())
+        self._send_text(self._diskfree())
 
     def _slack_user_info(self, user_id):
         if user_id not in self.users:
@@ -870,12 +870,14 @@ class SlackbotShell(cmd.Cmd):
                                 for user_id in response_members['members']]
                 self.channels[team_id][channel_id] = '🧑' + ' '.join(participants)
 
-    def diskfree(self):
-        du = self.disk_usage_raw('/')
-        return self.progress_bar(du.used / du.total, 80)
+    @staticmethod
+    def _diskfree():
+        du = SlackbotShell._disk_usage_raw('/')
+        return SlackbotShell._progress_bar(du.used / du.total, 80)
 
     if hasattr(os, 'statvfs'):  # POSIX
-        def disk_usage_raw(self, path):
+        @staticmethod
+        def disk_usage_raw(path):
             st = os.statvfs(path)
             free = st.f_bavail * st.f_frsize
             total = st.f_blocks * st.f_frsize
@@ -883,7 +885,8 @@ class SlackbotShell(cmd.Cmd):
             return _ntuple_diskusage(total, used, free)
 
     elif os.name == 'nt':  # Windows
-        def disk_usage_raw(self, path):
+        @staticmethod
+        def _disk_usage_raw(path):
             _, total, free = ctypes.c_ulonglong(), ctypes.c_ulonglong(), \
                              ctypes.c_ulonglong()
             fun = ctypes.windll.kernel32.GetDiskFreeSpaceExW
@@ -893,7 +896,8 @@ class SlackbotShell(cmd.Cmd):
             used = total.value - free.value
             return _ntuple_diskusage(total.value, used, free.value)
 
-    def progress_bar(self, percentage, size):
+    @staticmethod
+    def _progress_bar(percentage, size):
         filled = math.ceil(size * percentage)
         empty = math.floor(size * (1 - percentage))
         bar = '\u2588' * filled + '\u2591' * empty
