@@ -78,6 +78,11 @@ class SlackbotShell(cmd.Cmd):
                          username=self.trigger_words[0],
                          attachments=fields)
 
+    def preload(self, user_id, team_id, channel_id):
+        self._slack_team_info(team_id)
+        self._slack_user_info(user_id)
+        self._slack_channel_info(team_id, channel_id)
+
     def postcmd(self, stop, line):
         self.stdout.flush()
         self.stdout.seek(self.pos, io.SEEK_SET)
