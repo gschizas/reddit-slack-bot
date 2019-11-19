@@ -850,9 +850,11 @@ class SlackbotShell(cmd.Cmd):
         """Switch environment to mock"""
         args = arg.split()
         with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
-            mock_config = json.load(f)['microservices']
-        if len(args) != 1 or args[0].lower() not in [k.lower() for k in mock_config.keys()]:
-            self._send_text(f"Syntax is {self.trigger_words[0]} mock QA|DATA|OTP|ALL", is_error=True)
+            mock_config = json.load(f)
+        valid_mock_statuses = [k.lower() for k in mock_config['microservices'].keys()]
+        if len(args) != 1 or args[0].lower() not in valid_mock_statuses:
+            valid_mock_statuses_text = '|'.join(valid_mock_statuses).upper()
+            self._send_text(f"Syntax is {self.trigger_words[0]} mock {valid_mock_statuses_text}", is_error=True)
             return
         mock_status = args[0]
         self._send_text(f"Mocking {mock_status}...")
