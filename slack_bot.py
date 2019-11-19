@@ -64,22 +64,22 @@ def main():
     # Disable features according to environment
 
     if not shell.subreddit_name:
-        del shell.do_add_domain_tag
-        del shell.do_add_policy
-        del shell.do_archive_user
-        del shell.do_modqueue_comments
-        del shell.do_modqueue_posts
-        del shell.do_nuke_thread
-        del shell.do_nuke_user
-        del shell.do_usernotes
-        del shell.do_youtube_info
-        del shell.do_history
+        del SlackbotShell.do_add_domain_tag
+        del SlackbotShell.do_add_policy
+        del SlackbotShell.do_archive_user
+        del SlackbotShell.do_modqueue_comments
+        del SlackbotShell.do_modqueue_posts
+        del SlackbotShell.do_nuke_thread
+        del SlackbotShell.do_nuke_user
+        del SlackbotShell.do_usernotes
+        del SlackbotShell.do_youtube_info
+        del SlackbotShell.do_history
 
     if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ or 'QUESTIONNAIRE_FILE' not in os.environ:
-        del shell.do_survey
+        del SlackbotShell.do_survey
 
     if 'KUDOS_DATABASE_URL' not in os.environ:
-        del shell.do_kudos
+        del SlackbotShell.do_kudos
 
     if shell.subreddit_name:
         shell.sr = shell.reddit_session.subreddit(shell.subreddit_name)
