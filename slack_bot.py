@@ -72,6 +72,9 @@ def main():
     if 'KUDOS_DATABASE_URL' not in os.environ:
         del SlackbotShell.do_kudos
 
+    if 'MOCK_CONFIGURATION' not in os.environ:
+        del SlackbotShell.do_mock
+
     if shell.subreddit_name:
         shell.sr = shell.reddit_session.subreddit(shell.subreddit_name)
     shell.trigger_words = os.environ['BOT_NAME'].split()

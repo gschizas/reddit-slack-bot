@@ -846,6 +846,23 @@ class SlackbotShell(cmd.Cmd):
         Display free disk space"""
         self._send_text(self._diskfree())
 
+    def do_mock(self, arg):
+        """Switch environment to mock"""
+        args = arg.split()
+        with open(pathlib.Path('data') / os.environ['MOCK_CONFIGURATION']) as f:
+            mock_config = json.load(f)['microservices']
+        if len(args) != 1 or args[0].lower() not in [k.lower() for k in mock_config.keys()]:
+            self._send_text(f"Syntax is {self.trigger_words[0]} mock QA|DATA|OTP|ALL", is_error=True)
+            return
+        mock_status = args[0]
+        self._send_text(f"Mocking {mock_status}...")
+        result_text = ""
+        for microservice, status in mock_config[mock_status].items():
+            status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
+            result_text += subprocess.check_output(['oc', 'set', 'env', 'dc/ocp-' + microservice, status_text]) + '\n\n'
+        self._send_text('```' + result_text + '```')
+
+
     def _slack_user_info(self, user_id):
         if user_id not in self.users:
             response_user = self.sc.api_call('users.info', user=user_id)
