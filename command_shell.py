@@ -20,7 +20,6 @@ import xlsxwriter
 from tabulate import tabulate
 
 from bot_framework.yaml_wrapper import yaml
-from slack_bot import logger, users
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
     SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT
 
@@ -37,6 +36,10 @@ class SlackbotShell(cmd.Cmd):
         self.permalink = None
         self.sc = None
         self.users = None
+        self.logger = None
+        self.reddit_session = None
+        self.subreddit_name = None
+        self.archive_session = None
 
     def _send_text(self, text, is_error=False):
         icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
@@ -164,7 +167,7 @@ class SlackbotShell(cmd.Cmd):
 
         prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
                                    params={'fsym': currency_from, 'tsyms': currency_to})
-        logger.info(prices_page.url)
+        self.logger.info(prices_page.url)
         prices = prices_page.json()
         if prices.get('Response') == 'Error':
             text = prices['Message']
@@ -189,7 +192,7 @@ class SlackbotShell(cmd.Cmd):
         tb_notes_2 = json.loads(zlib.decompress(base64.b64decode(tb_notes_1['blob'])).decode())
         tb_config = json.loads(self.sr.wiki['toolbox'].content_md)
         usernote_colors = {c['key']: c for c in tb_config['usernoteColors']}
-        redditor = reddit_session.redditor(redditor_username)
+        redditor = self.reddit_session.redditor(redditor_username)
         try:
             redditor._fetch()
             redditor_username = redditor.name  # fix capitalization
@@ -212,10 +215,10 @@ class SlackbotShell(cmd.Cmd):
                 link_href = '???'
                 if link_parts[0] == 'l':
                     if len(link_parts) == 2:
-                        link_href = f'{reddit_session.config.reddit_url}/r/{self.sr.display_name}/comments/{link_parts[1]}'
+                        link_href = f'{self.reddit_session.config.reddit_url}/r/{self.sr.display_name}/comments/{link_parts[1]}'
                     elif len(link_parts) == 3:
                         link_href = (
-                            f'{reddit_session.config.reddit_url}/r/{self.sr.display_name}/comments/'
+                            f'{self.reddit_session.config.reddit_url}/r/{self.sr.display_name}/comments/'
                             f'{link_parts[1]}/-/{link_parts[2]}')
                 else:
                     link_href = note['l']
@@ -256,14 +259,13 @@ class SlackbotShell(cmd.Cmd):
         """Display comments from the modqueue"""
         text = ''
         for c in self.sr.mod.modqueue(only='comments', limit=10):
-            text += reddit_session.config.reddit_url + c.permalink + '\n```\n' + c.body[:80] + '\n```\n'
+            text += self.reddit_session.config.reddit_url + c.permalink + '\n```\n' + c.body[:80] + '\n```\n'
         self._send_text(text)
 
     def do_youtube_info(self, arg):
         """Get YouTube media URL"""
-        global reddit_session, logger
-        logger.debug(arg)
-        post = reddit_session.submission(url=arg[1:-1])
+        self.logger.debug(arg)
+        post = self.reddit_session.submission(url=arg[1:-1])
         post._fetch()
         if 'media' not in post.__dict__:
             self._send_text('Not a YouTube post', is_error=True)
@@ -311,7 +313,7 @@ class SlackbotShell(cmd.Cmd):
                 thread_id = thread_id.split('/')[4]
             else:
                 thread_id = thread_id.split('/')[3]
-        post = reddit_session.submission(thread_id)
+        post = self.reddit_session.submission(thread_id)
         post.comments.replace_more(limit=None)
         comments = post.comments.list()
         post.mod.remove()
@@ -337,15 +339,14 @@ class SlackbotShell(cmd.Cmd):
 
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
-        global reddit_session, subreddit_name
         permalink_response = sc.api_call(
             'chat.getPermalink',
             channel=self.channel_id,
             message_ts=self.message['ts'])
         permalink = permalink_response['permalink']
-        policy_subreddit = os.environ.get('REDDIT_POLICY_SUBREDDIT', subreddit_name)
+        policy_subreddit = os.environ.get('REDDIT_POLICY_SUBREDDIT', self.subreddit_name)
         policy_page = os.environ.get('REDDIT_POLICY_PAGE', 'mod_policy_votes')
-        sr = reddit_session.subreddit(policy_subreddit)
+        sr = self.reddit_session.subreddit(policy_subreddit)
         existing_page = sr.wiki[policy_page]
         content = existing_page.content_md
         today_text = datetime.datetime.strftime(datetime.datetime.utcnow(), '%d/%m/%Y')
@@ -590,17 +591,17 @@ class SlackbotShell(cmd.Cmd):
         if not re.match('[a-zA-Z0-9_-]+', username):
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
-        user = reddit_session.redditor(username)
+        user = self.reddit_session.redditor(username)
 
         urls_to_archive = []
-        urls_to_archive.append(f'{reddit_session.config.reddit_url}/user/{user.name}/submitted/')
+        urls_to_archive.append(f'{self.reddit_session.config.reddit_url}/user/{user.name}/submitted/')
 
         submissions = list(user.submissions.new(limit=None))
         for s in submissions:
-            urls_to_archive.append(reddit_session.config.reddit_url + s.permalink)
+            urls_to_archive.append(self.reddit_session.config.reddit_url + s.permalink)
 
         comments = list(user.comments.new(limit=None))
-        url_base = f'{reddit_session.config.reddit_url}/user/{user.name}/comments?sort=new'
+        url_base = f'{self.reddit_session.config.reddit_url}/user/{user.name}/comments?sort=new'
         urls_to_archive.append(url_base)
         for c in comments[24::25]:
             after = c.name
@@ -622,9 +623,7 @@ class SlackbotShell(cmd.Cmd):
         Accepted values are 24 (default), 48, 72, A_WEEK, TWO_WEEKS, A_MONTH, THREE_MONTHS, FOREVER_AND_EVER
         Add SUBMISSIONS or POSTS to remove submissions as well.
         """
-        global reddit_session
         global sc
-        global subreddit_name
         CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH': 30, 'THREE_MONTHS': 90,
                        'FOREVER_AND_EVER': 36525}
         # FOREVER_AND_EVER is 100 years. Should be enough.
@@ -654,7 +653,7 @@ class SlackbotShell(cmd.Cmd):
         else:
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
-        u = reddit_session.redditor(username)
+        u = self.reddit_session.redditor(username)
         all_comments = u.comments.new(limit=None)
         removed_comments = 0
         other_subreddits = 0
@@ -666,7 +665,7 @@ class SlackbotShell(cmd.Cmd):
 
         for c in all_comments:
             comment_subreddit_name = c.subreddit.display_name.lower()
-            if comment_subreddit_name != subreddit_name:
+            if comment_subreddit_name != self.subreddit_name:
                 other_subreddits += 1
                 other_subreddit_history[comment_subreddit_name] = \
                     other_subreddit_history.get(comment_subreddit_name, 0) + 1
@@ -695,7 +694,7 @@ class SlackbotShell(cmd.Cmd):
             too_old_submissions = 0
             for s in all_submissions:
                 submission_subreddit_name = s.subreddit.display_name.lower()
-                if submission_subreddit_name != subreddit_name:
+                if submission_subreddit_name != self.subreddit_name:
                     other_subreddits += 1
                     other_subreddit_history[submission_subreddit_name] = \
                         other_subreddit_history.get(submission_subreddit_name, 0) + 1
@@ -811,16 +810,15 @@ class SlackbotShell(cmd.Cmd):
         Return full user comment history, including deleted comments
         This should work for deleted users as well
         Data comes from pushshift.io"""
-        global subreddit_name
         username, *rest_of_text = arg.split()
         comments = requests.get(
             "http://api.pushshift.io/reddit/comment/search",
             params={
                 'limit': 40,
                 'author': username,
-                'subreddit': subreddit_name}).json()
+                'subreddit': self.subreddit_name}).json()
         if not comments['data']:
-            self._send_text(f"User u/{username} has no comments in r/{subreddit_name}")
+            self._send_text(f"User u/{username} has no comments in r/{self.subreddit_name}")
             return
         comment_full_body = [comment['body'] for comment in comments['data']]
         self._send_file(
@@ -865,6 +863,3 @@ def get_channel_info(team_id, channel_id):
             channels[team_id][channel_id] = '🧑' + ' '.join(participants)
 
 
-reddit_session = None
-subreddit_name = None
-archive_session = None

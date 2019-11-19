@@ -13,18 +13,20 @@ from requests.adapters import HTTPAdapter
 from bot_framework.common import setup_logging, normalize_text
 from bot_framework.praw_wrapper import praw_wrapper
 from constants import ARCHIVE_URL
-from command_shell import SlackbotShell, get_user_info, get_team_info, get_channel_info, reddit_session
+from command_shell import SlackbotShell, get_user_info, get_team_info, get_channel_info
 
 
 def init():
+    global shell, logger
     shell.archive_session = requests.Session()
     shell.archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
     slack_api_token = os.environ['SLACK_API_TOKEN']
     shell.subreddit_name = os.environ.get('SUBREDDIT_NAME')
     shell.sc = slackclient.SlackClient(slack_api_token)
+    shell.logger = logger
     if shell.subreddit_name:
         user_agent = f'python:gr.terrasoft.reddit.slackmodbot-{shell.subreddit_name}:v0.1 (by /u/gschizas)'
-        shell.r = praw_wrapper(user_agent=user_agent, scopes=['*'])
+        shell.reddit_session = praw_wrapper(user_agent=user_agent, scopes=['*'])
 
 
 def excepthook(type_, value, tb):
@@ -80,7 +82,7 @@ def main():
 
     shell = SlackbotShell()
     if shell.subreddit_name:
-        shell.sr = reddit_session.subreddit(shell.subreddit_name)
+        shell.sr = shell.reddit_session.subreddit(shell.subreddit_name)
     shell.trigger_words = os.environ['BOT_NAME'].split()
     logger.debug(f"Listening for {','.join(shell.trigger_words)}")
 
