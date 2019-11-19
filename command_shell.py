@@ -346,7 +346,7 @@ class SlackbotShell(cmd.Cmd):
 
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
-        permalink_response = sc.api_call(
+        permalink_response = self.sc.api_call(
             'chat.getPermalink',
             channel=self.channel_id,
             message_ts=self.message['ts'])
@@ -848,13 +848,13 @@ class SlackbotShell(cmd.Cmd):
         if team_id not in self.channels:
             self.channels[team_id] = {}
         if channel_id not in self.channels[team_id]:
-            response_channel = sc.api_call('conversations.info', channel=channel_id)
+            response_channel = self.sc.api_call('conversations.info', channel=channel_id)
             channel_info = response_channel['channel'] if response_channel['ok'] else {}
             if channel_info.get('is_group') or channel_info.get('is_channel'):
                 priv = '🔒' if channel_info.get('is_private') else '#'
                 self.channels[team_id][channel_id] = priv + channel_info['name_normalized']
             elif channel_info.get('is_im'):
-                response_members = sc.api_call('conversations.members', channel=channel_id)
+                response_members = self.sc.api_call('conversations.members', channel=channel_id)
                 for user_id in response_members['members']:
                     self.get_user_info(user_id)
                 participants = [f"{self.users[user_id]['real_name']} <{self.users[user_id]['name']}@{user_id}>"
