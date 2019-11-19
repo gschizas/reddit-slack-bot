@@ -18,6 +18,7 @@ from command_shell import SlackbotShell, get_user_info, get_team_info, get_chann
 
 def init():
     global shell, logger
+    shell = SlackbotShell()
     shell.archive_session = requests.Session()
     shell.archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
     slack_api_token = os.environ['SLACK_API_TOKEN']
@@ -63,24 +64,23 @@ def main():
     # Disable features according to environment
 
     if not shell.subreddit_name:
-        del SlackbotShell.do_add_domain_tag
-        del SlackbotShell.do_add_policy
-        del SlackbotShell.do_archive_user
-        del SlackbotShell.do_modqueue_comments
-        del SlackbotShell.do_modqueue_posts
-        del SlackbotShell.do_nuke_thread
-        del SlackbotShell.do_nuke_user
-        del SlackbotShell.do_usernotes
-        del SlackbotShell.do_youtube_info
-        del SlackbotShell.do_history
+        del shell.do_add_domain_tag
+        del shell.do_add_policy
+        del shell.do_archive_user
+        del shell.do_modqueue_comments
+        del shell.do_modqueue_posts
+        del shell.do_nuke_thread
+        del shell.do_nuke_user
+        del shell.do_usernotes
+        del shell.do_youtube_info
+        del shell.do_history
 
     if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ or 'QUESTIONNAIRE_FILE' not in os.environ:
-        del SlackbotShell.do_survey
+        del shell.do_survey
 
     if 'KUDOS_DATABASE_URL' not in os.environ:
-        del SlackbotShell.do_kudos
+        del shell.do_kudos
 
-    shell = SlackbotShell()
     if shell.subreddit_name:
         shell.sr = shell.reddit_session.subreddit(shell.subreddit_name)
     shell.trigger_words = os.environ['BOT_NAME'].split()
