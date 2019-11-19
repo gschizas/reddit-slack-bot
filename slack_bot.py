@@ -6,21 +6,16 @@ import sys
 import time
 import traceback
 
-import requests
 import slackclient
-from requests.adapters import HTTPAdapter
 
 from bot_framework.common import setup_logging, normalize_text
 from bot_framework.praw_wrapper import praw_wrapper
-from constants import ARCHIVE_URL
-from command_shell import SlackbotShell, get_user_info, get_team_info, get_channel_info
+from command_shell import SlackbotShell
 
 
 def init():
     global shell, logger
     shell = SlackbotShell()
-    shell.archive_session = requests.Session()
-    shell.archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
     slack_api_token = os.environ['SLACK_API_TOKEN']
     shell.subreddit_name = os.environ.get('SUBREDDIT_NAME')
     shell.sc = slackclient.SlackClient(slack_api_token)
@@ -46,7 +41,7 @@ def excepthook(type_, value, tb):
 
 
 def main():
-    global logger, shell, teams, users, channels
+    global logger, shell
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
@@ -56,10 +51,6 @@ def main():
     else:
         logger.critical('Connection failed')
         sys.exit(1)
-
-    teams = {}
-    users = {}
-    channels = {}
 
     # Disable features according to environment
 
@@ -103,7 +94,7 @@ def main():
 
 
 def handle_message(msg):
-    global shell, logger, teams
+    global shell, logger
     if msg['type'] != 'message':
         logger.debug(f"Found message of type {msg['type']}")
         return
@@ -119,10 +110,10 @@ def handle_message(msg):
     user_id = msg.get('user', '')
 
     permalink = shell.sc.api_call('chat.getPermalink', channel=channel_id, message_ts=msg['ts'])
-    get_team_info(team_id)
+    shell.get_team_info(team_id)
 
-    get_user_info(user_id)
-    get_channel_info(team_id, channel_id)
+    shell.get_user_info(user_id)
+    shell.get_channel_info(team_id, channel_id)
 
     text = msg['text']
 

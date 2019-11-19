@@ -17,6 +17,7 @@ import prawcore
 import psycopg2
 import requests
 import xlsxwriter
+from requests.adapters import HTTPAdapter
 from tabulate import tabulate
 
 from bot_framework.yaml_wrapper import yaml
@@ -40,6 +41,12 @@ class SlackbotShell(cmd.Cmd):
         self.reddit_session = None
         self.subreddit_name = None
         self.archive_session = None
+        self.users = {}
+        self.teams = {}
+        self.channels = {}
+        self.archive_session = requests.Session()
+        self.archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
+
 
     def _send_text(self, text, is_error=False):
         icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
@@ -561,14 +568,14 @@ class SlackbotShell(cmd.Cmd):
         return result
 
     @staticmethod
-    def _archive_page(url):
+    def _archive_page(self, url):
         url = url.replace('//www.reddit.com/', '//old.reddit.com/')
 
         # start_page = requests.get(ARCHIVE_URL)
         # soup = BeautifulSoup(start_page.text, 'lxml')
         # main_form = soup.find('form', {'id': 'submiturl'})
         # submit_id = main_form.find('input', {'name': 'submitid'})['value']
-        p2 = archive_session.post(
+        p2 = self.archive_session.post(
             f'{ARCHIVE_URL}/submit/',
             data={
                 'url': url
@@ -734,7 +741,6 @@ class SlackbotShell(cmd.Cmd):
         kudos view to see all kudos so far
         kudos view 15 to see kudos given last 15 days
         """
-        global users, teams, channels
         args = arg.split()
         if len(args) == 0:
             self._send_text(("You need to specify a user "
@@ -743,10 +749,10 @@ class SlackbotShell(cmd.Cmd):
             return
         if re.match(r'<@\w+>', args[0]):
             recipient_user_id = args[0][2:-1]
-            get_user_info(recipient_user_id)
-            get_channel_info(self.team_id, self.channel_id)
-            recipient_name = users[recipient_user_id]['name']
-            sender_name = users[self.user_id]['name']
+            self.get_user_info(recipient_user_id)
+            self.get_channel_info(self.team_id, self.channel_id)
+            recipient_name = self.users[recipient_user_id]['name']
+            sender_name = self.users[self.user_id]['name']
             reason = ' '.join(args[1:])
 
             if recipient_user_id == self.user_id:
@@ -760,8 +766,8 @@ class SlackbotShell(cmd.Cmd):
             cmd_vars = {
                 'sender_name': sender_name, 'sender_id': self.user_id,
                 'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
-                'team_name': teams[self.team_id]['name'], 'team_id': self.team_id,
-                'channel_name': channels[self.team_id][self.channel_id], 'channel_id': self.channel_id,
+                'team_name': self.teams[self.team_id]['name'], 'team_id': self.team_id,
+                'channel_name': self.channels[self.team_id][self.channel_id], 'channel_id': self.channel_id,
                 'permalink': self.permalink['permalink'], 'reason': reason}
             cur.execute(SQL_KUDOS_INSERT, vars=cmd_vars)
             success = cur.rowcount > 0
@@ -826,40 +832,31 @@ class SlackbotShell(cmd.Cmd):
             filename=f'comment_history-{username}.txt',
             filetype='text/plain')
 
+    def get_user_info(self, user_id):
+        if user_id not in self.users:
+            response_user = self.sc.api_call('users.info', user=user_id)
+            if response_user['ok']:
+                self.users[user_id] = response_user['user']
 
-def get_user_info(user_id):
-    global sc, users
-    if user_id not in users:
-        response_user = sc.api_call('users.info', user=user_id)
-        if response_user['ok']:
-            users[user_id] = response_user['user']
+    def get_team_info(self, team_id):
+        if team_id not in self.teams:
+            response_team = self.sc.api_call('team.info')
+            if response_team['ok']:
+                self.teams[team_id] = response_team['team']
 
-
-def get_team_info(team_id):
-    global sc, teams
-    if team_id not in teams:
-        response_team = sc.api_call('team.info')
-        if response_team['ok']:
-            teams[team_id] = response_team['team']
-
-
-def get_channel_info(team_id, channel_id):
-    global sc, channels
-    if team_id not in channels:
-        channels[team_id] = {}
-    if channel_id not in channels[team_id]:
-        response_channel = sc.api_call('conversations.info', channel=channel_id)
-        if response_channel['ok']:
-            channel_info = response_channel['channel']
-        if channel_info.get('is_group') or channel_info.get('is_channel'):
-            priv = '🔒' if channel_info.get('is_private') else '#'
-            channels[team_id][channel_id] = priv + channel_info['name_normalized']
-        elif channel_info.get('is_im'):
-            response_members = sc.api_call('conversations.members', channel=channel_id)
-            for user_id in response_members['members']:
-                get_user_info(user_id)
-            participants = [f"{users[user_id]['real_name']} <{users[user_id]['name']}@{user_id}>" for user_id in
-                            response_members['members']]
-            channels[team_id][channel_id] = '🧑' + ' '.join(participants)
-
-
+    def get_channel_info(self, team_id, channel_id):
+        if team_id not in self.channels:
+            self.channels[team_id] = {}
+        if channel_id not in self.channels[team_id]:
+            response_channel = sc.api_call('conversations.info', channel=channel_id)
+            channel_info = response_channel['channel'] if response_channel['ok'] else {}
+            if channel_info.get('is_group') or channel_info.get('is_channel'):
+                priv = '🔒' if channel_info.get('is_private') else '#'
+                self.channels[team_id][channel_id] = priv + channel_info['name_normalized']
+            elif channel_info.get('is_im'):
+                response_members = sc.api_call('conversations.members', channel=channel_id)
+                for user_id in response_members['members']:
+                    self.get_user_info(user_id)
+                participants = [f"{self.users[user_id]['real_name']} <{self.users[user_id]['name']}@{user_id}>"
+                                for user_id in response_members['members']]
+                self.channels[team_id][channel_id] = '🧑' + ' '.join(participants)
