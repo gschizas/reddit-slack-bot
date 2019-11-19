@@ -836,7 +836,7 @@ class SlackbotShell(cmd.Cmd):
             filename=f'comment_history-{username}.txt',
             filetype='text/plain')
 
-    def do_disk_space(self):
+    def do_disk_space(self, arg):
         """\
         Display free disk space"""
         self._send_text(self.diskfree())
