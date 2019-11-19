@@ -110,10 +110,10 @@ def handle_message(msg):
     user_id = msg.get('user', '')
 
     permalink = shell.sc.api_call('chat.getPermalink', channel=channel_id, message_ts=msg['ts'])
-    shell.get_team_info(team_id)
+    shell._slack_team_info(team_id)
 
-    shell.get_user_info(user_id)
-    shell.get_channel_info(team_id, channel_id)
+    shell._slack_user_info(user_id)
+    shell._slack_channel_info(team_id, channel_id)
 
     text = msg['text']
 

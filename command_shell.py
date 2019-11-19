@@ -753,8 +753,8 @@ class SlackbotShell(cmd.Cmd):
             return
         if re.match(r'<@\w+>', args[0]):
             recipient_user_id = args[0][2:-1]
-            self.get_user_info(recipient_user_id)
-            self.get_channel_info(self.team_id, self.channel_id)
+            self._slack_user_info(recipient_user_id)
+            self._slack_channel_info(self.team_id, self.channel_id)
             recipient_name = self.users[recipient_user_id]['name']
             sender_name = self.users[self.user_id]['name']
             reason = ' '.join(args[1:])
@@ -841,19 +841,19 @@ class SlackbotShell(cmd.Cmd):
         Display free disk space"""
         self._send_text(self.diskfree())
 
-    def get_user_info(self, user_id):
+    def _slack_user_info(self, user_id):
         if user_id not in self.users:
             response_user = self.sc.api_call('users.info', user=user_id)
             if response_user['ok']:
                 self.users[user_id] = response_user['user']
 
-    def get_team_info(self, team_id):
+    def _slack_team_info(self, team_id):
         if team_id not in self.teams:
             response_team = self.sc.api_call('team.info')
             if response_team['ok']:
                 self.teams[team_id] = response_team['team']
 
-    def get_channel_info(self, team_id, channel_id):
+    def _slack_channel_info(self, team_id, channel_id):
         if team_id not in self.channels:
             self.channels[team_id] = {}
         if channel_id not in self.channels[team_id]:
@@ -865,7 +865,7 @@ class SlackbotShell(cmd.Cmd):
             elif channel_info.get('is_im'):
                 response_members = self.sc.api_call('conversations.members', channel=channel_id)
                 for user_id in response_members['members']:
-                    self.get_user_info(user_id)
+                    self._slack_user_info(user_id)
                 participants = [f"{self.users[user_id]['real_name']} <{self.users[user_id]['name']}@{user_id}>"
                                 for user_id in response_members['members']]
                 self.channels[team_id][channel_id] = '🧑' + ' '.join(participants)
