@@ -13,7 +13,7 @@ from requests.adapters import HTTPAdapter
 from bot_framework.common import setup_logging, normalize_text
 from bot_framework.praw_wrapper import praw_wrapper
 from constants import ARCHIVE_URL
-from shell import SlackbotShell, get_user_info, get_team_info, get_channel_info, reddit_session
+from command_shell import SlackbotShell, get_user_info, get_team_info, get_channel_info, reddit_session
 
 
 def init():
