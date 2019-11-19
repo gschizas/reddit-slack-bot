@@ -1,8 +1,11 @@
 import base64
 import cmd
+import collections
+import ctypes
 import datetime
 import io
 import json
+import math
 import os
 import pathlib
 import random
@@ -24,6 +27,7 @@ from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
     SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT
 
+_ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
@@ -832,6 +836,12 @@ class SlackbotShell(cmd.Cmd):
             filename=f'comment_history-{username}.txt',
             filetype='text/plain')
 
+    def do_disk_space(self):
+        """\
+        Display free disk space"""
+        self._send_text(self.diskfree())
+
+
     def get_user_info(self, user_id):
         if user_id not in self.users:
             response_user = self.sc.api_call('users.info', user=user_id)
@@ -860,3 +870,32 @@ class SlackbotShell(cmd.Cmd):
                 participants = [f"{self.users[user_id]['real_name']} <{self.users[user_id]['name']}@{user_id}>"
                                 for user_id in response_members['members']]
                 self.channels[team_id][channel_id] = '🧑' + ' '.join(participants)
+
+    def diskfree(self):
+        du = self.disk_usage_raw('/')
+        return self.progress_bar(du.used / du.total, 80)
+
+    if hasattr(os, 'statvfs'):  # POSIX
+        def disk_usage_raw(self, path):
+            st = os.statvfs(path)
+            free = st.f_bavail * st.f_frsize
+            total = st.f_blocks * st.f_frsize
+            used = (st.f_blocks - st.f_bfree) * st.f_frsize
+            return _ntuple_diskusage(total, used, free)
+
+    elif os.name == 'nt':  # Windows
+        def disk_usage_raw(self, path):
+            _, total, free = ctypes.c_ulonglong(), ctypes.c_ulonglong(), \
+                             ctypes.c_ulonglong()
+            fun = ctypes.windll.kernel32.GetDiskFreeSpaceExW
+            ret = fun(path, ctypes.byref(_), ctypes.byref(total), ctypes.byref(free))
+            if ret == 0:
+                raise ctypes.WinError()
+            used = total.value - free.value
+            return _ntuple_diskusage(total.value, used, free.value)
+
+    def progress_bar(self, percentage, size):
+        filled = math.ceil(size * percentage)
+        empty = math.floor(size * (1 - percentage))
+        bar = '\u2588' * filled + '\u2591' * empty
+        return bar
