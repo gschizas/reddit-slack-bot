@@ -849,7 +849,7 @@ class SlackbotShell(cmd.Cmd):
     def do_mock(self, arg):
         """Switch environment to mock"""
         args = arg.split()
-        with open(pathlib.Path('data') / os.environ['MOCK_CONFIGURATION']) as f:
+        with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
             mock_config = json.load(f)['microservices']
         if len(args) != 1 or args[0].lower() not in [k.lower() for k in mock_config.keys()]:
             self._send_text(f"Syntax is {self.trigger_words[0]} mock QA|DATA|OTP|ALL", is_error=True)
