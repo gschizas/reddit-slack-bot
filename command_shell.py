@@ -29,6 +29,7 @@ from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_
 
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
+
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
         super().__init__(self, stdout=io.StringIO(), **kwargs)
@@ -51,32 +52,31 @@ class SlackbotShell(cmd.Cmd):
         self.archive_session = requests.Session()
         self.archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
 
-
     def _send_text(self, text, is_error=False):
         icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
         self.sc.api_call("chat.postMessage",
-                    channel=self.channel_id,
-                    text=text,
-                    icon_emoji=icon_emoji,
-                    username=self.trigger_words[0])
+                         channel=self.channel_id,
+                         text=text,
+                         icon_emoji=icon_emoji,
+                         username=self.trigger_words[0])
 
     def _send_file(self, file_data, title=None, filename=None, filetype=None):
         self.sc.api_call("files.upload",
-                    channels=self.channel_id,
-                    icon_emoji=':robot_face:',
-                    username=self.trigger_words[0],
-                    file=file_data,
-                    filename=filename,
-                    title=title,
-                    filetype=filetype or 'auto')
+                         channels=self.channel_id,
+                         icon_emoji=':robot_face:',
+                         username=self.trigger_words[0],
+                         file=file_data,
+                         filename=filename,
+                         title=title,
+                         filetype=filetype or 'auto')
 
     def _send_fields(self, text, fields):
         self.sc.api_call("chat.postMessage",
-                    channel=self.channel_id,
-                    icon_emoji=':robot_face:',
-                    text=text,
-                    username=self.trigger_words[0],
-                    attachments=fields)
+                         channel=self.channel_id,
+                         icon_emoji=':robot_face:',
+                         text=text,
+                         username=self.trigger_words[0],
+                         attachments=fields)
 
     def postcmd(self, stop, line):
         self.stdout.flush()
@@ -840,7 +840,6 @@ class SlackbotShell(cmd.Cmd):
         """\
         Display free disk space"""
         self._send_text(self.diskfree())
-
 
     def get_user_info(self, user_id):
         if user_id not in self.users:
