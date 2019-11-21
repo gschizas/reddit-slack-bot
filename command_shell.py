@@ -904,7 +904,7 @@ class SlackbotShell(cmd.Cmd):
 
     if hasattr(os, 'statvfs'):  # POSIX
         @staticmethod
-        def disk_usage_raw(path):
+        def _disk_usage_raw(path):
             st = os.statvfs(path)
             free = st.f_bavail * st.f_frsize
             total = st.f_blocks * st.f_frsize
