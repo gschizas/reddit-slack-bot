@@ -882,15 +882,13 @@ class SlackbotShell(cmd.Cmd):
         username = mock_config['username']
         password = mock_config['password']
         site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site, '-u', username, '-p', password]) + '\n' * 3
+        result_text = subprocess.check_output(['oc', 'login', site, '-u', username, '-p', password]).decode() + '\n' * 3
         project = mock_config['project']
-        self._send_text(f"Mocking {mock_status} for project {project}...")
-        result_text += subprocess.check_output(['oc', 'project', project]).decode() + b'\n' * 3
+        result_text += subprocess.check_output(['oc', 'project', project]).decode() + '\n' * 3
         mock_status = list(mock_config['microservices'].keys())[0]
         for microservice, status in mock_config['microservices'][mock_status].items():
-            status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
-            result_text += subprocess.check_output(['oc', 'describe', 'dc/ocp-' + microservice, status_text]).decode() + b'\n\n'
-        result_text += subprocess.check_output(['oc', 'logout']).decode() + b'\n\n'
+            result_text += subprocess.check_output(['oc', 'describe', 'dc/ocp-' + microservice]).decode() + '\n\n'
+        result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
         self._send_file(result_text, title='OpenShift Data', filename='openshift-data.txt')
 
     def _slack_user_info(self, user_id):
