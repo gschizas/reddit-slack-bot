@@ -862,7 +862,7 @@ class SlackbotShell(cmd.Cmd):
         username = mock_config['username']
         password = mock_config['password']
         site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site,'-u', username, '-p', password]) + '\n' * 3
+        result_text = subprocess.check_output(['oc', 'login', site, '-u', username, '-p', password]) + '\n' * 3
         project = mock_config['project']
         self._send_text(f"Mocking {mock_status} for project {project}...")
         result_text += subprocess.check_output(['oc', 'project', project]) + '\n' * 3
@@ -872,6 +872,31 @@ class SlackbotShell(cmd.Cmd):
         result_text += subprocess.check_output(['oc', 'logout']) + '\n\n'
         self._send_text('```' + result_text + '```')
 
+    def do_check_mock(self, arg):
+        """Switch environment to mock"""
+        args = arg.split()
+        with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
+            mock_config = json.load(f)
+        if self.user_id not in mock_config['allowed_users']:
+            self._send_text(f"You don't have premission to switch mock status.", is_error=True)
+        valid_mock_statuses = [k.lower() for k in mock_config['microservices'].keys()]
+        if len(args) != 1 or args[0].lower() not in valid_mock_statuses:
+            valid_mock_statuses_text = '|'.join(valid_mock_statuses).upper()
+            self._send_text(f"Syntax is {self.trigger_words[0]} mock {valid_mock_statuses_text}", is_error=True)
+            return
+        mock_status = args[0]
+        username = mock_config['username']
+        password = mock_config['password']
+        site = mock_config['site']
+        result_text = subprocess.check_output(['oc', 'login', site, '-u', username, '-p', password]) + '\n' * 3
+        project = mock_config['project']
+        self._send_text(f"Mocking {mock_status} for project {project}...")
+        result_text += subprocess.check_output(['oc', 'project', project]) + '\n' * 3
+        for microservice, status in mock_config['microservices'][mock_status].items():
+            status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
+            result_text += subprocess.check_output(['oc', 'describe', 'dc/ocp-' + microservice, status_text]) + '\n\n'
+        result_text += subprocess.check_output(['oc', 'logout']) + '\n\n'
+        self._send_file(result_text, title='OpenShift Data', filename='openshift-data.txt')
 
     def _slack_user_info(self, user_id):
         if user_id not in self.users:
