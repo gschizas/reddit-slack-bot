@@ -185,3 +185,4 @@ usernotes-*.yml
 .env.d/
 .idea/
 confusables.txt
+.vscode/
