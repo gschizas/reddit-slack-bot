@@ -859,12 +859,17 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"Syntax is {self.trigger_words[0]} mock {valid_mock_statuses_text}", is_error=True)
             return
         mock_status = args[0]
+        username = mock_config['username']
+        password = mock_config['password']
+        site = mock_config['site']
+        result_text = subprocess.check_output(['oc', 'login', site,'-u', username, '-p', password]) + '\n' * 3
         project = mock_config['project']
         self._send_text(f"Mocking {mock_status} for project {project}...")
-        result_text = subprocess.check_output(['oc', 'project', project]) + '\n' * 3
+        result_text += subprocess.check_output(['oc', 'project', project]) + '\n' * 3
         for microservice, status in mock_config['microservices'][mock_status].items():
             status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
             result_text += subprocess.check_output(['oc', 'set', 'env', 'dc/ocp-' + microservice, status_text]) + '\n\n'
+        result_text += subprocess.check_output(['oc', 'logout']) + '\n\n'
         self._send_text('```' + result_text + '```')
 
 
