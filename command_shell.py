@@ -873,7 +873,7 @@ class SlackbotShell(cmd.Cmd):
         self._send_text('```' + result_text + '```')
 
     def do_check_mock(self, arg):
-        """Switch environment to mock"""
+        """View current status of environment"""
         args = arg.split()
         with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
             mock_config = json.load(f)
