@@ -878,7 +878,7 @@ class SlackbotShell(cmd.Cmd):
         with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
             mock_config = json.load(f)
         if self.user_id not in mock_config['allowed_users']:
-            self._send_text(f"You don't have premission to switch mock status.", is_error=True)
+            self._send_text(f"You don't have premission to view mock status.", is_error=True)
         valid_mock_statuses = [k.lower() for k in mock_config['microservices'].keys()]
         if len(args) != 1 or args[0].lower() not in valid_mock_statuses:
             valid_mock_statuses_text = '|'.join(valid_mock_statuses).upper()
