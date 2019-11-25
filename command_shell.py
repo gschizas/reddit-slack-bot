@@ -859,10 +859,9 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"Syntax is {self.trigger_words[0]} mock {valid_mock_statuses_text}", is_error=True)
             return
         mock_status = args[0]
-        username = mock_config['username']
-        password = mock_config['password']
+        oc_token = mock_config['oc_token']
         site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site, '-u', username, '-p', password]).decode() + '\n' * 3
+        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}').decode() + '\n' * 3
         project = mock_config['project']
         self._send_text(f"Mocking {mock_status} for project {project}...")
         result_text += subprocess.check_output(['oc', 'project', project]).decode() + '\n' * 3
@@ -879,10 +878,9 @@ class SlackbotShell(cmd.Cmd):
             mock_config = json.load(f)
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have premission to view mock status.", is_error=True)
-        username = mock_config['username']
-        password = mock_config['password']
+        username = mock_config['oc_token']
         site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site, '-u', username, '-p', password]).decode() + '\n' * 3
+        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
         project = mock_config['project']
         result_text += subprocess.check_output(['oc', 'project', project]).decode() + '\n' * 3
         mock_status = list(mock_config['microservices'].keys())[0]
