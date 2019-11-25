@@ -878,7 +878,7 @@ class SlackbotShell(cmd.Cmd):
         with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
             mock_config = json.load(f)
         if self.user_id not in mock_config['allowed_users']:
-            self._send_text(f"You don't have premission to view mock status.", is_error=True)
+            self._send_text(f"You don't have permission to view mock status.", is_error=True)
         username = mock_config['openshift_token']
         oc_token = mock_config['openshift_token']
         site = mock_config['site']
