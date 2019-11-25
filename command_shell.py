@@ -879,7 +879,6 @@ class SlackbotShell(cmd.Cmd):
             mock_config = json.load(f)
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have permission to view mock status.", is_error=True)
-        username = mock_config['openshift_token']
         oc_token = mock_config['openshift_token']
         site = mock_config['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
