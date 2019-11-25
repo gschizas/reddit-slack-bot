@@ -859,7 +859,7 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"Syntax is {self.trigger_words[0]} mock {valid_mock_statuses_text}", is_error=True)
             return
         mock_status = args[0]
-        oc_token = mock_config['oc_token']
+        oc_token = mock_config['openshift_token']
         site = mock_config['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}').decode() + '\n' * 3
         project = mock_config['project']
@@ -878,7 +878,7 @@ class SlackbotShell(cmd.Cmd):
             mock_config = json.load(f)
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have premission to view mock status.", is_error=True)
-        username = mock_config['oc_token']
+        username = mock_config['openshift_token']
         site = mock_config['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
         project = mock_config['project']
