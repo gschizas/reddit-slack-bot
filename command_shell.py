@@ -861,7 +861,7 @@ class SlackbotShell(cmd.Cmd):
         mock_status = args[0]
         oc_token = mock_config['openshift_token']
         site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}').decode() + '\n' * 3
+        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
         project = mock_config['project']
         prefix = mock_config['prefix']
         self._send_text(f"Mocking {mock_status} for project {project}...")
