@@ -855,10 +855,10 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"You don't have premission to switch mock status.", is_error=True)
         valid_mock_statuses = [k.lower() for k in mock_config['microservices'].keys()]
         if len(args) != 1 or args[0].lower() not in valid_mock_statuses:
-            valid_mock_statuses_text = '|'.join(valid_mock_statuses).upper()
+            valid_mock_statuses_text = '{' + ' | '.join(valid_mock_statuses).lower() + '}'
             self._send_text(f"Syntax is {self.trigger_words[0]} mock {valid_mock_statuses_text}", is_error=True)
             return
-        mock_status = args[0]
+        mock_status = args[0].upper()
         oc_token = mock_config['openshift_token']
         site = mock_config['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
