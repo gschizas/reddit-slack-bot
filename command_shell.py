@@ -390,7 +390,7 @@ class SlackbotShell(cmd.Cmd):
             if dice_spec:
                 if dice_spec.group('Times'):
                     times = int(dice_spec.group('Times'))
-                if dice_spec.group('Add'):
+                if dice_spec.group('Bonus'):
                     bonus = int(dice_spec.group('Bonus'))
                 if dice_spec.group('Sides'):
                     sides = int(dice_spec.group('Sides'))
