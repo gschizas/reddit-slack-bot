@@ -870,6 +870,7 @@ class SlackbotShell(cmd.Cmd):
             status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
             result_text += subprocess.check_output(['oc', 'set', 'env', prefix + microservice, status_text]).decode() + '\n\n'
         result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
+        result_text = re.sub('\n{2,}', '\n', result_text)
         self._send_text('```' + result_text + '```')
 
     def do_check_mock(self, arg):
