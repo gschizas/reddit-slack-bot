@@ -186,3 +186,4 @@ usernotes-*.yml
 .idea/
 confusables.txt
 .vscode/
+.sourcetrail/
