@@ -847,7 +847,7 @@ class SlackbotShell(cmd.Cmd):
         self._send_text(self._diskfree())
 
     def do_mock(self, arg):
-        """Switch environment to mock"""
+        """Switch openshift mock status on environment"""
         args = arg.split()
         with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
             mock_config = json.load(f)
