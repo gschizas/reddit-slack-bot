@@ -849,24 +849,34 @@ class SlackbotShell(cmd.Cmd):
     def do_mock(self, arg):
         """Switch openshift mock status on environment"""
         args = arg.split()
+        if len(args) != 2:
+            self._send_text(f"Syntax is {self.trigger_words[0]} mock «ENVIRONMENT» «STATUS»", is_error=True)
+            return
         with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
             mock_config = json.load(f)
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have premission to switch mock status.", is_error=True)
-        valid_mock_statuses = [k.lower() for k in mock_config['microservices'].keys()]
-        if len(args) != 1 or args[0].lower() not in valid_mock_statuses:
-            valid_mock_statuses_text = '{' + ' | '.join(valid_mock_statuses).lower() + '}'
-            self._send_text(f"Syntax is {self.trigger_words[0]} mock {valid_mock_statuses_text}", is_error=True)
+        environment = args[0].upper()
+        mock_status = args[1].upper()
+        valid_environments = [e.upper() for e in mock_config['environments']]
+        if environment not in valid_environments:
+            self._send_text((f"Invalid project `{environment}`. "
+                             f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
             return
-        mock_status = args[0].upper()
-        oc_token = mock_config['openshift_token']
+        valid_mock_statuses = [k.upper() for k in mock_config['environments'][environment]['status'].keys()]
+        if mock_status not in valid_mock_statuses:
+            self._send_text((f"Invalid status `{mock_status}`. "
+                             f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
+            return
+
+        oc_token = mock_config['environments'][environment]['openshift_token']
         site = mock_config['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
-        project = mock_config['project']
         prefix = mock_config['prefix']
-        self._send_text(f"Mocking {mock_status} for project {project}...")
-        result_text += subprocess.check_output(['oc', 'project', project]).decode() + '\n' * 3
-        for microservice, status in mock_config['microservices'][mock_status].items():
+        self._send_text(f"Mocking {mock_status} for project {environment}...")
+        result_text += subprocess.check_output(['oc', 'project', environment]).decode() + '\n' * 3
+        statuses = mock_config['environments'][environment]['status'][mock_status]
+        for microservice, status in statuses.items():
             status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
             result_text += subprocess.check_output(['oc', 'set', 'env', prefix + microservice, status_text]).decode() + '\n\n'
         result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
