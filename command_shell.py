@@ -868,13 +868,10 @@ class SlackbotShell(cmd.Cmd):
         environment = args[0].lower()
         mock_status = args[1].upper()
         if not self._is_valid_mock_environment(environment, mock_config): return
-        valid_mock_statuses = [k.upper() for k in mock_config['environments'][environment]['status'].keys()]
-        if mock_status not in valid_mock_statuses:
-            self._send_text((f"Invalid status `{mock_status}`. "
-                             f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
-            return
+        if not self._is_valid_mock_status(environment, mock_config, mock_status): return
 
         self._send_text(f"Mocking {mock_status} for project {environment}...")
+
         prefix, result_text = self._mock_initialize(environment, mock_config)
         statuses = mock_config['environments'][environment]['status'][mock_status]
         for microservice, status in statuses.items():
@@ -883,6 +880,7 @@ class SlackbotShell(cmd.Cmd):
         result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
         result_text = re.sub('\n{2,}', '\n', result_text)
         self._send_text('```' + result_text + '```')
+
 
     def do_check_mock(self, arg):
         """View current status of environment"""
@@ -917,6 +915,14 @@ class SlackbotShell(cmd.Cmd):
         if environment not in valid_environments:
             self._send_text((f"Invalid project `{environment}`. "
                              f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
+            return False
+        return True
+
+    def _is_valid_mock_status(self, environment, mock_config, mock_status):
+        valid_mock_statuses = [k.upper() for k in mock_config['environments'][environment]['status'].keys()]
+        if mock_status not in valid_mock_statuses:
+            self._send_text((f"Invalid status `{mock_status}`. "
+                             f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
             return False
         return True
 
