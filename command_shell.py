@@ -895,17 +895,27 @@ class SlackbotShell(cmd.Cmd):
     def do_check_mock(self, arg):
         """View current status of environment"""
         args = arg.split()
+        if len(args) != 1:
+            self._send_text(f"Syntax is {self.trigger_words[0]} check_mock «ENVIRONMENT»", is_error=True)
+            return
         mock_config = self._mock_config()
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have permission to view mock status.", is_error=True)
-        oc_token = mock_config['openshift_token']
+        environment = args[0].upper()
+        valid_environments = [e.upper() for e in mock_config['environments']]
+        if environment not in valid_environments:
+            self._send_text((f"Invalid project `{environment}`. "
+                             f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
+            return
+
+        oc_token = mock_config['environments'][environment]['openshift_token']
         site = mock_config['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
-        project = mock_config['project']
         prefix = mock_config['prefix']
-        result_text += subprocess.check_output(['oc', 'project', project]).decode() + '\n' * 3
-        mock_status = list(mock_config['microservices'].keys())[0]
-        for microservice, status in mock_config['microservices'][mock_status].items():
+        result_text += subprocess.check_output(['oc', 'project', environment]).decode() + '\n' * 3
+        config_env = mock_config['environments'][environment]
+        mock_status = list(config_env['status'].keys())[0]
+        for microservice, status in config_env['status'][mock_status].items():
             result_text += subprocess.check_output(['oc', 'env', prefix + microservice, '--list']).decode() + '\n\n'
         result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
         self._send_file(result_text, title='OpenShift Data', filename='openshift-data.txt')
