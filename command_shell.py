@@ -856,9 +856,9 @@ class SlackbotShell(cmd.Cmd):
             mock_config = json.load(f)
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have premission to switch mock status.", is_error=True)
-        environment = args[0].upper()
+        environment = args[0].lower()
         mock_status = args[1].upper()
-        valid_environments = [e.upper() for e in mock_config['environments']]
+        valid_environments = [e.lower() for e in mock_config['environments']]
         if environment not in valid_environments:
             self._send_text((f"Invalid project `{environment}`. "
                              f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
