@@ -867,11 +867,7 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"You don't have premission to switch mock status.", is_error=True)
         environment = args[0].lower()
         mock_status = args[1].upper()
-        valid_environments = [e.lower() for e in mock_config['environments']]
-        if environment not in valid_environments:
-            self._send_text((f"Invalid project `{environment}`. "
-                             f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
-            return
+        if not self._is_valid_mock_environment(environment, mock_config): return
         valid_mock_statuses = [k.upper() for k in mock_config['environments'][environment]['status'].keys()]
         if mock_status not in valid_mock_statuses:
             self._send_text((f"Invalid status `{mock_status}`. "
@@ -902,12 +898,7 @@ class SlackbotShell(cmd.Cmd):
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have permission to view mock status.", is_error=True)
         environment = args[0].upper()
-        valid_environments = [e.upper() for e in mock_config['environments']]
-        if environment not in valid_environments:
-            self._send_text((f"Invalid project `{environment}`. "
-                             f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
-            return
-
+        if not self._is_valid_mock_environment(environment, mock_config): return
         oc_token = mock_config['environments'][environment]['openshift_token']
         site = mock_config['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
@@ -919,6 +910,14 @@ class SlackbotShell(cmd.Cmd):
             result_text += subprocess.check_output(['oc', 'env', prefix + microservice, '--list']).decode() + '\n\n'
         result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
         self._send_file(result_text, title='OpenShift Data', filename='openshift-data.txt')
+
+    def _is_valid_mock_environment(self, environment, mock_config):
+        valid_environments = [e.upper() for e in mock_config['environments']]
+        if environment not in valid_environments:
+            self._send_text((f"Invalid project `{environment}`. "
+                             f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
+            return False
+        return True
 
     def _slack_user_info(self, user_id):
         if user_id not in self.users:
