@@ -874,12 +874,8 @@ class SlackbotShell(cmd.Cmd):
                              f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
             return
 
-        oc_token = mock_config['environments'][environment]['openshift_token']
-        site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
-        prefix = mock_config['prefix']
         self._send_text(f"Mocking {mock_status} for project {environment}...")
-        result_text += subprocess.check_output(['oc', 'project', environment]).decode() + '\n' * 3
+        prefix, result_text = self._mock_initialize(environment, mock_config)
         statuses = mock_config['environments'][environment]['status'][mock_status]
         for microservice, status in statuses.items():
             status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
@@ -899,17 +895,22 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"You don't have permission to view mock status.", is_error=True)
         environment = args[0].upper()
         if not self._is_valid_mock_environment(environment, mock_config): return
-        oc_token = mock_config['environments'][environment]['openshift_token']
-        site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
-        prefix = mock_config['prefix']
-        result_text += subprocess.check_output(['oc', 'project', environment]).decode() + '\n' * 3
+        prefix, result_text = self._mock_initialize(environment, mock_config)
         config_env = mock_config['environments'][environment]
         mock_status = list(config_env['status'].keys())[0]
         for microservice, status in config_env['status'][mock_status].items():
             result_text += subprocess.check_output(['oc', 'env', prefix + microservice, '--list']).decode() + '\n\n'
         result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
         self._send_file(result_text, title='OpenShift Data', filename='openshift-data.txt')
+
+    @staticmethod
+    def _mock_initialize(environment, mock_config):
+        oc_token = mock_config['environments'][environment]['openshift_token']
+        site = mock_config['site']
+        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
+        prefix = mock_config['prefix']
+        result_text += subprocess.check_output(['oc', 'project', environment]).decode() + '\n' * 3
+        return prefix, result_text
 
     def _is_valid_mock_environment(self, environment, mock_config):
         valid_environments = [e.upper() for e in mock_config['environments']]
