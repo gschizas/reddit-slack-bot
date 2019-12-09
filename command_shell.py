@@ -846,14 +846,23 @@ class SlackbotShell(cmd.Cmd):
         Display free disk space"""
         self._send_text(self._diskfree())
 
+    @staticmethod
+    def _mock_config():
+        if os.environ('MOCK_CONFIGURATION').startswith('/'):
+            config_file = pathlib.Path(os.environ['MOCK_CONFIGURATION'])
+        else:
+            config_file = pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']
+        with config_file.open() as f:
+            mock_config = json.load(f)
+        return mock_config
+
     def do_mock(self, arg):
         """Switch openshift mock status on environment"""
         args = arg.split()
         if len(args) != 2:
             self._send_text(f"Syntax is {self.trigger_words[0]} mock «ENVIRONMENT» «STATUS»", is_error=True)
             return
-        with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
-            mock_config = json.load(f)
+        mock_config = self._mock_config()
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have premission to switch mock status.", is_error=True)
         environment = args[0].lower()
@@ -886,8 +895,7 @@ class SlackbotShell(cmd.Cmd):
     def do_check_mock(self, arg):
         """View current status of environment"""
         args = arg.split()
-        with open(pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']) as f:
-            mock_config = json.load(f)
+        mock_config = self._mock_config()
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have permission to view mock status.", is_error=True)
         oc_token = mock_config['openshift_token']
