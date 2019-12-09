@@ -864,7 +864,7 @@ class SlackbotShell(cmd.Cmd):
             return
         mock_config = self._mock_config()
         if self.user_id not in mock_config['allowed_users']:
-            self._send_text(f"You don't have premission to switch mock status.", is_error=True)
+            self._send_text(f"You don't have permission to switch mock status.", is_error=True)
         environment = args[0].lower()
         mock_status = args[1].upper()
         if not self._is_valid_mock_environment(environment, mock_config): return
