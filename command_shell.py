@@ -848,7 +848,7 @@ class SlackbotShell(cmd.Cmd):
 
     @staticmethod
     def _mock_config():
-        if os.environ('MOCK_CONFIGURATION').startswith('/'):
+        if os.environ['MOCK_CONFIGURATION'].startswith('/'):
             config_file = pathlib.Path(os.environ['MOCK_CONFIGURATION'])
         else:
             config_file = pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']
