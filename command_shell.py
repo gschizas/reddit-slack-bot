@@ -943,7 +943,8 @@ class SlackbotShell(cmd.Cmd):
     @staticmethod
     def _diskfree():
         du = SlackbotShell._disk_usage_raw('/')
-        return SlackbotShell._progress_bar(du.used / du.total, 80)
+        du_text = SlackbotShell._disk_usage_human()
+        return SlackbotShell._progress_bar(du.used / du.total, 80) + '\n```\n' + du_text + '\n```\n'
 
     if hasattr(os, 'statvfs'):  # POSIX
         @staticmethod
@@ -953,6 +954,10 @@ class SlackbotShell(cmd.Cmd):
             total = st.f_blocks * st.f_frsize
             used = (st.f_blocks - st.f_bfree) * st.f_frsize
             return _ntuple_diskusage(total, used, free)
+
+        @staticmethod
+        def _disk_usage_human():
+            return subprocess.check_output(['df', '--total', '--type=ext2', '--type=ext3', '--type=ext4', '--human-readable']).decode()
 
     elif os.name == 'nt':  # Windows
         @staticmethod
@@ -965,6 +970,11 @@ class SlackbotShell(cmd.Cmd):
                 raise ctypes.WinError()
             used = total.value - free.value
             return _ntuple_diskusage(total.value, used, free.value)
+
+        @staticmethod
+        def _disk_usage_human():
+            return subprocess.check_output(['wmic', 'LogicalDisk', 'Where DriveType="3"', 'Get', 'DeviceID,FreeSpace,Size']).decode()
+
 
     @staticmethod
     def _progress_bar(percentage, size):
