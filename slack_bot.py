@@ -10,6 +10,7 @@ import slackclient
 
 from bot_framework.common import setup_logging, normalize_text
 from bot_framework.praw_wrapper import praw_wrapper
+from bot_framework.yaml_wrapper import yaml
 from command_shell import SlackbotShell
 
 
@@ -79,6 +80,11 @@ def main():
     if shell.subreddit_name:
         shell.sr = shell.reddit_session.subreddit(shell.subreddit_name)
     shell.trigger_words = os.environ['BOT_NAME'].split()
+    if 'SHORTCUT_WORDS' in os.environ:
+        with open('data/' + os.environ['SHORTCUT_WORDS']) as sf:
+            shell.shortcut_words = dict(yaml.round_trip_load(sf))
+    else:
+        shell.shortcut_words = {}
     logger.debug(f"Listening for {','.join(shell.trigger_words)}")
 
     while True:
@@ -122,6 +128,11 @@ def handle_message(msg):
     if not typed_text:
         return
     first_word = typed_text[0]
+    if first_word in shell.shortcut_words:
+        replaced_words = shell.shortcut_words[first_word]
+        typed_text = replaced_words + typed_text[1:]
+        first_word = typed_text[0]
+        text = ' '.join(replaced_words) + ' ' + ' '.join(text.split()[1:])
     if any([first_word == trigger_word for trigger_word in shell.trigger_words]):
         logger.debug(f"Triggerred by {text}")
         line = ' '.join(text.split()[1:])
