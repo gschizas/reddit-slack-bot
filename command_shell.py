@@ -428,7 +428,7 @@ class SlackbotShell(cmd.Cmd):
             self._send_text('No questionnaire file found', is_error=True)
             return
         with questionnaire_file.open(encoding='utf8') as qf:
-            questionnaire_data = list(yaml.round_trip_load_all(qf))
+            questionnaire_data = list(yaml.load_all(qf))
         questions = [q for q in questionnaire_data if q['kind'] not in ('config', 'header')]
         args = arg.lower().split()
         if len(args) == 0:

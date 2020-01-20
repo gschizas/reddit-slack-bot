@@ -82,7 +82,7 @@ def main():
     shell.trigger_words = os.environ['BOT_NAME'].split()
     if 'SHORTCUT_WORDS' in os.environ:
         with open('data/' + os.environ['SHORTCUT_WORDS']) as sf:
-            shell.shortcut_words = dict(yaml.round_trip_load(sf))
+            shell.shortcut_words = dict(yaml.load(sf))
     else:
         shell.shortcut_words = {}
     logger.debug(f"Listening for {','.join(shell.trigger_words)}")
