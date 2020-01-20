@@ -108,7 +108,7 @@ def handle_message(msg):
     if msg['type'] != 'message':
         logger.debug(f"Found message of type {msg['type']}")
         return
-    if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message'):
+    if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message', 'slackbot_response'):
         logger.debug(f"Found message of subtype {msg.get('subtype')}")
         return
     if 'message' in msg:
