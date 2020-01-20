@@ -127,7 +127,6 @@ class SlackbotShell(cmd.Cmd):
         log_name = os.environ.get('LOG_NAME', 'unknown')
 
         pref_cache = {}
-        breakpoint()
         cache_file = pathlib.Path(f'data/weather-{log_name}.yml')
         if cache_file.exists():
             with cache_file.open(mode='r', encoding='utf8') as y:
