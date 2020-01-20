@@ -125,12 +125,21 @@ class SlackbotShell(cmd.Cmd):
     def do_weather(self, arg):
         """Display the weather in place"""
         place = arg.lower()
+        log_name = os.environ.get('LOG_NAME', 'unknown')
 
-        with shelve.open('data/weather_preferences.db') as db:
-            if place == '':
-                place = db.get(self.user_id, '')
-            else:
-                db[self.user_id] = place
+        pref_cache = {}
+        cache_file = pathlib.Path(f'data/weather-{log_name}.yml')
+        if cache_file.exists():
+            with cache_file.open(mode='r', encoding='utf8') as y:
+                pref_cache = yaml.load(y)
+
+        if place:
+            pref_cache[self.user_id] = place
+        else:
+            place = pref_cache.get(self.user_id, '')
+
+        with cache_file.open(mode='w', encoding='utf8') as y:
+            yaml.dump(pref_cache, y)
 
         if place == 'macedonia' or place == 'makedonia':
             place = 'Thessaloniki'
