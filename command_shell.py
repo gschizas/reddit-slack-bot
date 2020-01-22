@@ -99,8 +99,17 @@ class SlackbotShell(cmd.Cmd):
         # self._send_file(instant_answer_page.content, filename='duckduckgo.json', filetype='application/json')
         if isinstance(instant_answer["Answer"], str) and instant_answer["Answer"]:
             self._send_text(instant_answer["Answer"])
+            if 'Image' in instant_answer:
+                self._send_text(instant_answer['Image'])
         elif instant_answer["AbstractText"]:
             self._send_text(instant_answer["AbstractText"])
+            if 'Image' in instant_answer:
+                self._send_text(instant_answer['Image'])
+        elif instant_answer['RelatedTopics']:
+            topic = instant_answer['RelatedTopics'][0]
+            self._send_text(topic['Text'])
+            if 'Icon' in topic:
+                self._send_text(topic['Icon']['URL'])
         else:
             self._send_text(
                 f"```I don't know what to do with {line}.\nTry one of the following commands:\n```",
