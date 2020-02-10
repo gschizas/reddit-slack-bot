@@ -418,7 +418,7 @@ class SlackbotShell(cmd.Cmd):
                     dice = random.randint(1, 6)
                     ability_line.append(dice)
                 ability_line_sorted = sorted(ability_line)[1:]
-                ability_text += f"You rolled {', '.join(ability_line)}. Keeping {', '.join(ability_line_sorted)}, for a sum of {sum(ability_line_sorted).\n"
+                ability_text += f"You rolled {', '.join(ability_line)}. Keeping {', '.join(ability_line_sorted)}, for a sum of {sum(ability_line_sorted)}.\n"
             self._send_text(ability_text)
             return
 
