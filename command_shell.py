@@ -409,12 +409,15 @@ class SlackbotShell(cmd.Cmd):
         times = 1
         bonus = 0
         args = arg.split()
-        if len(args) == 1 and args[0].lower() == 'statline':
+        if len(args) >= 1 and args[0].lower() == 'statline':
+            min_roll = 1
+            if len(args) > 1 and args[1] == 'drop1':
+                min_roll = 2
             ability_text = ""
             for roll_line in range(6):
                 ability_line = []
                 for roll_dice in range(4):
-                    dice = random.randint(1, 6)
+                    dice = random.randint(min_roll, 6)
                     ability_line.append(dice)
                 ability_line_sorted = sorted(ability_line)[1:]
                 ability_text += (
