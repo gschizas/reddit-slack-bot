@@ -410,7 +410,6 @@ class SlackbotShell(cmd.Cmd):
         bonus = 0
         args = arg.split()
         if len(args) == 1 and args[0].lower() == 'statline':
-            ability_rolls = []
             ability_text = ""
             for roll_line in range(6):
                 ability_line = []
@@ -418,7 +417,10 @@ class SlackbotShell(cmd.Cmd):
                     dice = random.randint(1, 6)
                     ability_line.append(dice)
                 ability_line_sorted = sorted(ability_line)[1:]
-                ability_text += f"You rolled {', '.join(ability_line)}. Keeping {', '.join(ability_line_sorted)}, for a sum of {sum(ability_line_sorted)}.\n"
+                ability_text += (
+                    f"You rolled 4d6: {', '.join([str(a) for a in ability_line])}."
+                    f" Keeping {', '.join([str(a) for a in ability_line_sorted])},"
+                    f" for a sum of *{sum(ability_line_sorted)}*.\n")
             self._send_text(ability_text)
             return
 
