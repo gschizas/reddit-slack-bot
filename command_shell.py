@@ -409,7 +409,20 @@ class SlackbotShell(cmd.Cmd):
         times = 1
         bonus = 0
         args = arg.split()
-        if len(args) > 0:
+        if len(args) == 1 and args[0].lower() == 'statline':
+            ability_rolls = []
+            ability_text = ""
+            for roll_line in range(6):
+                ability_line = []
+                for roll_dice in range(4):
+                    dice = random.randint(1, 6)
+                    ability_line.append(dice)
+                ability_line_sorted = sorted(ability_line)[1:]
+                ability_text += f"You rolled {', '.join(ability_line)}. Keeping {', '.join(ability_line_sorted)}, for a sum of {sum(ability_line_sorted).\n"
+            self._send_text(ability_text)
+            return
+
+        elif len(args) > 0:
             dice_spec = re.match(r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})(?:\+(?P<Bonus>\d))?$', args[0])
             if dice_spec:
                 if dice_spec.group('Times'):
