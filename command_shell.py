@@ -828,6 +828,9 @@ class SlackbotShell(cmd.Cmd):
                 text_to_send = f"Kudos from {sender_name} to {recipient_name}"
                 if reason.strip():
                     text_to_send += ' ' + reason
+                gift = random.random()
+                if gift > 0.6:
+                    text_to_send += " Have a " + random.choice([':balloon:', ':bear:', ':lollipop:'])
                 self._send_text(text_to_send)
             else:
                 self._send_text("Kudos not recorded")
