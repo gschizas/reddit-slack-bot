@@ -428,7 +428,7 @@ class SlackbotShell(cmd.Cmd):
             return
 
         elif len(args) > 0:
-            dice_spec = re.match(r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})\s*(?:\+\s*(?P<Bonus>\d{1,2}))?$', args[0])
+            dice_spec = re.match(r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})\s*(?:\+\s*(?P<Bonus>\d{1,2}))?$', arg.strip())
             if dice_spec:
                 if dice_spec.group('Times'):
                     times = int(dice_spec.group('Times'))
