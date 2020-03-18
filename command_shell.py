@@ -830,6 +830,7 @@ class SlackbotShell(cmd.Cmd):
                     text_to_send += ' ' + reason
                 gift = random.random()
                 if gift > 0.6:
+                    if not text_to_send.endswith('.'): text_to_send += '.'
                     text_to_send += " Have a " + random.choice([':balloon:', ':bear:', ':lollipop:'])
                 self._send_text(text_to_send)
             else:
