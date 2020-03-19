@@ -833,7 +833,7 @@ class SlackbotShell(cmd.Cmd):
                 if give_gift > 0.25:
                     if not text_to_send.endswith('.'): text_to_send += '.'
                     gift = random.choice(GIFTS)
-                    text_to_send += " Have a :{gift}:"
+                    text_to_send += f" Have a :{gift}:"
                 self._send_text(text_to_send)
             else:
                 self._send_text("Kudos not recorded")
