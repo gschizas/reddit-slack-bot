@@ -826,9 +826,12 @@ class SlackbotShell(cmd.Cmd):
             conn.close()
             if success:
                 text_to_send = f"Kudos from {sender_name} to {recipient_name}"
-                if reason.strip():
-                    text_to_send += ' ' + reason
                 give_gift = random.random()
+                if reason.strip():
+                    if re.search(':\w+:', reason):
+                        reason = '. No cheating! Only I can send gifts!'
+                        give_gift = -1
+                    text_to_send += ' ' + reason
                 GIFTS = 'balloon bear lollipop cake pancakes apple pineapple cherries grapes pizza popcorn rose tulip baby_chick beer doughnut cookie'.split()
                 if give_gift > 0.25:
                     if not text_to_send.endswith('.'): text_to_send += '.'
