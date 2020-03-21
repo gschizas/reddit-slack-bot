@@ -452,7 +452,7 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(result)
             return
         elif len(args) > 0:
-            dice_spec = re.match(r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})\s*(?:\+\s*(?P<Bonus>\d{1,2}))?$', args[0])
+            dice_spec = re.match(r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})\s*(?:\+\s*(?P<Bonus>\d{1,2}))?$', arg.strip())
             if dice_spec:
                 if dice_spec.group('Times'):
                     times = int(dice_spec.group('Times'))
@@ -852,9 +852,12 @@ class SlackbotShell(cmd.Cmd):
                 text_to_send = f"Kudos from {sender_name} to {recipient_name}"
                 if reason.strip():
                     text_to_send += ' ' + reason
-                gift = random.random()
-                if gift > 0.6:
-                    text_to_send += " Have a " + random.choice([':balloon:', ':bear:', ':lollipop:'])
+                give_gift = random.random()
+                GIFTS = 'balloon bear lollipop cake pancakes apple pineapple cherries grapes pizza popcorn rose tulip baby_chick beer doughnut cookie'.split()
+                if give_gift > 0.25:
+                    if not text_to_send.endswith('.'): text_to_send += '.'
+                    gift = random.choice(GIFTS)
+                    text_to_send += f" Have a :{gift}:"
                 self._send_text(text_to_send)
             else:
                 self._send_text("Kudos not recorded")
