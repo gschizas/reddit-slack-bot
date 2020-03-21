@@ -426,7 +426,31 @@ class SlackbotShell(cmd.Cmd):
                     f" for a sum of *{sum(ability_line_sorted)}*.\n")
             self._send_text(ability_text)
             return
-
+        elif len(args) >= 1 and args[0].lower() == 'magic8':
+            MAGIC_8_BALL_RESULTS = [
+                "It is certain.",
+                "It is decidedly so.",
+                "Without a doubt.",
+                "Yes - definitely.",
+                "You may rely on it.",
+                "As I see it, yes.",
+                "Most likely.",
+                "Outlook good.",
+                "Yes.",
+                "Signs point to yes.",
+                "Reply hazy, try again.",
+                "Ask again later.",
+                "Better not tell you now.",
+                "Cannot predict now.",
+                "Concentrate and ask again.",
+                "Don't count on it.",
+                "My reply is no.",
+                "My sources say no.",
+                "Outlook not so good.",
+                "Very doubtful."]
+            result = random.choice(MAGIC_8_BALL_RESULTS)
+            self._send_text(result)
+            return
         elif len(args) > 0:
             dice_spec = re.match(r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})\s*(?:\+\s*(?P<Bonus>\d{1,2}))?$', args[0])
             if dice_spec:
