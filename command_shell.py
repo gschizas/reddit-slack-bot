@@ -245,7 +245,7 @@ class SlackbotShell(cmd.Cmd):
             text = ''
             fields = []
             for note in notes['ns']:
-                warning = warnings[note['w']]
+                warning = warnings[note['w']] or ''
                 when = datetime.datetime.fromtimestamp(note['t'])
                 note_text = note['n']
                 color = usernote_colors.get(warning, {'color': '#000000'})['color']
