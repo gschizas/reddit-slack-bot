@@ -769,7 +769,7 @@ class SlackbotShell(cmd.Cmd):
             f"{too_old} comments were too old for the {timeframe} timeframe.\n"
         )
         if remove_submissions_as_well:
-            all_submissions = u.posts.new(limit=None)
+            all_submissions = u.submissions.new(limit=None)
             already_removed_submissions = 0
             removed_submissions = 0
             other_subreddit_submissions = 0
