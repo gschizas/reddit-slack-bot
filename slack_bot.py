@@ -66,6 +66,7 @@ def main():
         del SlackbotShell.do_usernotes
         del SlackbotShell.do_youtube_info
         del SlackbotShell.do_history
+        del SlackbotShell.do_comment_source
 
     if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ or 'QUESTIONNAIRE_FILE' not in os.environ:
         del SlackbotShell.do_survey

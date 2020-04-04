@@ -15,6 +15,7 @@ import tempfile
 import urllib.parse
 import zlib
 
+import praw
 import prawcore
 import psycopg2
 import requests
@@ -1057,3 +1058,23 @@ class SlackbotShell(cmd.Cmd):
         empty = math.floor(size * (1 - percentage))
         bar = '\u2588' * filled + '\u2591' * empty
         return bar
+
+    def do_comment_source(self, arg):
+        """Get comment source
+        Syntax:
+        comment_source comment_thing_id
+        comment_source comment_full_url"""
+        self.logger.debug(arg)
+        if '/' in arg:
+            comment_id = praw.models.Comment.id_from_url(arg)
+        else:
+            comment_id = arg
+
+        try:
+            comment = self.reddit_session.comment(comment_id)
+            comment._fetch()
+            self._send_text('```\n' + comment.body.encode('unicode_escape').decode() + '```')
+        except Exception as e:
+            self._send_text(repr(e), is_error=True)
+        pass
+
