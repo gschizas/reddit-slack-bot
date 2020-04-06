@@ -1073,7 +1073,7 @@ class SlackbotShell(cmd.Cmd):
         try:
             comment = self.reddit_session.comment(comment_id)
             comment._fetch()
-            self._send_text('```\n' + comment.body.encode('unicode_escape').decode() + '```')
+            self._send_file(comment.body.encode('unicode_escape'), filename=f'comment_{comment_id}.md')
         except Exception as e:
             self._send_text(repr(e), is_error=True)
         pass
