@@ -957,15 +957,19 @@ class SlackbotShell(cmd.Cmd):
 
         oc_token = mock_config['environments'][environment]['openshift_token']
         site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
+        login_command = ['oc', 'login', site, f'--token={oc_token}']
+        result_text = subprocess.check_output(login_command).decode() + '\n' * 3
         prefix = mock_config['prefix']
         self._send_text(f"Setting mock status to {mock_status} for project {environment}...")
-        result_text += subprocess.check_output(['oc', 'project', environment.lower()]).decode() + '\n' * 3
+        change_project_command = ['oc', 'project', environment.lower()]
+        result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
         statuses = mock_config['environments'][environment]['status'][mock_status]
         for microservice, status in statuses.items():
             status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
-            result_text += subprocess.check_output(['oc', 'set', 'env', prefix + microservice, status_text]).decode() + '\n\n'
-        result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
+            environment_set_command = ['oc', 'set', 'env', prefix + microservice, status_text]
+            result_text += subprocess.check_output(environment_set_command).decode() + '\n\n'
+        logout_command = ['oc', 'logout']
+        result_text += subprocess.check_output(logout_command).decode() + '\n\n'
         result_text = re.sub('\n{2,}', '\n', result_text)
         self._send_text('```' + result_text + '```')
 
