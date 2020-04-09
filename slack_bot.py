@@ -94,7 +94,6 @@ def main():
                 handle_message(msg)
             time.sleep(0.5)
         except Exception as ex:  # slackclient.server.SlackConnectionResetError as ex:
-            exx = sys.exc_info()
             tb = sys.exc_info()[2]
             logger.warning(''.join(traceback.format_exception(None, ex, tb)))
             if shell.sc.rtm_connect():
