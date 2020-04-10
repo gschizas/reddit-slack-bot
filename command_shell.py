@@ -944,6 +944,7 @@ class SlackbotShell(cmd.Cmd):
             return
         environment = args[0].upper()
         mock_status = args[1].upper()
+        env_vars = mock_config['env_vars']
         valid_environments = [e.upper() for e in mock_config['environments']]
         if environment not in valid_environments:
             self._send_text((f"Invalid project `{environment}`. "
@@ -964,9 +965,12 @@ class SlackbotShell(cmd.Cmd):
         change_project_command = ['oc', 'project', environment.lower()]
         result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
         statuses = mock_config['environments'][environment]['status'][mock_status]
-        for microservice, status in statuses.items():
-            status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
-            environment_set_command = ['oc', 'set', 'env', prefix + microservice, status_text]
+        for microservice_info, status in statuses.items():
+            if '$' not in microservice_info: microservice_info += '$'
+            microservice, env_var_shortcut = microservice_info.split('$')
+            env_var_name: str = env_vars[env_var_shortcut]
+            env_variable_value = f'{env_var_name}={status}' if status else f'{env_var_name}-'
+            environment_set_command = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
             result_text += subprocess.check_output(environment_set_command).decode() + '\n\n'
         logout_command = ['oc', 'logout']
         result_text += subprocess.check_output(logout_command).decode() + '\n\n'
