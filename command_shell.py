@@ -1041,7 +1041,8 @@ class SlackbotShell(cmd.Cmd):
 
         @staticmethod
         def _disk_usage_human():
-            return subprocess.check_output(['df', '--total', '--type=ext2', '--type=ext3', '--type=ext4', '--human-readable']).decode()
+            disk_usage_command = ['df', '--total', '--exclude-type=tmpfs', '--exclude-type=udev', '--human-readable']
+            return subprocess.check_output(disk_usage_command).decode()
 
     elif os.name == 'nt':  # Windows
         @staticmethod
@@ -1057,8 +1058,8 @@ class SlackbotShell(cmd.Cmd):
 
         @staticmethod
         def _disk_usage_human():
-            return subprocess.check_output(['wmic', 'LogicalDisk', 'Where DriveType="3"', 'Get', 'DeviceID,FreeSpace,Size']).decode()
-
+            disk_usage_command = ['wmic', 'LogicalDisk', 'Where DriveType="3"', 'Get', 'DeviceID,FreeSpace,Size']
+            return subprocess.check_output(disk_usage_command).decode()
 
     @staticmethod
     def _progress_bar(percentage, size):
