@@ -84,9 +84,8 @@ class SlackbotShell(cmd.Cmd):
         self._slack_channel_info(team_id, channel_id)
 
     def precmd(self, line):
-        line_parts = line
         i, n = 0, len(line)
-        while i < n and line[i] in self.identchars: i = i+1
+        while i < n and line[i] in self.identchars: i += 1
         return line[:i].lower() + line[i:]
 
     def postcmd(self, stop, line):
