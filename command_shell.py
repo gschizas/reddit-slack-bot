@@ -1065,3 +1065,24 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(repr(e), is_error=True)
         pass
 
+    def do_deleted_comment_source(self, arg):
+        """\
+        Return comment source even if deleted. Use comment ids
+        Data comes from pushshift.io"""
+        ids = ','.join(arg.split())
+        comments = requests.get(
+            "http://api.pushshift.io/reddit/comment/search",
+            params={
+                'limit': 40,
+                'ids': ids,
+                'subreddit': self.subreddit_name}).json()
+        if not comments['data']:
+            self._send_text(f"No comments under those ids were found in r/{self.subreddit_name}")
+            return
+        comment_full_body = [comment['body'] for comment in comments['data']]
+        self._send_file(
+            file_data='\n'.join(comment_full_body).encode(),
+            filename=f'comment_body-{ids}.txt',
+            filetype='text/plain')
+
+
