@@ -25,7 +25,8 @@ from tabulate import tabulate
 
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
-    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX
+    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
+    WIKI_PAGE_BAD_FORMAT
 
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
@@ -44,6 +45,7 @@ class SlackbotShell(cmd.Cmd):
         self.users = None
         self.logger = None
         self.reddit_session = None
+        self.bot_reddit_session = None
         self.subreddit_name = None
         self.archive_session = None
         self.users = {}
@@ -1085,4 +1087,45 @@ class SlackbotShell(cmd.Cmd):
             filename=f'comment_body-{ids}.txt',
             filetype='text/plain')
 
+    def do_make_post(self, arg):
+        """
+        Create or update a post as the common moderator user. It reads the provided wiki page and creates or updates
+        a post according to the included data.
 
+        Note that there's no need for a separate wiki page for each post, the wiki page can be reused
+        
+        Syntax:
+        make_post NEW wiki_page
+        make_post thread_id wiki_page
+        make_post thread_id wiki_page version_id"""
+        args = arg.split()
+        if len(args) == 2:
+            thread_id, wiki_page_name = args
+            revision_id = 'LATEST'
+        elif len(args) == 3:
+            thread_id, wiki_page_name, revision_id = args
+        else:
+            self._send_text(self.do_make_post.__doc__, is_error=True)
+            return
+
+        sr = self.bot_reddit_session.subreddit(self.subreddit_name)
+        wiki_page = sr.wiki[wiki_page_name]
+        wiki_text = wiki_page.content_md if revision_id == 'LATEST' else wiki_page.revision[revision_id].content_md
+        wiki_lines = wiki_text.splitlines()
+        if len(wiki_lines) < 2:
+            self._send_text(WIKI_PAGE_BAD_FORMAT, is_error=True)
+            return
+        if wiki_lines[0].startswith("# ") and wiki_lines[1] == '':
+            wiki_title = wiki_lines[0][2:]
+            wiki_text_body = '\n'.join(wiki_lines[2:])
+        else:
+            self._send_text(WIKI_PAGE_BAD_FORMAT, is_error=True)
+            return
+
+        if thread_id.upper() == 'NEW':
+            submission = sr.submit(wiki_title, wiki_text_body)
+            self._send_text(self.bot_reddit_session.config.reddit_url + submission.permalink)
+        else:
+            submission = self.bot_reddit_session.submission(thread_id)
+            submission.edit(wiki_text_body)
+            self._send_text(self.bot_reddit_session.config.reddit_url + submission.permalink)

@@ -65,3 +65,4 @@ MAGIC_8_BALL_OUTCOMES = [
     "Outlook not so good.",
     "Very doubtful."]
 DICE_REGEX = r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})\s*(?:\+\s*(?P<Bonus>\d{1,2}))?$'
+WIKI_PAGE_BAD_FORMAT = "Page should have a title at the first line an an empty line below that"

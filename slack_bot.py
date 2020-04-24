@@ -22,8 +22,15 @@ def init():
     shell.sc = slackclient.SlackClient(slack_api_token)
     shell.logger = logger
     if shell.subreddit_name:
-        user_agent = f'python:gr.terrasoft.reddit.slackmodbot-{shell.subreddit_name}:v0.1 (by /u/gschizas)'
+        base_user_agent = 'python:gr.terrasoft.reddit.slackmodbot'
+        user_agent = f'{base_user_agent}-{shell.subreddit_name}:v0.1 (by /u/gschizas)'
         shell.reddit_session = praw_wrapper(user_agent=user_agent, scopes=['*'])
+        if 'REDDIT_ALT_USER' in os.environ:
+            alt_user = os.environ['REDDIT_ALT_USER']
+            alt_user_agent = f'{base_user_agent}-{shell.subreddit_name}-as-{alt_user}:v0.1 (by /u/gschizas)'
+            shell.bot_reddit_session = praw_wrapper(user_agent=alt_user_agent,
+                                                    prompt=f'Visit the following URL as {alt_user}:',
+                                                    scopes=['*'])
 
 
 def excepthook(type_, value, tb):
@@ -68,6 +75,9 @@ def main():
         del SlackbotShell.do_history
         del SlackbotShell.do_comment_source
         del SlackbotShell.do_deleted_comment_source
+
+    if not shell.bot_reddit_session:
+        del SlackbotShell.do_make_post
 
     if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ or 'QUESTIONNAIRE_FILE' not in os.environ:
         del SlackbotShell.do_survey
