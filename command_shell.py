@@ -1008,7 +1008,7 @@ class SlackbotShell(cmd.Cmd):
     def _diskfree():
         du = SlackbotShell._disk_usage_raw('/')
         du_text = SlackbotShell._disk_usage_human()
-        return SlackbotShell._progress_bar(du.used / du.total, 80) + '\n```\n' + du_text + '\n```\n'
+        return SlackbotShell._progress_bar(du.used / du.total, 48) + '\n```\n' + du_text + '\n```\n'
 
     if hasattr(os, 'statvfs'):  # POSIX
         @staticmethod
