@@ -1021,7 +1021,13 @@ class SlackbotShell(cmd.Cmd):
 
         @staticmethod
         def _disk_usage_human():
-            disk_usage_command = ['df', '--total', '--exclude-type=tmpfs', '--exclude-type=udev', '--human-readable']
+            disk_usage_command = [
+                'df',
+                '--total',
+                '--exclude-type=tmpfs',
+                '--exclude-type=devtmpfs',
+                '--exclude-type=squashfs',
+                '--human-readable']
             return subprocess.check_output(disk_usage_command).decode()
 
     elif os.name == 'nt':  # Windows
