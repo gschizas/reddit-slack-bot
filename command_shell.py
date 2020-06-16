@@ -360,13 +360,7 @@ class SlackbotShell(cmd.Cmd):
     def do_nuke_thread(self, thread_id):
         """Nuke whole thread (except distinguished comments)
         Thread ID should be either the submission URL or the submission id"""
-        if '/' in thread_id:
-            if thread_id.startswith('http://') or thread_id.startswith('https://'):
-                thread_id = thread_id.split('/')[6]
-            elif thread_id.startswith('/'):
-                thread_id = thread_id.split('/')[4]
-            else:
-                thread_id = thread_id.split('/')[3]
+        thread_id = self._extract_real_thread_id(thread_id)
         post = self.reddit_session.submission(thread_id)
         post.comments.replace_more(limit=None)
         comments = post.comments.list()
@@ -390,6 +384,17 @@ class SlackbotShell(cmd.Cmd):
             f"{comments_already_removed} comments were already removed.\n"
             "Submission was locked")
         self._send_text(result)
+
+    @staticmethod
+    def _extract_real_thread_id(thread_id):
+        if '/' in thread_id:
+            if thread_id.startswith('http://') or thread_id.startswith('https://'):
+                thread_id = thread_id.split('/')[6]
+            elif thread_id.startswith('/'):
+                thread_id = thread_id.split('/')[4]
+            else:
+                thread_id = thread_id.split('/')[3]
+        return thread_id
 
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
