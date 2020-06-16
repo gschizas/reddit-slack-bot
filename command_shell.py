@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 import urllib.parse
 import zlib
+from contextlib import contextmanager
 
 import praw
 import prawcore
@@ -31,26 +32,19 @@ from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
 
-class StateFile():
-    def __init__(self, filename):
-        self.filename = filename
-        self.data = {}
-        log_name = os.environ.get('LOG_NAME', 'unknown')
-        self.data_file = pathlib.Path(f'data/{self.filename}-{log_name}.yml')
-        if self.data_file.exists():
-            with self.data_file.open(mode='r', encoding='utf8') as y:
-                self.data = dict(yaml.load(y))
-                if not self.data:
-                    self.data = {}
-
-    def __enter__(self):
-        return self.data
-
-    def __exit__(self, type, value, traceback):
-        log_name = os.environ.get('LOG_NAME', 'unknown')
-        data_file = pathlib.Path(f'data/{self.filename}-{log_name}.yml')
-        with data_file.open(mode='w', encoding='utf8') as y:
-            yaml.dump(self.data, y)
+@contextmanager
+def state_file(path):
+    data = {}
+    log_name = os.environ.get('LOG_NAME', 'unknown')
+    data_file = pathlib.Path(f'data/{path}-{log_name}.yml')
+    if data_file.exists():
+        with data_file.open(mode='r', encoding='utf8') as y:
+            data = dict(yaml.load(y))
+            if not data:
+                data = {}
+    yield data
+    with data_file.open(mode='w', encoding='utf8') as y:
+        yaml.dump(data, y)
 
 
 class SlackbotShell(cmd.Cmd):
@@ -164,7 +158,7 @@ class SlackbotShell(cmd.Cmd):
         """Display the weather in place"""
         place = arg.lower()
 
-        with StateFile('weather') as pref_cache:
+        with state_file('weather') as pref_cache:
             if place:
                 pref_cache[self.user_id] = place
             else:
@@ -383,7 +377,7 @@ class SlackbotShell(cmd.Cmd):
             f"{comments_distinguished} distinguished comments were kept.\n"
             f"{comments_already_removed} comments were already removed.\n"
             "Submission was locked")
-        with StateFile('nuke_thread') as state:
+        with state_file('nuke_thread') as state:
             state[thread_id] = comments_removed
         self._send_text(result)
 
@@ -402,7 +396,7 @@ class SlackbotShell(cmd.Cmd):
         """Undo previous nuke thread
         Thread ID should be either the submission URL or the submission id"""
         thread_id = self._extract_real_thread_id(thread_id)
-        with StateFile('nuke_thread') as state:
+        with state_file('nuke_thread') as state:
             if thread_id not in state:
                 self._send_text(f"Could not find thread {thread_id}", is_error=True)
                 return
