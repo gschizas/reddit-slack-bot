@@ -410,7 +410,7 @@ class SlackbotShell(cmd.Cmd):
             for comment_id in removed_comments:
                 comment = self.reddit_session.comment(comment_id)
                 comment.mod.approve()
-            self._send_text(f"Nuking {len(removed_comments)} comments was undone}")
+            self._send_text(f"Nuking {len(removed_comments)} comments was undone")
 
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
