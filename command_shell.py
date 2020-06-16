@@ -365,7 +365,7 @@ class SlackbotShell(cmd.Cmd):
         post.comments.replace_more(limit=None)
         comments = post.comments.list()
         post.mod.remove()
-        comments_removed = 0
+        comments_removed = []
         comments_distinguished = 0
         comments_already_removed = 0
         for comment in comments:
@@ -376,13 +376,15 @@ class SlackbotShell(cmd.Cmd):
                 comments_already_removed += 1
                 continue
             comment.mod.remove()
-            comments_removed += 1
+            comments_removed.append(comment.id)
         post.mod.lock()
         result = (
-            f"{comments_removed} comments were removed.\n"
+            f"{len(comments_removed)} comments were removed.\n"
             f"{comments_distinguished} distinguished comments were kept.\n"
             f"{comments_already_removed} comments were already removed.\n"
             "Submission was locked")
+        with StateFile('nuke_thread') as state:
+            state[thread_id] = comments_removed
         self._send_text(result)
 
     @staticmethod
@@ -395,6 +397,20 @@ class SlackbotShell(cmd.Cmd):
             else:
                 thread_id = thread_id.split('/')[3]
         return thread_id
+
+    def do_undo_nuke_thread(self, thread_id):
+        """Undo previous nuke thread
+        Thread ID should be either the submission URL or the submission id"""
+        thread_id = self._extract_real_thread_id(thread_id)
+        with StateFile('nuke_thread') as state:
+            if thread_id not in state:
+                self._send_text(f"Could not find thread {thread_id}", is_error=True)
+                return
+            removed_comments = state.pop(thread_id)
+            for comment_id in removed_comments:
+                comment = self.reddit_session.comment(comment_id)
+                comment.mod.approve()
+            self._send_text(f"Nuking {len(removed_comments)} comments was undone}")
 
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
