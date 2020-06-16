@@ -46,7 +46,7 @@ class StateFile():
     def __enter__(self):
         return self.data
 
-    def __exit__(self):
+    def __exit__(self, type, value, traceback):
         log_name = os.environ.get('LOG_NAME', 'unknown')
         data_file = pathlib.Path(f'data/{self.filename}-{log_name}.yml')
         with data_file.open(mode='w', encoding='utf8') as y:
