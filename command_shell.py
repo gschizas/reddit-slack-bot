@@ -31,6 +31,28 @@ from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
 
+class StateFile():
+    def __init__(self, filename):
+        self.filename = filename
+        self.data = {}
+        log_name = os.environ.get('LOG_NAME', 'unknown')
+        self.data_file = pathlib.Path(f'data/{self.filename}-{log_name}.yml')
+        if self.data_file.exists():
+            with self.data_file.open(mode='r', encoding='utf8') as y:
+                self.data = dict(yaml.load(y))
+                if not self.data:
+                    self.data = {}
+
+    def __enter__(self):
+        return self.data
+
+    def __exit__(self):
+        log_name = os.environ.get('LOG_NAME', 'unknown')
+        data_file = pathlib.Path(f'data/{self.filename}-{log_name}.yml')
+        with data_file.open(mode='w', encoding='utf8') as y:
+            yaml.dump(self.data, y)
+
+
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
         super().__init__(self, stdout=io.StringIO(), **kwargs)
@@ -141,22 +163,12 @@ class SlackbotShell(cmd.Cmd):
     def do_weather(self, arg):
         """Display the weather in place"""
         place = arg.lower()
-        log_name = os.environ.get('LOG_NAME', 'unknown')
 
-        pref_cache = {}
-        cache_file = pathlib.Path(f'data/weather-{log_name}.yml')
-        if cache_file.exists():
-            with cache_file.open(mode='r', encoding='utf8') as y:
-                pref_cache = dict(yaml.load(y))
-                if not pref_cache:
-                    pref_cache = {}
-        if place:
-            pref_cache[self.user_id] = place
-        else:
-            place = pref_cache.get(self.user_id, '')
-
-        with cache_file.open(mode='w', encoding='utf8') as y:
-            yaml.dump(pref_cache, y)
+        with StateFile('weather') as pref_cache:
+            if place:
+                pref_cache[self.user_id] = place
+            else:
+                place = pref_cache.get(self.user_id, '')
 
         if place == 'macedonia' or place == 'makedonia':
             place = 'Thessaloniki'
