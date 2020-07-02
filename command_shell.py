@@ -14,7 +14,9 @@ import subprocess
 import tempfile
 import urllib.parse
 import zlib
+from contextlib import contextmanager
 
+import praw
 import prawcore
 import psycopg2
 import requests
@@ -24,9 +26,25 @@ from tabulate import tabulate
 
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
-    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT
+    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
+    WIKI_PAGE_BAD_FORMAT
 
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
+
+
+@contextmanager
+def state_file(path):
+    data = {}
+    log_name = os.environ.get('LOG_NAME', 'unknown')
+    data_file = pathlib.Path(f'data/{path}-{log_name}.yml')
+    if data_file.exists():
+        with data_file.open(mode='r', encoding='utf8') as y:
+            data = dict(yaml.load(y))
+            if not data:
+                data = {}
+    yield data
+    with data_file.open(mode='w', encoding='utf8') as y:
+        yaml.dump(data, y)
 
 
 class SlackbotShell(cmd.Cmd):
@@ -43,6 +61,7 @@ class SlackbotShell(cmd.Cmd):
         self.users = None
         self.logger = None
         self.reddit_session = None
+        self.bot_reddit_session = None
         self.subreddit_name = None
         self.archive_session = None
         self.users = {}
@@ -81,6 +100,11 @@ class SlackbotShell(cmd.Cmd):
         self._slack_team_info(team_id)
         self._slack_user_info(user_id)
         self._slack_channel_info(team_id, channel_id)
+
+    def precmd(self, line):
+        i, n = 0, len(line)
+        while i < n and line[i] in self.identchars: i += 1
+        return line[:i].lower() + line[i:]
 
     def postcmd(self, stop, line):
         self.stdout.flush()
@@ -133,22 +157,12 @@ class SlackbotShell(cmd.Cmd):
     def do_weather(self, arg):
         """Display the weather in place"""
         place = arg.lower()
-        log_name = os.environ.get('LOG_NAME', 'unknown')
 
-        pref_cache = {}
-        cache_file = pathlib.Path(f'data/weather-{log_name}.yml')
-        if cache_file.exists():
-            with cache_file.open(mode='r', encoding='utf8') as y:
-                pref_cache = dict(yaml.load(y))
-                if not pref_cache:
-                    pref_cache = {}
-        if place:
-            pref_cache[self.user_id] = place
-        else:
-            place = pref_cache.get(self.user_id, '')
-
-        with cache_file.open(mode='w', encoding='utf8') as y:
-            yaml.dump(pref_cache, y)
+        with state_file('weather') as pref_cache:
+            if place:
+                pref_cache[self.user_id] = place
+            else:
+                place = pref_cache.get(self.user_id, '')
 
         if place == 'macedonia' or place == 'makedonia':
             place = 'Thessaloniki'
@@ -239,7 +253,7 @@ class SlackbotShell(cmd.Cmd):
             text = ''
             fields = []
             for note in notes['ns']:
-                warning = warnings[note['w']]
+                warning = warnings[note['w']] or ''
                 when = datetime.datetime.fromtimestamp(note['t'])
                 note_text = note['n']
                 color = usernote_colors.get(warning, {'color': '#000000'})['color']
@@ -340,18 +354,12 @@ class SlackbotShell(cmd.Cmd):
     def do_nuke_thread(self, thread_id):
         """Nuke whole thread (except distinguished comments)
         Thread ID should be either the submission URL or the submission id"""
-        if '/' in thread_id:
-            if thread_id.startswith('http://') or thread_id.startswith('https://'):
-                thread_id = thread_id.split('/')[6]
-            elif thread_id.startswith('/'):
-                thread_id = thread_id.split('/')[4]
-            else:
-                thread_id = thread_id.split('/')[3]
+        thread_id = self._extract_real_thread_id(thread_id)
         post = self.reddit_session.submission(thread_id)
         post.comments.replace_more(limit=None)
         comments = post.comments.list()
         post.mod.remove()
-        comments_removed = 0
+        comments_removed = []
         comments_distinguished = 0
         comments_already_removed = 0
         for comment in comments:
@@ -362,14 +370,41 @@ class SlackbotShell(cmd.Cmd):
                 comments_already_removed += 1
                 continue
             comment.mod.remove()
-            comments_removed += 1
+            comments_removed.append(comment.id)
         post.mod.lock()
         result = (
-            f"{comments_removed} comments were removed.\n"
+            f"{len(comments_removed)} comments were removed.\n"
             f"{comments_distinguished} distinguished comments were kept.\n"
             f"{comments_already_removed} comments were already removed.\n"
             "Submission was locked")
+        with state_file('nuke_thread') as state:
+            state[thread_id] = comments_removed
         self._send_text(result)
+
+    @staticmethod
+    def _extract_real_thread_id(thread_id):
+        if '/' in thread_id:
+            if thread_id.startswith('http://') or thread_id.startswith('https://'):
+                thread_id = thread_id.split('/')[6]
+            elif thread_id.startswith('/'):
+                thread_id = thread_id.split('/')[4]
+            else:
+                thread_id = thread_id.split('/')[3]
+        return thread_id
+
+    def do_undo_nuke_thread(self, thread_id):
+        """Undo previous nuke thread
+        Thread ID should be either the submission URL or the submission id"""
+        thread_id = self._extract_real_thread_id(thread_id)
+        with state_file('nuke_thread') as state:
+            if thread_id not in state:
+                self._send_text(f"Could not find thread {thread_id}", is_error=True)
+                return
+            removed_comments = state.pop(thread_id)
+            for comment_id in removed_comments:
+                comment = self.reddit_session.comment(comment_id)
+                comment.mod.approve()
+            self._send_text(f"Nuking {len(removed_comments)} comments was undone")
 
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
@@ -403,8 +438,29 @@ class SlackbotShell(cmd.Cmd):
         times = 1
         bonus = 0
         args = arg.split()
-        if len(args) > 0:
-            dice_spec = re.match(r'^(?P<Times>\d{1,2})?d(?P<Sides>\d{1,2})(?:\+(?P<Bonus>\d))?$', args[0])
+        if len(args) >= 1 and args[0].lower() == 'statline':
+            min_roll = 1
+            if len(args) > 1 and args[1] == 'drop1':
+                min_roll = 2
+            ability_text = ""
+            for roll_line in range(6):
+                ability_line = []
+                for roll_dice in range(4):
+                    dice = random.randint(min_roll, 6)
+                    ability_line.append(dice)
+                ability_line_sorted = sorted(ability_line)[1:]
+                ability_text += (
+                    f"You rolled 4d6: {', '.join([str(a) for a in ability_line])}."
+                    f" Keeping {', '.join([str(a) for a in ability_line_sorted])},"
+                    f" for a sum of *{sum(ability_line_sorted)}*.\n")
+            self._send_text(ability_text)
+            return
+        elif len(args) >= 1 and args[0].lower() == 'magic8':
+            result = random.choice(MAGIC_8_BALL_OUTCOMES)
+            self._send_text(result)
+            return
+        elif len(args) > 0:
+            dice_spec = re.match(DICE_REGEX, arg.strip())
             if dice_spec:
                 if dice_spec.group('Times'):
                     times = int(dice_spec.group('Times'))
@@ -721,7 +777,7 @@ class SlackbotShell(cmd.Cmd):
             f"{too_old} comments were too old for the {timeframe} timeframe.\n"
         )
         if remove_submissions_as_well:
-            all_submissions = u.posts.new(limit=None)
+            all_submissions = u.submissions.new(limit=None)
             already_removed_submissions = 0
             removed_submissions = 0
             other_subreddit_submissions = 0
@@ -802,8 +858,17 @@ class SlackbotShell(cmd.Cmd):
             conn.close()
             if success:
                 text_to_send = f"Kudos from {sender_name} to {recipient_name}"
+                give_gift = random.random()
                 if reason.strip():
+                    if re.search(':\w+:', reason):
+                        reason = '. No cheating! Only I can send gifts!'
+                        give_gift = -1
                     text_to_send += ' ' + reason
+                GIFTS = 'balloon bear lollipop cake pancakes apple pineapple cherries grapes pizza popcorn rose tulip baby_chick beer doughnut cookie'.split()
+                if give_gift > 0.25:
+                    if not text_to_send.endswith('.'): text_to_send += '.'
+                    gift = random.choice(GIFTS)
+                    text_to_send += f" Have a :{gift}:"
                 self._send_text(text_to_send)
             else:
                 self._send_text("Kudos not recorded")
@@ -886,6 +951,7 @@ class SlackbotShell(cmd.Cmd):
             return
         environment = args[0].upper()
         mock_status = args[1].upper()
+        env_vars = mock_config['env_vars']
         valid_environments = [e.upper() for e in mock_config['environments']]
         if environment not in valid_environments:
             self._send_text((f"Invalid project `{environment}`. "
@@ -899,15 +965,22 @@ class SlackbotShell(cmd.Cmd):
 
         oc_token = mock_config['environments'][environment]['openshift_token']
         site = mock_config['site']
-        result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
+        login_command = ['oc', 'login', site, f'--token={oc_token}']
+        result_text = subprocess.check_output(login_command).decode() + '\n' * 3
         prefix = mock_config['prefix']
         self._send_text(f"Setting mock status to {mock_status} for project {environment}...")
-        result_text += subprocess.check_output(['oc', 'project', environment.lower()]).decode() + '\n' * 3
+        change_project_command = ['oc', 'project', environment.lower()]
+        result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
         statuses = mock_config['environments'][environment]['status'][mock_status]
-        for microservice, status in statuses.items():
-            status_text = 'SPRING_PROFILES_ACTIVE=' + status if status else 'SPRING_PROFILES_ACTIVE-'
-            result_text += subprocess.check_output(['oc', 'set', 'env', prefix + microservice, status_text]).decode() + '\n\n'
-        result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
+        for microservice_info, status in statuses.items():
+            if '$' not in microservice_info: microservice_info += '$'
+            microservice, env_var_shortcut = microservice_info.split('$')
+            env_var_name: str = env_vars[env_var_shortcut]
+            env_variable_value = f'{env_var_name}={status}' if status else f'{env_var_name}-'
+            environment_set_command = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
+            result_text += subprocess.check_output(environment_set_command).decode() + '\n\n'
+        logout_command = ['oc', 'logout']
+        result_text += subprocess.check_output(logout_command).decode() + '\n\n'
         result_text = re.sub('\n{2,}', '\n', result_text)
         self._send_text('```' + result_text + '```')
 
@@ -962,7 +1035,7 @@ class SlackbotShell(cmd.Cmd):
     def _diskfree():
         du = SlackbotShell._disk_usage_raw('/')
         du_text = SlackbotShell._disk_usage_human()
-        return SlackbotShell._progress_bar(du.used / du.total, 80) + '\n```\n' + du_text + '\n```\n'
+        return SlackbotShell._progress_bar(du.used / du.total, 48) + '\n```\n' + du_text + '\n```\n'
 
     if hasattr(os, 'statvfs'):  # POSIX
         @staticmethod
@@ -975,7 +1048,14 @@ class SlackbotShell(cmd.Cmd):
 
         @staticmethod
         def _disk_usage_human():
-            return subprocess.check_output(['df', '--total', '--type=ext2', '--type=ext3', '--type=ext4', '--human-readable']).decode()
+            disk_usage_command = [
+                'df',
+                '--total',
+                '--exclude-type=tmpfs',
+                '--exclude-type=devtmpfs',
+                '--exclude-type=squashfs',
+                '--human-readable']
+            return subprocess.check_output(disk_usage_command).decode()
 
     elif os.name == 'nt':  # Windows
         @staticmethod
@@ -991,8 +1071,8 @@ class SlackbotShell(cmd.Cmd):
 
         @staticmethod
         def _disk_usage_human():
-            return subprocess.check_output(['wmic', 'LogicalDisk', 'Where DriveType="3"', 'Get', 'DeviceID,FreeSpace,Size']).decode()
-
+            disk_usage_command = ['wmic', 'LogicalDisk', 'Where DriveType="3"', 'Get', 'DeviceID,FreeSpace,Size']
+            return subprocess.check_output(disk_usage_command).decode()
 
     @staticmethod
     def _progress_bar(percentage, size):
@@ -1000,3 +1080,85 @@ class SlackbotShell(cmd.Cmd):
         empty = math.floor(size * (1 - percentage))
         bar = '\u2588' * filled + '\u2591' * empty
         return bar
+
+    def do_comment_source(self, arg):
+        """Get comment source
+        Syntax:
+        comment_source comment_thing_id
+        comment_source comment_full_url"""
+        self.logger.debug(arg)
+        if '/' in arg:
+            comment_id = praw.models.Comment.id_from_url(arg)
+        else:
+            comment_id = arg
+
+        try:
+            comment = self.reddit_session.comment(comment_id)
+            comment._fetch()
+            self._send_file(comment.body.encode('unicode_escape'), filename=f'comment_{comment_id}.md')
+        except Exception as e:
+            self._send_text(repr(e), is_error=True)
+        pass
+
+    def do_deleted_comment_source(self, arg):
+        """\
+        Return comment source even if deleted. Use comment ids
+        Data comes from pushshift.io"""
+        ids = ','.join(arg.split())
+        comments = requests.get(
+            "http://api.pushshift.io/reddit/comment/search",
+            params={
+                'limit': 40,
+                'ids': ids,
+                'subreddit': self.subreddit_name}).json()
+        if not comments['data']:
+            self._send_text(f"No comments under those ids were found in r/{self.subreddit_name}")
+            return
+        comment_full_body = [comment['body'] for comment in comments['data']]
+        self._send_file(
+            file_data='\n'.join(comment_full_body).encode(),
+            filename=f'comment_body-{ids}.txt',
+            filetype='text/plain')
+
+    def do_make_post(self, arg):
+        """
+        Create or update a post as the common moderator user. It reads the provided wiki page and creates or updates
+        a post according to the included data.
+
+        Note that there's no need for a separate wiki page for each post, the wiki page can be reused
+        
+        Syntax:
+        make_post NEW wiki_page
+        make_post thread_id wiki_page
+        make_post thread_id wiki_page version_id"""
+        args = arg.split()
+        if len(args) == 2:
+            thread_id, wiki_page_name = args
+            revision_id = 'LATEST'
+        elif len(args) == 3:
+            thread_id, wiki_page_name, revision_id = args
+        else:
+            self._send_text(self.do_make_post.__doc__, is_error=True)
+            return
+
+        sr = self.bot_reddit_session.subreddit(self.subreddit_name)
+        wiki_page = sr.wiki[wiki_page_name]
+        wiki_text = wiki_page.content_md if revision_id == 'LATEST' else wiki_page.revision[revision_id].content_md
+        wiki_lines = wiki_text.splitlines()
+        if len(wiki_lines) < 2:
+            self._send_text(WIKI_PAGE_BAD_FORMAT, is_error=True)
+            return
+        if wiki_lines[0].startswith("# ") and wiki_lines[1] == '':
+            wiki_title = wiki_lines[0][2:]
+            wiki_text_body = '\n'.join(wiki_lines[2:])
+        else:
+            self._send_text(WIKI_PAGE_BAD_FORMAT, is_error=True)
+            return
+
+        if thread_id.upper() == 'NEW':
+            submission = sr.submit(wiki_title, wiki_text_body)
+            self._send_text(self.bot_reddit_session.config.reddit_url + submission.permalink)
+        else:
+            submission = self.bot_reddit_session.submission(thread_id)
+            submission.edit(wiki_text_body)
+            self._send_text(self.bot_reddit_session.config.reddit_url + submission.permalink)
