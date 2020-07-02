@@ -22,6 +22,8 @@ psycopg2 = {index = "home",version = "*"}
 soupsieve = "==1.9"
 tabulate = "*"
 xlsxwriter = "*"
+flask = "*"
+celery = "*"
 
 [dev-packages]
 
