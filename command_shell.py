@@ -678,7 +678,7 @@ class SlackbotShell(cmd.Cmd):
         the user then deletes their account).
         Only one argument, the username"""
         username, *rest_of_text = arg.split()
-        if username := self._extract_username(username) is None:
+        if (username := self._extract_username(username)) is None:
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
         user = self.reddit_session.redditor(username)
@@ -734,7 +734,7 @@ class SlackbotShell(cmd.Cmd):
         if timeframe not in CUTOFF_AGES:
             self._send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
             return
-        if username := self._extract_username(username) is None:
+        if (username := self._extract_username(username)) is None:
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
         u = self.reddit_session.redditor(username)
@@ -805,7 +805,7 @@ class SlackbotShell(cmd.Cmd):
     def _extract_username(username):
         if re.match('[a-zA-Z0-9_-]+', username):
             pass
-        elif m := re.match(r'<https://www.reddit.com/user/(?P<username>[a-zA-Z0-9_-]+)(?:\|\1)?>', username):
+        elif (m := re.match(r'<https://www.reddit.com/user/(?P<username>[a-zA-Z0-9_-]+)(?:\|\1)?>', username)):
             username = m.group('username')
         elif re.match(r'u/[a-zA-Z0-9_-]+', username):
             username = username.split('/')[-1]
