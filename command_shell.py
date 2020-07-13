@@ -801,7 +801,8 @@ class SlackbotShell(cmd.Cmd):
             )
         self._send_text(result)
 
-    def _extract_username(self, username):
+    @staticmethod
+    def _extract_username(username):
         if re.match('[a-zA-Z0-9_-]+', username):
             pass
         elif m := re.match(r'<https://www.reddit.com/user/(?P<username>[a-zA-Z0-9_-]+)(?:\|\1)?>', username):
