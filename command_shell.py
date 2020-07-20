@@ -982,7 +982,7 @@ class SlackbotShell(cmd.Cmd):
             if '$' not in microservice_info: microservice_info += '$'
             microservice, env_var_shortcut = microservice_info.split('$')
             env_var_name: str = env_vars[env_var_shortcut]
-            env_variable_value = f'{env_var_name}={status}' if status else f'{env_var_name}-'
+            env_variable_value = f'{env_var_name}={status}' if status is not None else f'{env_var_name}-'
             environment_set_command = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
             result_text += subprocess.check_output(environment_set_command).decode() + '\n\n'
         logout_command = ['oc', 'logout']
