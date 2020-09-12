@@ -171,6 +171,7 @@ class SlackbotShell(cmd.Cmd):
                 ('You need to first set a default location\n'
                  f'Try `{self.trigger_words[0]} weather LOCATION`'), is_error=True)
             return
+        place = place.replace("?", "")
         if place in ('brexit', 'pompeii'):
             title = 'the floor is lava'
             with open('img/lava.png', 'rb') as f:
