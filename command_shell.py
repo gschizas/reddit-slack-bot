@@ -155,7 +155,12 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}")
 
     def do_weather(self, arg):
-        """Display the weather in place"""
+        """Display the weather in any place.
+
+        Syntax: weather PLACE
+
+        if PLACE is skipped, the location from the last query is used.
+        """
         place = arg.lower()
 
         with state_file('weather') as pref_cache:
