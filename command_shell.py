@@ -1192,7 +1192,7 @@ class SlackbotShell(cmd.Cmd):
                                or search_country == c['ISO2'].lower()]
             country = found_countries[0]['Slug'] if len(found_countries) > 0 else None
         if not country:
-            self._send_text(f"Country '{arg} not found")
+            self._send_text(f"Country \"{arg}\" not found")
             return
 
         today = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
