@@ -1207,4 +1207,4 @@ class SlackbotShell(cmd.Cmd):
         diff_confirmed = result[-1]['Confirmed'] - result[-2]['Confirmed']
         report_date = datetime.datetime.fromisoformat(result[-1]['Date'].replace('Z', '+00:00'))
 
-        self._send_text(f"*Date*:{report_date:%h %m %Y}\n*New* Cases: {diff_confirmed}\n*Deaths*: {diff_deaths}")
+        self._send_text(f"*Date*:{report_date:%h %d %Y}\n*New* Cases: {diff_confirmed}\n*Deaths*: {diff_deaths}")
