@@ -1199,7 +1199,7 @@ class SlackbotShell(cmd.Cmd):
         day_before_yesterday = today - datetime.timedelta(2)
 
         result = requests.get(
-            f"https://api.covid19api.com/country/{country}", params={
+            f"https://api.covid19api.com/total/country/{country}", params={
                 "from": day_before_yesterday.isoformat(),
                 "to": today.isoformat()}).json()
 
