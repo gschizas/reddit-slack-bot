@@ -1154,9 +1154,7 @@ class SlackbotShell(cmd.Cmd):
             return
 
         sr = self.bot_reddit_session.subreddit(self.subreddit_name)
-        wiki_page = sr.wiki[wiki_page_name]
-        wiki_text = wiki_page.content_md if revision_id == 'LATEST' else wiki_page.revision[revision_id].content_md
-        wiki_lines = wiki_text.splitlines()
+        wiki_lines = self._get_wiki_text(sr, wiki_page_name, revision_id)
         if len(wiki_lines) < 2:
             self._send_text(WIKI_PAGE_BAD_FORMAT, is_error=True)
             return
@@ -1174,3 +1172,11 @@ class SlackbotShell(cmd.Cmd):
             submission = self.bot_reddit_session.submission(thread_id)
             submission.edit(wiki_text_body)
             self._send_text(self.bot_reddit_session.config.reddit_url + submission.permalink)
+
+    @staticmethod
+    def _get_wiki_text(sr, wiki_page_name, revision_id=None):
+        if revision_id is None: revision_id = 'LATEST'
+        wiki_page = sr.wiki[wiki_page_name]
+        wiki_text = wiki_page.content_md if revision_id == 'LATEST' else wiki_page.revision[revision_id].content_md
+        wiki_lines = wiki_text.splitlines()
+        return wiki_lines
