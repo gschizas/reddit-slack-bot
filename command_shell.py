@@ -1180,3 +1180,34 @@ class SlackbotShell(cmd.Cmd):
         wiki_text = wiki_page.content_md if revision_id == 'LATEST' else wiki_page.revision[revision_id].content_md
         wiki_lines = wiki_text.splitlines()
         return wiki_lines
+    def do_covid19(self, arg):
+        search_country = arg.lower()
+        country = None
+        with state_file('covid19_countries') as state:
+            if not state or 'countries' not in state:
+                state['countries'] = requests.get("https://api.covid19api.com/countries").json()
+            found_countries = [c for c in state['countries']
+                               if search_country == c['Country'].lower()
+                               or search_country == c['ISO2'].lower()]
+            country = found_countries[0]['Slug'] if len(found_countries) > 0 else None
+        if not country:
+            self._send_text(f"Country '{arg} not found")
+            return
+
+        today = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        day_before_yesterday = today - datetime.timedelta(2)
+
+        result = requests.get(
+            f"https://api.covid19api.com/country/{country}", params={
+                "from": day_before_yesterday.isoformat(),
+                "to": today.isoformat()}).json()
+
+        diff_deaths = result[-1]['Deaths'] - result[-2]['Deaths']
+        diff_confirmed = result[-1]['Confirmed'] - result[-2]['Confirmed']
+
+        self._send_fields([
+            {
+                'color': '#00FFFF',
+                'text': f"New Cases: {diff_confirmed}\nDeaths: {diff_deaths}"
+            }
+        ])
