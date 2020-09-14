@@ -1182,7 +1182,7 @@ class SlackbotShell(cmd.Cmd):
         return wiki_lines
     def do_covid19(self, arg):
         search_country = arg.lower()
-        if search_country == 'USA': search_country = 'US'
+        if search_country == 'usa': search_country = 'us'
         country = None
         with state_file('covid19_countries') as state:
             if not state or 'countries' not in state:
