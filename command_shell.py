@@ -1205,9 +1205,4 @@ class SlackbotShell(cmd.Cmd):
         diff_deaths = result[-1]['Deaths'] - result[-2]['Deaths']
         diff_confirmed = result[-1]['Confirmed'] - result[-2]['Confirmed']
 
-        self._send_fields([
-            {
-                'color': '#00FFFF',
-                'text': f"New Cases: {diff_confirmed}\nDeaths: {diff_deaths}"
-            }
-        ])
+        self._send_text(f"New Cases: {diff_confirmed}\nDeaths: {diff_deaths}")
