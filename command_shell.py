@@ -1210,7 +1210,8 @@ class SlackbotShell(cmd.Cmd):
 
         submission = self.bot_reddit_session.submission(thread_id)
         sticky_comments = [c for c in submission.comments.list() if
-                           c.stickied and c.author.name == self.bot_reddit_session.user.me().name]
+                           c.__dict__.get('stickied', False) and
+                           c.author.name == self.bot_reddit_session.user.me().name]
         if sticky_comments:
             sticky_comment = sticky_comments[0]
             sticky_comment.edit(wiki_text_body)
