@@ -1217,7 +1217,7 @@ class SlackbotShell(cmd.Cmd):
         else:
             sticky_comment = submission.reply(wiki_text_body)
             sticky_comment.mod.distinguish(how='yes', sticky=True)
-        
+
         self._send_text(self.bot_reddit_session.config.reddit_url + sticky_comment.permalink)
 
 
