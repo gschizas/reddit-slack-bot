@@ -1183,6 +1183,45 @@ class SlackbotShell(cmd.Cmd):
         wiki_text = wiki_page.content_md if revision_id == 'LATEST' else wiki_page.revision[revision_id].content_md
         wiki_lines = wiki_text.splitlines()
         return wiki_lines
+
+    def do_make_sticky(self, arg):
+        """
+        Create or update a sticky comment as the common moderator user. It reads the provided wiki page and creates or
+        updates the comment according to the included data.
+
+        Note that there's no need for a separate wiki page for each post, the wiki page can be reused
+
+        Syntax:
+        make_sticky thread_id wiki_page
+        make_sticky thread_id wiki_page version_id"""
+        args = arg.split()
+        if len(args) == 2:
+            thread_id, wiki_page_name = args
+            revision_id = 'LATEST'
+        elif len(args) == 3:
+            thread_id, wiki_page_name, revision_id = args
+        else:
+            self._send_text(self.do_make_sticky.__doc__, is_error=True)
+            return
+
+        sr = self.bot_reddit_session.subreddit(self.subreddit_name)
+        wiki_lines = self._get_wiki_text(sr, wiki_page_name, revision_id)
+        wiki_text_body = '\n'.join(wiki_lines)
+
+        submission = self.bot_reddit_session.submission(thread_id)
+        sticky_comments = [c for c in submission.comments.list() if
+                           c.stickied and c.author.name == self.bot_reddit_session.user.me().name]
+        if sticky_comments:
+            sticky_comment = sticky_comments[0]
+            sticky_comment.edit(wiki_text_body)
+        else:
+            sticky_comment = submission.reply(wiki_text_body)
+            sticky_comment.mod.distinguish(how='yes', sticky=True)
+        
+        self._send_text(self.bot_reddit_session.config.reddit_url + sticky_comment.permalink)
+
+
+
     def do_covid19(self, arg):
         search_country = arg.lower()
         if search_country == 'usa': search_country = 'us'
