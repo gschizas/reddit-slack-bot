@@ -78,6 +78,7 @@ def main():
 
     if not shell.bot_reddit_session:
         del SlackbotShell.do_make_post
+        del SlackbotShell.do_make_sticky
 
     if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ or 'QUESTIONNAIRE_FILE' not in os.environ:
         del SlackbotShell.do_survey
