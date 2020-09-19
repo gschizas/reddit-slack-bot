@@ -1177,6 +1177,9 @@ class SlackbotShell(cmd.Cmd):
     def _get_wiki_text(sr, wiki_page_name, revision_id=None):
         if revision_id is None: revision_id = 'LATEST'
         wiki_page = sr.wiki[wiki_page_name]
+        # If wiki page is not protected (i.e. "Only mods may edit and view"), protect it.
+        if wiki_page.mod.settings()['permlevel'] != 2:
+            wiki_page.mod.update(permlevel=2, listed=True)
         wiki_text = wiki_page.content_md if revision_id == 'LATEST' else wiki_page.revision[revision_id].content_md
         wiki_lines = wiki_text.splitlines()
         return wiki_lines
