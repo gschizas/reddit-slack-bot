@@ -321,10 +321,11 @@ class SlackbotShell(cmd.Cmd):
         self.logger.debug(arg)
         post = self.reddit_session.submission(url=arg[1:-1])
         post._fetch()
-        if 'media' not in post.__dict__:
+        media = getattr(post, 'media', None)
+        if not media:
             self._send_text('Not a YouTube post', is_error=True)
         try:
-            author_url = post.media['oembed']['author_url']
+            author_url = media['oembed']['author_url']
             self._send_text(author_url)
         except Exception as e:
             self._send_text(repr(e), is_error=True)
@@ -1209,8 +1210,8 @@ class SlackbotShell(cmd.Cmd):
         wiki_text_body = '\n'.join(wiki_lines)
 
         submission = self.bot_reddit_session.submission(thread_id)
-        sticky_comments = [c for c in submission.comments.list() if
-                           c.__dict__.get('stickied', False) and
+        sticky_comments = [c for c in submission.comments.list()
+                           if getattr(c, 'stickied', False) and
                            c.author.name == self.bot_reddit_session.user.me().name]
         if sticky_comments:
             sticky_comment = sticky_comments[0]
