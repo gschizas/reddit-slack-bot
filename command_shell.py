@@ -324,6 +324,7 @@ class SlackbotShell(cmd.Cmd):
         media = getattr(post, 'media', None)
         if not media:
             self._send_text('Not a YouTube post', is_error=True)
+            return
         try:
             author_url = media['oembed']['author_url']
             self._send_text(author_url)
