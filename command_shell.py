@@ -1226,6 +1226,12 @@ class SlackbotShell(cmd.Cmd):
 
 
     def do_covid19(self, arg):
+        """Display last available statistics for COVID-19 cases
+
+        Syntax:
+
+        covid19 GR
+        covid19 Greece"""
         search_country = arg.lower()
         if search_country == 'usa': search_country = 'us'
         country = None
