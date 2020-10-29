@@ -1259,3 +1259,5 @@ class SlackbotShell(cmd.Cmd):
         report_date = datetime.datetime.fromisoformat(result[-1]['Date'].replace('Z', '+00:00'))
 
         self._send_text(f"*Date*:{report_date:%h %d %Y}\n*New* Cases: {diff_confirmed}\n*Deaths*: {diff_deaths}")
+
+    do_covid = do_covid19
