@@ -1223,8 +1223,6 @@ class SlackbotShell(cmd.Cmd):
 
         self._send_text(self.bot_reddit_session.config.reddit_url + sticky_comment.permalink)
 
-
-
     def do_covid19(self, arg):
         """Display last available statistics for COVID-19 cases
 
