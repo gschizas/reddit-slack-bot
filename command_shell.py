@@ -1261,3 +1261,58 @@ class SlackbotShell(cmd.Cmd):
         self._send_text(f"*Date*:{report_date:%h %d %Y}\n*New* Cases: {diff_confirmed}\n*Deaths*: {diff_deaths}")
 
     do_covid = do_covid19
+
+    def do_allow_only_regulars(self, arg):
+        """Configure the enhanched crowd control
+
+        Syntax:
+        list: list all current threads
+        add THREAD_ID or URL: add a new thread to the monitored threads
+        remove THREAD_ID or URL: delete the thread from the monitored threads
+        """
+
+        subcommand: str = arg.split()[0].lower()
+        config_file = pathlib.Path(f'config/enhanced_crowd_control.yml')
+        if config_file.exists():
+            with config_file.open(mode='r', encoding='utf8') as y:
+                config = dict(yaml.load(y))
+        if not config:
+            config = {self.subreddit_name: {
+                'slack': {'channel': '#something', 'url': 'https://hooks.slack.com/services/TEAM_ID/CHANNEL_ID/KEY'}},
+                'threads': [{'action': 'remove', 'id': 'xxxxxx', 'last': None}]}
+        monitored_threads: list = config[self.subreddit_name]['threads']
+        if subcommand in ('list', 'show'):
+            text = ""
+            for thread_index, thread in enumerate(monitored_threads):
+                s = self.reddit_session.submission(thread['id'])
+                submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
+                text += (f"{1 + thread_index}. {self.reddit_session.config.reddit_url}{s.permalink}\t"
+                         f"(on {submission_date:%Y-%m-%d %H:%M:%S UTC})\n")
+            self._send_text(text)
+        elif subcommand == 'add':
+            thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
+            monitored_threads.append({'action': 'remove', 'id': thread_id, 'last': None})
+            self._send_text(f"Added {thread_id}")
+        elif subcommand in ('del', 'remove'):
+            thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
+            remove_me = None
+            if '/' not in thread_id and len(thread_id) < 2:
+                remove_me = int(thread_id) - 1
+                thread_id = monitored_threads[remove_me]['id']
+            else:
+                for thread_index, thread in enumerate(monitored_threads):
+                    if thread['id'] == thread_id:
+                        remove_me = thread_index
+                        break
+            if remove_me is not None:
+                monitored_threads.pop(remove_me)
+                self._send_text(f"Removed {thread_id}")
+            else:
+                self._send_text(f"{thread_id} not found")
+
+        with config_file.open(mode='w', encoding='utf8') as y:
+            yaml.dump(config, y)
+
+    do_order66 = do_allow_only_regulars
+    do_order_66 = do_allow_only_regulars
+    do_configure_enhanched_crowd_control = do_allow_only_regulars
