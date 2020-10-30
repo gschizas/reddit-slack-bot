@@ -1,10 +1,5 @@
 [[source]]
 name = "pypi"
-url = "https://pypi.org/simple"
-verify_ssl = true
-
-[[source]]
-name = "home"
 url = "https://nexus.terrasoft.gr/repository/pypi-all/simple"
 verify_ssl = true
 
@@ -15,10 +10,9 @@ slackclient = "==1.3.1"
 requests = "*"
 tqdm = "*"
 tweepy = "*"
-# ;{ref = "7ae8019cda4cbc3a16eeb8cc63c95f316290f109", git = "https://github.com/tweepy/tweepy"}
 "beautifulsoup4" = "*"
 colorlog = "*"
-psycopg2 = {index = "home",version = "*"}
+psycopg2 = "*"
 soupsieve = "==1.9"
 tabulate = "*"
 xlsxwriter = "*"
@@ -28,4 +22,4 @@ celery = "*"
 [dev-packages]
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"
