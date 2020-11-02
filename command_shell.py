@@ -1291,8 +1291,15 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(text)
         elif subcommand == 'add':
             thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
-            monitored_threads.append({'action': 'remove', 'id': thread_id, 'last': None})
-            self._send_text(f"Added {thread_id}")
+            found = False
+            for x in monitored_threads:
+                if x['id'] == thread_id:
+                    found = True
+            if found:
+                self._send_text(f"Ignoring addition request, {thread_id} has already been added", is_error=True)
+            else:
+                monitored_threads.append({'action': 'remove', 'id': thread_id, 'last': None})
+                self._send_text(f"Added {thread_id}")
         elif subcommand in ('del', 'remove'):
             thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
             remove_me = None
