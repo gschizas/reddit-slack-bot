@@ -1266,9 +1266,9 @@ class SlackbotShell(cmd.Cmd):
         """Configure the enhanched crowd control
 
         Syntax:
-        list: list all current threads
+        list/show: list all current threads
         add THREAD_ID or URL: add a new thread to the monitored threads
-        remove THREAD_ID or URL: delete the thread from the monitored threads
+        del/remove THREAD_ID or URL: delete the thread from the monitored threads
         """
 
         subcommand: str = arg.split()[0].lower()
