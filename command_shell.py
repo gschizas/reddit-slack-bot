@@ -1285,6 +1285,7 @@ class SlackbotShell(cmd.Cmd):
             text = ""
             for thread_index, thread in enumerate(monitored_threads):
                 s = self.reddit_session.submission(thread['id'])
+                s.comment_limit = 0
                 submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
                 text += (f"{1 + thread_index}. {self.reddit_session.config.reddit_url}{s.permalink}\t"
                          f"(on {submission_date:%Y-%m-%d %H:%M:%S UTC})\n")
