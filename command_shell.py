@@ -1316,6 +1316,8 @@ class SlackbotShell(cmd.Cmd):
                 self._send_text(f"Removed {thread_id}")
             else:
                 self._send_text(f"{thread_id} not found")
+        else:
+            self._send_text(f"I can only understand add, del/remove and list/show")
 
         with config_file.open(mode='w', encoding='utf8') as y:
             yaml.dump(config, y)
