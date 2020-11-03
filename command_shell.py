@@ -1295,8 +1295,14 @@ class SlackbotShell(cmd.Cmd):
                     permalink = s.permalink
                     thread['date'] = submission_date
                     thread['permalink'] = permalink
+                from_date = thread.get('from_date')
+                to_date = thread.get('to_date')
+                from_date_text = from_date.isoformat() if from_date else "-\u221e"
+                to_date_text = to_date.isoformat() if to_date else "+\u221e"
                 text += (f"{1 + thread_index}. {self.reddit_session.config.reddit_url}{permalink}\t"
-                         f"(on {submission_date:%Y-%m-%d %H:%M:%S UTC})\n")
+                         f"(on {submission_date:%Y-%m-%d %H:%M:%S UTC}) "
+                         f"(monitoring {from_date_text} \u2014 {to_date_text}")
+                text += "\n"
             self._send_text(text)
         elif subcommand == 'add':
             thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
