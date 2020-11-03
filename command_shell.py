@@ -1284,15 +1284,18 @@ class SlackbotShell(cmd.Cmd):
         if subcommand in ('list', 'show'):
             text = ""
             for thread_index, thread in enumerate(monitored_threads):
-                if 'date' in thread:
+                if 'date' in thread and 'permalink' in thread:
                     submission_date = thread['date']
+                    permalink = thread['permalink']
                 else:
                     s = self.reddit_session.submission(thread['id'])
                     s.comment_limit = 0
                     s._fetch()
                     submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
+                    permalink = s.permalink
                     thread['date'] = submission_date
-                text += (f"{1 + thread_index}. {self.reddit_session.config.reddit_url}{s.permalink}\t"
+                    thread['permalink'] = permalink
+                text += (f"{1 + thread_index}. {self.reddit_session.config.reddit_url}{permalink}\t"
                          f"(on {submission_date:%Y-%m-%d %H:%M:%S UTC})\n")
             self._send_text(text)
         elif subcommand == 'add':
@@ -1305,7 +1308,13 @@ class SlackbotShell(cmd.Cmd):
                 s.comment_limit = 0
                 s._fetch()
                 submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
-                monitored_threads.append({'action': 'remove', 'id': thread_id, 'last': None, 'date': submission_date})
+                permalink = s.permalink
+                monitored_threads.append({
+                    'action': 'remove',
+                    'id': thread_id,
+                    'last': None,
+                    'date': submission_date,
+                    'permalink': permalink})
                 self._send_text(f"Added {thread_id}")
         elif subcommand in ('del', 'remove'):
             thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
