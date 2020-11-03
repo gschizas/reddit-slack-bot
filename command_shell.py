@@ -1337,7 +1337,7 @@ class SlackbotShell(cmd.Cmd):
                 monitored_threads.pop(remove_me)
                 self._send_text(f"Removed {thread_id}")
             else:
-                self._send_text(f"{thread_id} not found")
+                self._send_text(f"{thread_id} not found", is_error=True)
         else:
             self._send_text(f"I can only understand add, del/remove and list/show")
 
