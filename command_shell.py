@@ -1284,9 +1284,14 @@ class SlackbotShell(cmd.Cmd):
         if subcommand in ('list', 'show'):
             text = ""
             for thread_index, thread in enumerate(monitored_threads):
-                s = self.reddit_session.submission(thread['id'])
-                s.comment_limit = 0
-                submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
+                if 'date' in thread:
+                    submission_date = thread['date']
+                else:
+                    s = self.reddit_session.submission(thread['id'])
+                    s.comment_limit = 0
+                    s._fetch()
+                    submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
+                    thread['date'] = submission_date
                 text += (f"{1 + thread_index}. {self.reddit_session.config.reddit_url}{s.permalink}\t"
                          f"(on {submission_date:%Y-%m-%d %H:%M:%S UTC})\n")
             self._send_text(text)
@@ -1296,7 +1301,11 @@ class SlackbotShell(cmd.Cmd):
             if found:
                 self._send_text(f"Ignoring addition request, {thread_id} has already been added", is_error=True)
             else:
-                monitored_threads.append({'action': 'remove', 'id': thread_id, 'last': None})
+                s = self.reddit_session.submission(thread_id)
+                s.comment_limit = 0
+                s._fetch()
+                submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
+                monitored_threads.append({'action': 'remove', 'id': thread_id, 'last': None, 'date': submission_date})
                 self._send_text(f"Added {thread_id}")
         elif subcommand in ('del', 'remove'):
             thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
