@@ -165,7 +165,11 @@ def handle_message(msg):
                 error_text = f"```\n:::Error:::\n{exception_full_text}```\n"
             else:
                 error_text = f"```\n:::Error:::\n{e}```\n"
-            shell._send_text(error_text, is_error=True)
+            try:
+                shell._send_text(error_text, is_error=True)
+            except Exception as e:
+                logger.critical('Could not send exception error: ' + error_text)
+
 
 
 if __name__ == '__main__':
