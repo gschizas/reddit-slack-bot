@@ -76,6 +76,10 @@ def main():
         del SlackbotShell.do_history
         del SlackbotShell.do_comment_source
         del SlackbotShell.do_deleted_comment_source
+        del SlackbotShell.do_allow_only_regulars
+        del SlackbotShell.do_order_66
+        del SlackbotShell.do_order66
+        del SlackbotShell.do_configure_enhanched_crowd_control
 
     if not shell.bot_reddit_session:
         del SlackbotShell.do_make_post
