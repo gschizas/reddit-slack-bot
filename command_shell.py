@@ -1341,3 +1341,14 @@ class SlackbotShell(cmd.Cmd):
     do_order66 = do_allow_only_regulars
     do_order_66 = do_allow_only_regulars
     do_configure_enhanched_crowd_control = do_allow_only_regulars
+
+    def do_urban_dictionary(self, arg):
+        """Search in urban dictionary for the first definition of the word or phrase"""
+        definition_page = requests.get('http://api.urbandictionary.com/v0/define', params={'term': arg})
+        definition_answer = definition_page.json()
+        if len(definition_answer) > 0:
+            self._send_text(definition_answer['list'][0]['definition'])
+        else:
+            self._send_text(f"Could not find anything for {arg}", is_error=True)
+
+    do_ud = do_urban_dictionary
