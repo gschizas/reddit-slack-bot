@@ -1247,11 +1247,11 @@ class SlackbotShell(cmd.Cmd):
             return
 
         today = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        day_before_yesterday = today - datetime.timedelta(2)
+        start_day = today - datetime.timedelta(5)
 
         result = requests.get(
             f"https://api.covid19api.com/total/country/{country}", params={
-                "from": day_before_yesterday.isoformat(),
+                "from": start_day.isoformat(),
                 "to": today.isoformat()}).json()
 
         diff_deaths = result[-1]['Deaths'] - result[-2]['Deaths']
