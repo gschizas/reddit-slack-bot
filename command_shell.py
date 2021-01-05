@@ -24,6 +24,7 @@ import xlsxwriter
 from requests.adapters import HTTPAdapter
 from tabulate import tabulate
 
+from bot_framework.common import CaseInsensitiveDict
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
     SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
@@ -243,15 +244,11 @@ class SlackbotShell(cmd.Cmd):
         tb_notes = self.sr.wiki['usernotes']
         tb_notes_1 = json.loads(tb_notes.content_md)
         warnings = tb_notes_1['constants']['warnings']
-        tb_notes_2 = json.loads(zlib.decompress(base64.b64decode(tb_notes_1['blob'])).decode())
+        tb_notes_2 = CaseInsensitiveDict(json.loads(zlib.decompress(base64.b64decode(tb_notes_1['blob'])).decode()))
         tb_config = json.loads(self.sr.wiki['toolbox'].content_md)
         usernote_colors = {c['key']: c for c in tb_config['usernoteColors']}
-        redditor = self.reddit_session.redditor(redditor_username)
         try:
-            redditor._fetch()
-            redditor_username = redditor.name  # fix capitalization
-            notes = tb_notes_2.get(redditor_username)
-            text = ''
+            notes = tb_notes_2.get(redditor_username.lower())
             if notes is None:
                 self._send_text(f"user {redditor_username} doesn't have any user notes")
                 return
