@@ -182,7 +182,7 @@ class SlackbotShell(cmd.Cmd):
             with open('img/lava.png', 'rb') as f:
                 file_data = f.read()
         else:
-            weather = requests.get('http://wttr.in/' + place + '_p0.png')
+            weather = requests.get('http://wttr.in/' + place + '_p0.png?m')
             file_data = weather.content
             title = arg
         self._send_file(file_data, title=title, filetype='png')
