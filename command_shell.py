@@ -238,6 +238,9 @@ class SlackbotShell(cmd.Cmd):
         if len(args) not in (1, 2):
             self._send_text(f"Incorrect number of arguments. Either username or username short|long", is_error=True)
         redditor_username = args[0]
+        if (redditor_username := self._extract_username(redditor_username)) is None:
+            self._send_text(f'{redditor_username} is not a valid username', is_error=True)
+            return
         verbose = args[1] if len(args) == 2 else ''
         if verbose.lower() not in ('short', 'long'):
             verbose = ''
