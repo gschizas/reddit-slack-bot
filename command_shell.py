@@ -255,6 +255,8 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"user {redditor_username} doesn't have any user notes")
             return
 
+        mod_names = tb_notes_1['constants']['users']
+
         text = f'Usernotes for user {redditor_username}'
         fields = []
         for note in notes['ns']:
@@ -275,7 +277,7 @@ class SlackbotShell(cmd.Cmd):
                         f'{link_parts[1]}/-/{link_parts[2]}')
             else:
                 link_href = note['l']
-            mod_name = tb_notes_1['constants']['users'][note['m']]
+            mod_name = mod_names[note['m']]
             if verbose == 'short':
                 fields.append({
                     'color': color,
