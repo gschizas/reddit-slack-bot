@@ -250,57 +250,54 @@ class SlackbotShell(cmd.Cmd):
         tb_notes_2 = CaseInsensitiveDict(json.loads(zlib.decompress(base64.b64decode(tb_notes_1['blob'])).decode()))
         tb_config = json.loads(self.sr.wiki['toolbox'].content_md)
         usernote_colors = {c['key']: c for c in tb_config['usernoteColors']}
-        try:
-            notes = tb_notes_2.get(redditor_username.lower())
-            if notes is None:
-                self._send_text(f"user {redditor_username} doesn't have any user notes")
-                return
+        notes = tb_notes_2.get(redditor_username.lower())
+        if notes is None:
+            self._send_text(f"user {redditor_username} doesn't have any user notes")
+            return
 
-            text = ''
-            fields = []
-            for note in notes['ns']:
-                warning = warnings[note['w']] or ''
-                when = datetime.datetime.fromtimestamp(note['t'])
-                note_text = note['n']
-                color = usernote_colors.get(warning, {'color': '#000000'})['color']
-                warning_text = usernote_colors.get(warning, {'text': '?' + warning})['text']
-                # breakpoint()
-                link_parts = note['l'].split(',')
-                link_href = '???'
-                if link_parts[0] == 'l':
-                    if len(link_parts) == 2:
-                        link_href = f'{self.reddit_session.config.reddit_url}/r/{self.sr.display_name}/comments/{link_parts[1]}'
-                    elif len(link_parts) == 3:
-                        link_href = (
-                            f'{self.reddit_session.config.reddit_url}/r/{self.sr.display_name}/comments/'
-                            f'{link_parts[1]}/-/{link_parts[2]}')
-                else:
-                    link_href = note['l']
-                mod_name = tb_notes_1['constants']['users'][note['m']]
-                if verbose == 'short':
-                    fields.append({
-                        'color': color,
-                        'text': f"<!date^{int(when.timestamp())}^{{date_short}}|{when.isoformat()}>: {note_text}\n"
-                    })
-                elif verbose == 'long':
-                    fields.append({
-                        'color': color,
-                        'text': (f"{warning_text} at <!date^{int(when.timestamp())}"
-                                 f"^{{date_short}} {{time}}|{when.isoformat()}>:"
-                                 f"`{note_text}` for <{link_href}> by {mod_name}\n")
-                    })
-                else:
-                    fields.append({
-                        'color': color,
-                        'text': (
-                            f"{warning_text} at <!date^{int(when.timestamp())}^{{date_short}} {{time}}|"
-                            f"{when.isoformat()}>: `{note_text}`\n")
-                    })
-            self._send_fields(text, fields)
-            return
-        except prawcore.exceptions.NotFound:
-            self._send_text(f"user {redditor_username} not found")
-            return
+        text = f'Usernotes for user {redditor_username}'
+        fields = []
+        for note in notes['ns']:
+            warning = warnings[note['w']] or ''
+            when = datetime.datetime.fromtimestamp(note['t'])
+            note_text = note['n']
+            color = usernote_colors.get(warning, {'color': '#000000'})['color']
+            warning_text = usernote_colors.get(warning, {'text': '?' + warning})['text']
+            # breakpoint()
+            link_parts = note['l'].split(',')
+            link_href = '???'
+            if link_parts[0] == 'l':
+                if len(link_parts) == 2:
+                    link_href = f'{self.reddit_session.config.reddit_url}/r/{self.sr.display_name}/comments/{link_parts[1]}'
+                elif len(link_parts) == 3:
+                    link_href = (
+                        f'{self.reddit_session.config.reddit_url}/r/{self.sr.display_name}/comments/'
+                        f'{link_parts[1]}/-/{link_parts[2]}')
+            else:
+                link_href = note['l']
+            mod_name = tb_notes_1['constants']['users'][note['m']]
+            if verbose == 'short':
+                fields.append({
+                    'color': color,
+                    'text': f"<!date^{int(when.timestamp())}^{{date_short}}|{when.isoformat()}>: {note_text}\n"
+                })
+            elif verbose == 'long':
+                fields.append({
+                    'color': color,
+                    'text': (f"{warning_text} at <!date^{int(when.timestamp())}"
+                             f"^{{date_short}} {{time}}|{when.isoformat()}>:"
+                             f"`{note_text}` for <{link_href}> by {mod_name}\n")
+                })
+            else:
+                fields.append({
+                    'color': color,
+                    'text': (
+                        f"{warning_text} at <!date^{int(when.timestamp())}^{{date_short}} {{time}}|"
+                        f"{when.isoformat()}>: `{note_text}`\n")
+                })
+        self._send_fields(text, fields)
+        return
+
 
     def do_modqueue_posts(self, arg):
         """Display posts from the modqueue"""
