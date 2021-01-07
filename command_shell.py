@@ -257,6 +257,10 @@ class SlackbotShell(cmd.Cmd):
 
         mod_names = tb_notes_1['constants']['users']
 
+        self._send_usernote(redditor_username, notes, warnings, usernote_colors, mod_names, verbose)
+        return
+
+    def _send_usernote(self, redditor_username, notes, warnings, usernote_colors, mod_names, verbose):
         text = f'Usernotes for user {redditor_username}'
         fields = []
         for note in notes['ns']:
@@ -298,8 +302,6 @@ class SlackbotShell(cmd.Cmd):
                         f"{when.isoformat()}>: `{note_text}`\n")
                 })
         self._send_fields(text, fields)
-        return
-
 
     def do_modqueue_posts(self, arg):
         """Display posts from the modqueue"""
