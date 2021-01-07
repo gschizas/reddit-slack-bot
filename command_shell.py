@@ -22,9 +22,9 @@ import psycopg2
 import requests
 import xlsxwriter
 from requests.adapters import HTTPAdapter
+from requests.structures import CaseInsensitiveDict
 from tabulate import tabulate
 
-from bot_framework.common import CaseInsensitiveDict
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
     SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
@@ -1249,7 +1249,7 @@ class SlackbotShell(cmd.Cmd):
         result = requests.get(
             f"https://api.covid19api.com/total/country/{country}", params={
                 "from": start_day.isoformat(),
-                "to": today.isoformat()}).json()
+                "to": today.isoformat()}, verify=False).json()
 
         diff_deaths = result[-1]['Deaths'] - result[-2]['Deaths']
         diff_confirmed = result[-1]['Confirmed'] - result[-2]['Confirmed']
