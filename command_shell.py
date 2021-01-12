@@ -1021,9 +1021,26 @@ class SlackbotShell(cmd.Cmd):
         first_status = list(mock_config['environments'][environment]['status'].keys())[0]
         microservices = list(mock_config['environments'][environment]['status'][first_status].keys())
         for microservice in microservices:
-            result_text += subprocess.check_output(['oc', 'env', prefix + microservice, '--list']).decode() + '\n\n'
+            env_var_list = subprocess.check_output(['oc', 'env', prefix + microservice, '--list']).decode()
+            env_var_list = self._masked_oc_password(env_var_list)
+            result_text += env_var_list + '\n\n'
         result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
         self._send_file(result_text, title='OpenShift Data', filename='openshift-data.txt')
+
+    @staticmethod
+    def _masked_oc_password(variable_list):
+        variables = variable_list.splitlines()
+        result = ""
+        for full_variable in variables:
+            if full_variable.startswith('#') or full_variable == '':
+                result += full_variable + '\n'
+            else:
+                variable_name, variable_value = full_variable.split('=', 1)
+                if 'password' in variable_name.lower() or 'auth_header_value' in variable_name.lower():
+                    result += variable_name + '=' + variable_value[:2] + '*********' + variable_value[-2:]
+                else:
+                    result += full_variable + '\n'
+        return result
 
     def _slack_user_info(self, user_id):
         if user_id not in self.users:
