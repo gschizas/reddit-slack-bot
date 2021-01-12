@@ -1018,8 +1018,9 @@ class SlackbotShell(cmd.Cmd):
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
         prefix = mock_config['prefix']
         result_text += subprocess.check_output(['oc', 'project', environment.lower()]).decode() + '\n' * 3
-        mock_status = list(mock_config['microservices'].keys())[0]
-        for microservice, status in mock_config['microservices'][mock_status].items():
+        first_status = list(mock_config['environments'][environment]['status'].keys())[0]
+        microservices = list(mock_config['environments'][environment]['status'][first_status].keys())
+        for microservice in microservices:
             result_text += subprocess.check_output(['oc', 'env', prefix + microservice, '--list']).decode() + '\n\n'
         result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
         self._send_file(result_text, title='OpenShift Data', filename='openshift-data.txt')
