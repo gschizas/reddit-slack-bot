@@ -1005,9 +1005,15 @@ class SlackbotShell(cmd.Cmd):
         """View current status of environment"""
         args = arg.split()
         mock_config = self._mock_config()
+        environment = args[0].upper()
+        valid_environments = [e.upper() for e in mock_config['environments']]
+        if environment not in valid_environments:
+            self._send_text((f"Invalid project `{environment}`. "
+                             f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
+            return
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have permission to view mock status.", is_error=True)
-        oc_token = mock_config['openshift_token']
+        oc_token = mock_config['environments'][environment]['openshift_token']
         site = mock_config['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
         project = mock_config['project']
