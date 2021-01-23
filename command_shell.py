@@ -64,6 +64,7 @@ class SlackbotShell(cmd.Cmd):
         self.sc = None
         self.users = None
         self.logger = None
+        self.message = None
         self.reddit_session = None
         self.bot_reddit_session = None
         self.subreddit_name = None
