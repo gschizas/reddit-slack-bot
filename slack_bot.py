@@ -8,7 +8,7 @@ import traceback
 
 import slackclient
 
-from bot_framework.common import setup_logging, normalize_text
+from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
 from bot_framework.yaml_wrapper import yaml
 from command_shell import SlackbotShell
