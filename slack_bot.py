@@ -13,7 +13,7 @@ from bot_framework.praw_wrapper import praw_wrapper
 from bot_framework.yaml_wrapper import yaml
 from command_shell import SlackbotShell
 
-shell = None
+shell: SlackbotShell = None
 logger = None
 
 
