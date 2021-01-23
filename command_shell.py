@@ -130,30 +130,32 @@ class SlackbotShell(cmd.Cmd):
             first_word = typed_text[0]
             text = ' '.join(replaced_words) + ' ' + ' '.join(text.split()[1:])
         if any([first_word == trigger_word for trigger_word in self.trigger_words]):
-            self.logger.debug(f"Triggerred by {text}")
-            line = ' '.join(text.split()[1:])
-            self.channel_id = channel_id
-            self.team_id = team_id
-            self.message = msg
-            self.user_id = user_id
-            self.permalink = permalink
-            try:
-                line = self.precmd(line)
-                stop = self.onecmd(line)
-                stop = self.postcmd(stop, line)
-                if stop:
-                    sys.exit()
-            except Exception as e:
-                if 'DEBUG' in os.environ:
-                    exception_full_text = ''.join(traceback.format_exception(*sys.exc_info()))
-                    error_text = f"```\n:::Error:::\n{exception_full_text}```\n"
-                else:
-                    error_text = f"```\n:::Error:::\n{e}```\n"
-                try:
-                    self._send_text(error_text, is_error=True)
-                except Exception as e:
-                    self.logger.critical('Could not send exception error: ' + error_text)
+            self.act_on_message(msg, permalink, team_id, channel_id, user_id, text)
 
+    def act_on_message(self, msg, permalink, team_id, channel_id, user_id, text):
+        self.logger.debug(f"Triggerred by {text}")
+        line = ' '.join(text.split()[1:])
+        self.channel_id = channel_id
+        self.team_id = team_id
+        self.message = msg
+        self.user_id = user_id
+        self.permalink = permalink
+        try:
+            line = self.precmd(line)
+            stop = self.onecmd(line)
+            stop = self.postcmd(stop, line)
+            if stop:
+                sys.exit()
+        except Exception as e:
+            if 'DEBUG' in os.environ:
+                exception_full_text = ''.join(traceback.format_exception(*sys.exc_info()))
+                error_text = f"```\n:::Error:::\n{exception_full_text}```\n"
+            else:
+                error_text = f"```\n:::Error:::\n{e}```\n"
+            try:
+                self._send_text(error_text, is_error=True)
+            except Exception as e:
+                self.logger.critical('Could not send exception error: ' + error_text)
 
     def preload(self, user_id, team_id, channel_id):
         self._slack_team_info(team_id)
