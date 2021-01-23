@@ -39,15 +39,17 @@ def init():
 def excepthook(type_, value, tb):
     global shell
     global logger
+    # noinspection PyBroadException
     try:
         logger.fatal(type_, value, tb, exc_info=True)
         if shell:
+            # noinspection PyBroadException
             try:
                 error_text = f"```\n:::Error:::\n{value!r}```\n"
             except Exception:
                 error_text = "???"
             shell._send_text(error_text, is_error=True)
-    except:
+    except Exception:
         sys.__excepthook__(type_, value, tb)
 
 
