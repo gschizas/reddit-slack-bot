@@ -26,11 +26,11 @@ def init():
     shell.logger = logger
     if shell.subreddit_name:
         base_user_agent = 'python:gr.terrasoft.reddit.slackmodbot'
-        user_agent = f'{base_user_agent}-{shell.subreddit_name}:v0.1 (by /u/gschizas)'
+        user_agent = f'{base_user_agent}-{shell.subreddit_name}:v0.2 (by /u/gschizas)'
         shell.reddit_session = praw_wrapper(user_agent=user_agent, scopes=['*'])
         if 'REDDIT_ALT_USER' in os.environ:
             alt_user = os.environ['REDDIT_ALT_USER']
-            alt_user_agent = f'{base_user_agent}-{shell.subreddit_name}-as-{alt_user}:v0.1 (by /u/gschizas)'
+            alt_user_agent = f'{base_user_agent}-{shell.subreddit_name}-as-{alt_user}:v0.2 (by /u/gschizas)'
             shell.bot_reddit_session = praw_wrapper(user_agent=alt_user_agent,
                                                     prompt=f'Visit the following URL as {alt_user}:',
                                                     scopes=['*'])
