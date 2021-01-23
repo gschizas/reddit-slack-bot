@@ -11,7 +11,9 @@ import pathlib
 import random
 import re
 import subprocess
+import sys
 import tempfile
+import traceback
 import urllib.parse
 import zlib
 from contextlib import contextmanager
@@ -25,6 +27,7 @@ from requests.adapters import HTTPAdapter
 from requests.structures import CaseInsensitiveDict
 from tabulate import tabulate
 
+from bot_framework.common import normalize_text
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
     SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
@@ -96,6 +99,61 @@ class SlackbotShell(cmd.Cmd):
                          text=text,
                          username=self.trigger_words[0],
                          attachments=fields)
+
+    def handle_message(self, msg):
+        if msg['type'] != 'message':
+            self.logger.debug(f"Found message of type {msg['type']}")
+            return
+        if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message', 'slackbot_response'):
+            self.logger.debug(f"Found message of subtype {msg.get('subtype')}")
+            return
+        if 'message' in msg:
+            msg.update(msg['message'])
+            del msg['message']
+
+        channel_id = msg['channel']
+        team_id = msg.get('team', '')
+        user_id = msg.get('user', '')
+
+        permalink = self.sc.api_call('chat.getPermalink', channel=channel_id, message_ts=msg['ts'])
+        self.preload(user_id, team_id, channel_id)
+
+        text = msg['text']
+
+        typed_text = normalize_text(text).strip().lower().split()
+        if not typed_text:
+            return
+        first_word = typed_text[0]
+        if first_word in self.shortcut_words:
+            replaced_words = self.shortcut_words[first_word]
+            typed_text = replaced_words + typed_text[1:]
+            first_word = typed_text[0]
+            text = ' '.join(replaced_words) + ' ' + ' '.join(text.split()[1:])
+        if any([first_word == trigger_word for trigger_word in self.trigger_words]):
+            self.logger.debug(f"Triggerred by {text}")
+            line = ' '.join(text.split()[1:])
+            self.channel_id = channel_id
+            self.team_id = team_id
+            self.message = msg
+            self.user_id = user_id
+            self.permalink = permalink
+            try:
+                line = self.precmd(line)
+                stop = self.onecmd(line)
+                stop = self.postcmd(stop, line)
+                if stop:
+                    sys.exit()
+            except Exception as e:
+                if 'DEBUG' in os.environ:
+                    exception_full_text = ''.join(traceback.format_exception(*sys.exc_info()))
+                    error_text = f"```\n:::Error:::\n{exception_full_text}```\n"
+                else:
+                    error_text = f"```\n:::Error:::\n{e}```\n"
+                try:
+                    self._send_text(error_text, is_error=True)
+                except Exception as e:
+                    self.logger.critical('Could not send exception error: ' + error_text)
+
 
     def preload(self, user_id, team_id, channel_id):
         self._slack_team_info(team_id)
@@ -1382,3 +1440,5 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f"Could not find anything for {arg}", is_error=True)
 
     do_ud = do_urban_dictionary
+
+

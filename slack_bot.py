@@ -111,7 +111,7 @@ def main():
     while True:
         try:
             for msg in shell.sc.rtm_read():
-                handle_message(msg)
+                shell.handle_message(msg)
             time.sleep(0.5)
         except Exception as ex:  # slackclient.server.SlackConnectionResetError as ex:
             tb = sys.exc_info()[2]
@@ -121,63 +121,6 @@ def main():
             else:
                 logger.critical("Connection failed. Waiting 5 seconds")
                 time.sleep(5)
-
-
-def handle_message(msg):
-    global shell, logger
-    if msg['type'] != 'message':
-        logger.debug(f"Found message of type {msg['type']}")
-        return
-    if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message', 'slackbot_response'):
-        logger.debug(f"Found message of subtype {msg.get('subtype')}")
-        return
-    if 'message' in msg:
-        msg.update(msg['message'])
-        del msg['message']
-
-    channel_id = msg['channel']
-    team_id = msg.get('team', '')
-    user_id = msg.get('user', '')
-
-    permalink = shell.sc.api_call('chat.getPermalink', channel=channel_id, message_ts=msg['ts'])
-    shell.preload(user_id, team_id, channel_id)
-
-    text = msg['text']
-
-    typed_text = normalize_text(text).strip().lower().split()
-    if not typed_text:
-        return
-    first_word = typed_text[0]
-    if first_word in shell.shortcut_words:
-        replaced_words = shell.shortcut_words[first_word]
-        typed_text = replaced_words + typed_text[1:]
-        first_word = typed_text[0]
-        text = ' '.join(replaced_words) + ' ' + ' '.join(text.split()[1:])
-    if any([first_word == trigger_word for trigger_word in shell.trigger_words]):
-        logger.debug(f"Triggerred by {text}")
-        line = ' '.join(text.split()[1:])
-        shell.channel_id = channel_id
-        shell.team_id = team_id
-        shell.message = msg
-        shell.user_id = user_id
-        shell.permalink = permalink
-        try:
-            line = shell.precmd(line)
-            stop = shell.onecmd(line)
-            stop = shell.postcmd(stop, line)
-            if stop:
-                sys.exit()
-        except Exception as e:
-            if 'DEBUG' in os.environ:
-                exception_full_text = ''.join(traceback.format_exception(*sys.exc_info()))
-                error_text = f"```\n:::Error:::\n{exception_full_text}```\n"
-            else:
-                error_text = f"```\n:::Error:::\n{e}```\n"
-            try:
-                shell._send_text(error_text, is_error=True)
-            except Exception as e:
-                logger.critical('Could not send exception error: ' + error_text)
-
 
 
 if __name__ == '__main__':
