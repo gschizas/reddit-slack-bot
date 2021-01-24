@@ -1354,11 +1354,16 @@ class SlackbotShell(cmd.Cmd):
 
         report_date = datetime.datetime.strptime(data['date'], '%Y-%m-%d')
 
+        new_cases = data.get('new_cases', 0.0)
+        new_deaths = data.get('new_deaths', 0.0)
+        new_vaccinations = data.get('new_vaccinations', 0.0)
+        total_vaccinations = data.get('total_vaccinations', 0.0)
+        vaccinations_percent = data.get('total_vaccinations_per_hundred', 0.0)
         self._send_text((f"*Date*:{report_date:%h %d %Y}\n"
-                         f"*New Cases*: {int(data['new_cases'])}\n"
-                         f"*Deaths*: {int(data['new_deaths'])}\n"
-                         f"*Vaccinations*: {int(data['new_vaccinations'])}/{int(data['total_vaccinations'])} "
-                         f"({data['total_vaccinations_per_hundred']}%)"))
+                         f"*New Cases*: {new_cases:.10n}\n"
+                         f"*Deaths*: {new_deaths:.10n}\n"
+                         f"*Vaccinations*: {new_vaccinations:.10n}/{total_vaccinations:.10n} "
+                         f"({vaccinations_percent:.5n}%)"))
 
     do_covid = do_covid19
 
