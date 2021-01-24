@@ -33,6 +33,10 @@ from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_
     SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
     WIKI_PAGE_BAD_FORMAT
 
+
+import locale
+locale.setlocale(locale.LC_ALL, 'UK')
+
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
 
