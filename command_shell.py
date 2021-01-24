@@ -1348,7 +1348,7 @@ class SlackbotShell(cmd.Cmd):
     do_covid = do_covid19
 
     def do_allow_only_regulars(self, arg):
-        """Configure the enhanched crowd control
+        """Configure the enhanced crowd control
 
         Syntax:
         list/show: list all current threads
@@ -1431,7 +1431,7 @@ class SlackbotShell(cmd.Cmd):
 
     do_order66 = do_allow_only_regulars
     do_order_66 = do_allow_only_regulars
-    do_configure_enhanched_crowd_control = do_allow_only_regulars
+    do_configure_enhanced_crowd_control = do_allow_only_regulars
 
     def do_urban_dictionary(self, arg):
         """Search in urban dictionary for the first definition of the word or phrase"""
