@@ -1310,40 +1310,51 @@ class SlackbotShell(cmd.Cmd):
 
         self._send_text(self.bot_reddit_session.config.reddit_url + sticky_comment.permalink)
 
+    @staticmethod
+    def _lookup_country(country):
+        country = country.lower()
+        with open('countries.json') as f:
+            country_lookup = json.load(f)
+        # if country == 'usa': search_country = 'us'
+
+        found_countries = [c for c in country_lookup
+                           if country == c['name']['common'].lower()
+                           or country == c['name']['official'].lower()
+                           or any([country == names['common'].lower() for lang, names in c['name']['native'].items()])
+                           or any([country == names['official'].lower() for lang, names in c['name']['native'].items()])
+                           or country == c['cca2'].lower()
+                           or country == c['cca3'].lower()
+                           or country == c['cioc'].lower()]
+        result = found_countries[0] if len(found_countries) > 0 else None
+        return result
+
     def do_covid19(self, arg):
         """Display last available statistics for COVID-19 cases
 
         Syntax:
 
         covid19 GR
-        covid19 Greece"""
-        search_country = arg.lower()
-        if search_country == 'usa': search_country = 'us'
-        country = None
-        with state_file('covid19_countries') as state:
-            if not state or 'countries' not in state:
-                state['countries'] = requests.get("https://api.covid19api.com/countries").json()
-            found_countries = [c for c in state['countries']
-                               if search_country == c['Country'].lower()
-                               or search_country == c['ISO2'].lower()]
-            country = found_countries[0]['Slug'] if len(found_countries) > 0 else None
-        if not country:
+        covid19 GRC
+        covid19 Greece
+        covid19 Ελλάδα"""
+        country_info = self._lookup_country(arg.lower())
+        if not country_info:
             self._send_text(f"Country \"{arg}\" not found")
             return
+        country: str = country_info['cca3'].upper()
 
-        today = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        start_day = today - datetime.timedelta(5)
+        with open('data/owid-covid-data.json') as f:
+            full_data = json.load(f)
+        country_data = full_data[country]
+        data = country_data['data'][-1]
 
-        result = requests.get(
-            f"https://api.covid19api.com/total/country/{country}", params={
-                "from": start_day.isoformat(),
-                "to": today.isoformat()}, verify=False).json()
+        report_date = datetime.datetime.strptime(data['date'], '%Y-%m-%d')
 
-        diff_deaths = result[-1]['Deaths'] - result[-2]['Deaths']
-        diff_confirmed = result[-1]['Confirmed'] - result[-2]['Confirmed']
-        report_date = datetime.datetime.fromisoformat(result[-1]['Date'].replace('Z', '+00:00'))
-
-        self._send_text(f"*Date*:{report_date:%h %d %Y}\n*New* Cases: {diff_confirmed}\n*Deaths*: {diff_deaths}")
+        self._send_text((f"*Date*:{report_date:%h %d %Y}\n"
+                         f"*New Cases*: {int(data['new_cases'])}\n"
+                         f"*Deaths*: {int(data['new_deaths'])}\n"
+                         f"*Vaccinations*: {int(data['new_vaccinations'])}/{int(data['total_vaccinations'])} "
+                         f"({data['total_vaccinations_per_hundred']}%)"))
 
     do_covid = do_covid19
 
