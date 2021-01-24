@@ -1350,7 +1350,7 @@ class SlackbotShell(cmd.Cmd):
         with open('data/owid-covid-data.json') as f:
             full_data = json.load(f)
         country_data = full_data[country]
-        data = country_data['data'][-1]
+        data = [d for d in country_data['data'] if 'new_cases' in d and 'new_deaths' in d][-1]
 
         report_date = datetime.datetime.strptime(data['date'], '%Y-%m-%d')
 
