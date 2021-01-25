@@ -84,7 +84,7 @@ def main():
         del SlackbotShell.do_allow_only_regulars
         del SlackbotShell.do_order_66
         del SlackbotShell.do_order66
-        del SlackbotShell.do_configure_enhanched_crowd_control
+        del SlackbotShell.do_configure_enhanced_crowd_control
 
     if not shell.bot_reddit_session:
         del SlackbotShell.do_make_post
