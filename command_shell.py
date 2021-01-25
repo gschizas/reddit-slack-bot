@@ -35,7 +35,7 @@ from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_
 
 
 import locale
-locale.setlocale(locale.LC_ALL, 'UK')
+locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
 
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
