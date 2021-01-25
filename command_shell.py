@@ -912,8 +912,8 @@ class SlackbotShell(cmd.Cmd):
                              "(i.e. @pikos_apikos) or "
                              "'view' to see leaderboard"), is_error=True)
             return
-        if re.match(r'<@\w+>', args[0]):
-            recipient_user_id = args[0][2:-1]
+        if usermatch := re.match(r'<@(\w+)>', args[0]):
+            recipient_user_id = usermatch.group(1)
             self._slack_user_info(recipient_user_id)
             self._slack_channel_info(self.team_id, self.channel_id)
             recipient_name = self.users[recipient_user_id]['name']
