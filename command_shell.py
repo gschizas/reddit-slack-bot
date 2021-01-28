@@ -1524,3 +1524,6 @@ class SlackbotShell(cmd.Cmd):
             }
         ]
         self._send_blocks(blocks)
+
+    do_stock = do_stocks
+    do_stonk = do_stocks
