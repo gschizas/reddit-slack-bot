@@ -18,6 +18,7 @@ tabulate = "*"
 xlsxwriter = "*"
 flask = "*"
 celery = "*"
+yfinance = "*"
 
 [dev-packages]
 

@@ -32,8 +32,7 @@ from bot_framework.common import normalize_text
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
     SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
-    WIKI_PAGE_BAD_FORMAT
-
+    WIKI_PAGE_BAD_FORMAT, MID_DOT
 
 locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
 
@@ -1471,4 +1470,57 @@ class SlackbotShell(cmd.Cmd):
 
     do_ud = do_urban_dictionary
 
+    def do_stocks(self, arg):
+        """Show info for a stock"""
+        import yfinance as yf
 
+        stock_name = arg.split()[0]
+        if '|' in stock_name:
+            stock_name = re.findall(r'\|(.*)>', stock_name)[0]
+        stock_name = stock_name.replace(MID_DOT, '.')
+        stock = yf.Ticker(stock_name)
+
+        change = (((stock.info['ask'] / stock.info['previousClose']) - 1) * 100)  # > 10
+
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"{stock.info['longName']} ({stock.info['symbol'].replace('.', MID_DOT)}) " +
+                            f"{stock.info['currency']}"
+                },
+                "accessory": {
+                    "type": "image",
+                    "image_url": stock.info['logo_url'],
+                    "alt_text": stock.info['longName']
+                },
+                "fields": [
+                    {
+                        "type": "plain_text",
+                        "text": f"Ask Price: {stock.info['ask']}"
+                    },
+                    {
+                        "type": "plain_text",
+                        "text": f"Bid: {stock.info['bid']}"
+                    },
+                    {
+                        "type": "plain_text",
+                        "text": f"Low: {stock.info['regularMarketDayLow']}"
+                    },
+                    {
+                        "type": "plain_text",
+                        "text": f"Day High: {stock.info['dayHigh']}"
+                    },
+                    {
+                        "type": "plain_text",
+                        "text": f"Last Day: {stock.info['regularMarketPreviousClose']}"
+                    },
+                    {
+                        "type": "plain_text",
+                        "text": f"Change: {change}"
+                    }
+                ]
+            }
+        ]
+        self._send_blocks(blocks)
