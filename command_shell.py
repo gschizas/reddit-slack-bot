@@ -1518,7 +1518,7 @@ class SlackbotShell(cmd.Cmd):
                     },
                     {
                         "type": "plain_text",
-                        "text": f"Change: {change}"
+                        "text": f"Change: {change:.02f}"
                     }
                 ]
             }
