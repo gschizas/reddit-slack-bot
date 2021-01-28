@@ -105,6 +105,13 @@ class SlackbotShell(cmd.Cmd):
                          username=self.trigger_words[0],
                          attachments=fields)
 
+    def _send_blocks(self, blocks):
+        self.sc.api_call("chat.postMessage",
+                         channel=self.channel_id,
+                         icon_emoji=':robot_face:',
+                         blocks=blocks,
+                         username=self.trigger_words[0])
+
     def handle_message(self, msg):
         if msg['type'] != 'message':
             self.logger.debug(f"Found message of type {msg['type']}")
