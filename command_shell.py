@@ -1378,7 +1378,8 @@ class SlackbotShell(cmd.Cmd):
 
         Syntax:
         list/show: list all current threads
-        add THREAD_ID or URL: add a new thread to the monitored threads
+        add/addremove THREAD_ID or URL: add a new thread to the monitored threads
+        allow/addallow THREAD_ID or URL: add a new thread to the disabled crowd control threads
         del/remove THREAD_ID or URL: delete the thread from the monitored threads
         """
 
