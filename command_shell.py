@@ -1416,7 +1416,7 @@ class SlackbotShell(cmd.Cmd):
                          f"(monitoring {from_date_text} \u2014 {to_date_text})")
                 text += "\n"
             self._send_text(text)
-        elif subcommand == 'add':
+        elif subcommand in ('add', 'addremove', 'allow', 'addallow'):
             thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
             found = [t for t in monitored_threads if t['id'] == thread_id]
             if found:
@@ -1428,7 +1428,7 @@ class SlackbotShell(cmd.Cmd):
                 submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
                 permalink = s.permalink
                 monitored_threads.append({
-                    'action': 'remove',
+                    'action': 'remove' if subcommand in ('add', 'addremove') else 'allow',
                     'id': thread_id,
                     'last': None,
                     'date': submission_date,
@@ -1451,7 +1451,7 @@ class SlackbotShell(cmd.Cmd):
             else:
                 self._send_text(f"{thread_id} not found", is_error=True)
         else:
-            self._send_text(f"I can only understand add, del/remove and list/show")
+            self._send_text(f"I can only understand add/addremove, allow/addallow, del/remove and list/show")
 
         with config_file.open(mode='w', encoding='utf8') as y:
             yaml.dump(config, y)
