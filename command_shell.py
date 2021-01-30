@@ -380,6 +380,8 @@ class SlackbotShell(cmd.Cmd):
         text = ''
         for s in self.sr.mod.modqueue(only='submissions'):
             text += s.title + '\n' + s.url + '\n'
+        else:
+            text = "No posts in modqueue"
         self._send_text(text)
 
     def do_modqueue_comments(self, arg):
@@ -387,6 +389,8 @@ class SlackbotShell(cmd.Cmd):
         text = ''
         for c in self.sr.mod.modqueue(only='comments', limit=10):
             text += self.reddit_session.config.reddit_url + c.permalink + '\n```\n' + c.body[:80] + '\n```\n'
+        else:
+            text = "No comments in modqueue"
         self._send_text(text)
 
     def do_modqueue_length(self, arg):
