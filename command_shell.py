@@ -3,6 +3,7 @@ import cmd
 import collections
 import ctypes
 import datetime
+import html
 import io
 import json
 import locale
@@ -918,48 +919,36 @@ class SlackbotShell(cmd.Cmd):
                              "(i.e. @pikos_apikos) or "
                              "'view' to see leaderboard"), is_error=True)
             return
-        if usermatch := re.match(r'<@(\w+)>', args[0]):
-            recipient_user_id = usermatch.group(1)
-            self._slack_user_info(recipient_user_id)
-            self._slack_channel_info(self.team_id, self.channel_id)
-            recipient_name = self.users[recipient_user_id]['name']
-            sender_name = self.users[self.user_id]['name']
-            reason = ' '.join(args[1:])
+        if all_users := re.findall(r'<@(\w+)>', arg):
+            reason = html.unescape(arg.split('>')[-1].strip())
 
-            if recipient_user_id == self.user_id:
-                self._send_text("You can't give kudos to yourself, silly!", is_error=True)
-                return
+            for recipient_user_id in all_users:
+                self._slack_user_info(recipient_user_id)
+                self._slack_channel_info(self.team_id, self.channel_id)
+                recipient_name = self.users[recipient_user_id]['name']
+                sender_name = self.users[self.user_id]['name']
 
-            database_url = os.environ['KUDOS_DATABASE_URL']
-            conn = psycopg2.connect(database_url)
-            conn.autocommit = True
-            cur = conn.cursor()
-            cmd_vars = {
-                'sender_name': sender_name, 'sender_id': self.user_id,
-                'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
-                'team_name': self.teams[self.team_id]['name'], 'team_id': self.team_id,
-                'channel_name': self.channels[self.team_id][self.channel_id], 'channel_id': self.channel_id,
-                'permalink': self.permalink['permalink'], 'reason': reason}
-            cur.execute(SQL_KUDOS_INSERT, vars=cmd_vars)
-            success = cur.rowcount > 0
-            cur.close()
-            conn.close()
-            if success:
-                text_to_send = f"Kudos from {sender_name} to {recipient_name}"
-                give_gift = random.random()
-                if reason.strip():
-                    if re.search(':\w+:', reason):
-                        reason = '. No cheating! Only I can send gifts!'
-                        give_gift = -1
-                    text_to_send += ' ' + reason
-                GIFTS = 'balloon bear lollipop cake pancakes apple pineapple cherries grapes pizza popcorn rose tulip baby_chick beer doughnut cookie'.split()
-                if give_gift > 0.25:
-                    if not text_to_send.endswith('.'): text_to_send += '.'
-                    gift = random.choice(GIFTS)
-                    text_to_send += f" Have a :{gift}:"
-                self._send_text(text_to_send)
-            else:
-                self._send_text("Kudos not recorded")
+                if recipient_user_id == self.user_id:
+                    self._send_text("You can't give kudos to yourself, silly!", is_error=True)
+                    continue
+
+                if self._record_kudos(sender_name, recipient_name, recipient_user_id, reason):
+                    text_to_send = f"Kudos from {sender_name} to {recipient_name}"
+                    give_gift = random.random()
+                    if reason.strip():
+                        if re.search(r':\w+:', reason):
+                            reason = '. No cheating! Only I can send gifts!'
+                            give_gift = -1
+                        text_to_send += ' ' + reason
+                    GIFTS = ['balloon', 'bear', 'lollipop', 'cake', 'pancakes', 'apple', 'pineapple', 'cherries',
+                             'grapes', 'pizza', 'popcorn', 'rose', 'tulip', 'baby_chick', 'beer', 'doughnut', 'cookie']
+                    if give_gift > 0.25:
+                        if not text_to_send.endswith('.'): text_to_send += '.'
+                        gift = random.choice(GIFTS)
+                        text_to_send += f" Have a :{gift}:"
+                    self._send_text(text_to_send)
+                else:
+                    self._send_text("Kudos not recorded")
         elif args[0].lower() == 'view':
             if len(args) > 1 and re.match(r'\d{1,3}', args[1]):
                 days_to_check = int(args[1])
@@ -982,6 +971,23 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(("You need to specify a user "
                              "(i.e. @pikos_apikos) or "
                              "'view' to see leaderboard"), is_error=True)
+
+    def _record_kudos(self, sender_name, recipient_name, recipient_user_id, reason):
+        database_url = os.environ['KUDOS_DATABASE_URL']
+        conn = psycopg2.connect(database_url)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cmd_vars = {
+            'sender_name': sender_name, 'sender_id': self.user_id,
+            'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
+            'team_name': self.teams[self.team_id]['name'], 'team_id': self.team_id,
+            'channel_name': self.channels[self.team_id][self.channel_id], 'channel_id': self.channel_id,
+            'permalink': self.permalink['permalink'], 'reason': reason}
+        cur.execute(SQL_KUDOS_INSERT, vars=cmd_vars)
+        success = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        return success
 
     def do_joke(self, arg):
         """Tell a joke"""
