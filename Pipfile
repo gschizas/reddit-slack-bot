@@ -19,6 +19,7 @@ xlsxwriter = "*"
 flask = "*"
 celery = "*"
 yfinance = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
