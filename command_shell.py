@@ -389,6 +389,13 @@ class SlackbotShell(cmd.Cmd):
             text += self.reddit_session.config.reddit_url + c.permalink + '\n```\n' + c.body[:80] + '\n```\n'
         self._send_text(text)
 
+    def do_modqueue_length(self, arg):
+        """Show modqueue length"""
+        posts_modqueue_length = len(list(self.sr.mod.modqueue(only='submissions', limit=None)))
+        comments_modqueue_length = len(list(self.sr.mod.modqueue(only='comments', limit=None)))
+        text = f"Modqueue contains {posts_modqueue_length} posts and {comments_modqueue_length} comments"
+        self._send_text(text)
+
     def do_youtube_info(self, arg):
         """Get YouTube media URL"""
         self.logger.debug(arg)

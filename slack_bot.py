@@ -73,6 +73,7 @@ def main():
         del SlackbotShell.do_archive_user
         del SlackbotShell.do_modqueue_comments
         del SlackbotShell.do_modqueue_posts
+        del SlackbotShell.do_modqueue_length
         del SlackbotShell.do_nuke_thread
         del SlackbotShell.do_undo_nuke_thread
         del SlackbotShell.do_nuke_user
