@@ -919,7 +919,7 @@ class SlackbotShell(cmd.Cmd):
                              "(i.e. @pikos_apikos) or "
                              "'view' to see leaderboard"), is_error=True)
             return
-        if all_users := re.findall(r'<@(\w+)>', arg):
+        if all_users := set(re.findall(r'<@(\w+)>', arg)):
             reason = html.unescape(arg.split('>')[-1].strip())
 
             for recipient_user_id in all_users:
