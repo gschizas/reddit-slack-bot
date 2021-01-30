@@ -396,6 +396,9 @@ class SlackbotShell(cmd.Cmd):
         text = f"Modqueue contains {posts_modqueue_length} posts and {comments_modqueue_length} comments"
         self._send_text(text)
 
+    do_mq = do_modqueue_length
+    do_modqueue = do_modqueue_length
+
     def do_youtube_info(self, arg):
         """Get YouTube media URL"""
         self.logger.debug(arg)
