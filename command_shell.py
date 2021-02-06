@@ -1388,7 +1388,12 @@ class SlackbotShell(cmd.Cmd):
         with open('data/owid-covid-data.json') as f:
             full_data = json.load(f)
         country_data = full_data[country]
-        data = [d for d in country_data['data'] if 'new_cases' in d and 'new_deaths' in d][-1]
+        data = {}
+        relevant_data = list(filter(lambda d:('new_cases' in d and 'new_deaths' in d), country_data['data']))
+        for data_for_day in relevant_data[-7:-1]:
+            data |= data_for_day
+            if 'new_vaccinations' or 'total_vaccinations' in data_for_day:
+                data['vaccinations_on'] = data_for_day['date']
 
         report_date = datetime.datetime.strptime(data['date'], '%Y-%m-%d')
 
@@ -1397,11 +1402,12 @@ class SlackbotShell(cmd.Cmd):
         new_vaccinations = data.get('new_vaccinations', 0.0)
         total_vaccinations = data.get('total_vaccinations', 0.0)
         vaccinations_percent = data.get('total_vaccinations_per_hundred', 0.0)
-        self._send_text((f"*Date*:{report_date:%h %d %Y}\n"
+        vaccinations_on = datetime.datetime.strptime(data['vaccinations_on'], '%Y-%m-%d')
+        self._send_text((f"*Date*: {report_date:%h %d %Y}\n"
                          f"*New Cases*: {new_cases:.10n}\n"
                          f"*Deaths*: {new_deaths:.10n}\n"
                          f"*Vaccinations*: {new_vaccinations:.10n}/{total_vaccinations:.10n} "
-                         f"({vaccinations_percent:.5n}%)"))
+                         f"({vaccinations_percent:.5n}%) - on {vaccinations_on:%h %d %Y}"))
 
     do_covid = do_covid19
 
