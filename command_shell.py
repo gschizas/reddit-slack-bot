@@ -397,7 +397,9 @@ class SlackbotShell(cmd.Cmd):
         """Show modqueue length"""
         posts_modqueue_length = len(list(self.sr.mod.modqueue(only='submissions', limit=None)))
         comments_modqueue_length = len(list(self.sr.mod.modqueue(only='comments', limit=None)))
-        text = f"Modqueue contains {posts_modqueue_length} posts and {comments_modqueue_length} comments"
+        post_descr = 'posts' if posts_modqueue_length!=1 else 'post'
+        comment_descr = 'comments' if posts_modqueue_length != 1 else 'comment'
+        text = f"Modqueue contains {posts_modqueue_length} {post_descr} and {comments_modqueue_length} {comment_descr}"
         self._send_text(text)
 
     do_mq = do_modqueue_length
