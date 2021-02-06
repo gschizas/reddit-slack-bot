@@ -397,10 +397,20 @@ class SlackbotShell(cmd.Cmd):
         """Show modqueue length"""
         posts_modqueue_length = len(list(self.sr.mod.modqueue(only='submissions', limit=None)))
         comments_modqueue_length = len(list(self.sr.mod.modqueue(only='comments', limit=None)))
-        post_descr = 'posts' if posts_modqueue_length!=1 else 'post'
+        post_descr = 'posts' if posts_modqueue_length != 1 else 'post'
         comment_descr = 'comments' if posts_modqueue_length != 1 else 'comment'
-        text = f"Modqueue contains {posts_modqueue_length} {post_descr} and {comments_modqueue_length} {comment_descr}"
-        self._send_text(text)
+        if posts_modqueue_length == 0 and comments_modqueue_length == 0:
+            with state_file('kitteh') as pref_cache:
+                creature = pref_cache.get(
+                    self.user_id, pref_cache.get(
+                        'default',
+                        ("The queue is clean! Kitteh is pleased."
+                         "https://www.redditstatic.com/desktop2x/img/snoomoji/cat_blep.png")))
+            self._send_text(creature)
+        else:
+            text = (f"Modqueue contains {posts_modqueue_length} {post_descr} and "
+                    f"{comments_modqueue_length} {comment_descr}")
+            self._send_text(text)
 
     do_mq = do_modqueue_length
     do_modqueue = do_modqueue_length
