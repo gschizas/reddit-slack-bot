@@ -1418,7 +1418,7 @@ class SlackbotShell(cmd.Cmd):
         list/show: list all current threads
         add/addremove THREAD_ID or URL: add a new thread to the monitored threads
         allow/addallow THREAD_ID or URL: add a new thread to the disabled crowd control threads
-        del/remove THREAD_ID or URL: delete the thread from the monitored threads
+        del/delete/remove THREAD_ID or URL: delete the thread from the monitored threads
         """
 
         subcommand: str = arg.split()[0].lower()
@@ -1473,7 +1473,7 @@ class SlackbotShell(cmd.Cmd):
                     'date': submission_date,
                     'permalink': permalink})
                 self._send_text(f"Added {thread_id}")
-        elif subcommand in ('del', 'remove'):
+        elif subcommand in ('del', 'delete', 'remove'):
             thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
             remove_me = None
             if '/' not in thread_id and len(thread_id) < 2:
