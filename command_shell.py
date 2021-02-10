@@ -1476,7 +1476,7 @@ class SlackbotShell(cmd.Cmd):
         elif subcommand in ('del', 'delete', 'remove'):
             thread_id = self._extract_real_thread_id(arg.split(maxsplit=1)[1])
             remove_me = None
-            if '/' not in thread_id and len(thread_id) < 2:
+            if re.match(r'^\d+$', thread_id):
                 remove_me = int(thread_id) - 1
                 thread_id = monitored_threads[remove_me]['id']
             else:
