@@ -966,8 +966,9 @@ class SlackbotShell(cmd.Cmd):
                             reason = '. No cheating! Only I can send gifts!'
                             give_gift = -1
                         text_to_send += ' ' + reason
-                    GIFTS = ['balloon', 'bear', 'lollipop', 'cake', 'pancakes', 'apple', 'pineapple', 'cherries',
-                             'grapes', 'pizza', 'popcorn', 'rose', 'tulip', 'baby_chick', 'beer', 'doughnut', 'cookie']
+                    GIFTS = ['balloon', 'bear', 'goat', 'lollipop', 'cake', 'pancakes',
+                             'apple', 'pineapple', 'cherries', 'grapes', 'pizza', 'popcorn',
+                             'rose', 'tulip', 'baby_chick', 'beer', 'doughnut', 'cookie']
                     if give_gift > 0.25:
                         if not text_to_send.endswith('.'): text_to_send += '.'
                         gift = random.choice(GIFTS)
