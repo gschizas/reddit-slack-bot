@@ -25,6 +25,7 @@ import prawcore
 import psycopg2
 import requests
 import xlsxwriter
+import slack
 from requests.adapters import HTTPAdapter
 from requests.structures import CaseInsensitiveDict
 from tabulate import tabulate
@@ -65,7 +66,6 @@ class SlackbotShell(cmd.Cmd):
         self.sr = None
         self.pos = 0
         self.permalink = None
-        self.sc = None
         self.users = None
         self.logger = None
         self.message = None
@@ -78,17 +78,19 @@ class SlackbotShell(cmd.Cmd):
         self.channels = {}
         self.archive_session = requests.Session()
         self.archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
+        self.web_client: slack.WebClient = None
+        self.rtm_client: slack.RTMClient = None
 
     def _send_text(self, text, is_error=False):
         icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
-        self.sc.api_call("chat.postMessage",
+        self.web_client.chat_postMessage(
                          channel=self.channel_id,
                          text=text,
                          icon_emoji=icon_emoji,
                          username=self.trigger_words[0])
 
     def _send_file(self, file_data, title=None, filename=None, filetype=None):
-        self.sc.api_call("files.upload",
+        self.web_client.files_upload(
                          channels=self.channel_id,
                          icon_emoji=':robot_face:',
                          username=self.trigger_words[0],
@@ -98,7 +100,7 @@ class SlackbotShell(cmd.Cmd):
                          filetype=filetype or 'auto')
 
     def _send_fields(self, text, fields):
-        self.sc.api_call("chat.postMessage",
+        self.web_client.chat_postMessage(
                          channel=self.channel_id,
                          icon_emoji=':robot_face:',
                          text=text,
@@ -106,16 +108,13 @@ class SlackbotShell(cmd.Cmd):
                          attachments=fields)
 
     def _send_blocks(self, blocks):
-        self.sc.api_call("chat.postMessage",
+        self.web_client.chat_postMessage(
                          channel=self.channel_id,
                          icon_emoji=':robot_face:',
                          blocks=blocks,
                          username=self.trigger_words[0])
 
-    def handle_message(self, msg):
-        if msg['type'] != 'message':
-            self.logger.debug(f"Found message of type {msg['type']}")
-            return
+    def handle_message(self, msg, web_client, rtm_client):
         if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message', 'slackbot_response'):
             self.logger.debug(f"Found message of subtype {msg.get('subtype')}")
             return
@@ -127,7 +126,7 @@ class SlackbotShell(cmd.Cmd):
         team_id = msg.get('team', '')
         user_id = msg.get('user', '')
 
-        permalink = self.sc.api_call('chat.getPermalink', channel=channel_id, message_ts=msg['ts'])
+        permalink = web_client.chat_getPermalink(channel=channel_id, message_ts=msg['ts'])
         self.preload(user_id, team_id, channel_id)
 
         text = msg['text']
@@ -142,9 +141,9 @@ class SlackbotShell(cmd.Cmd):
             first_word = typed_text[0]
             text = ' '.join(replaced_words) + ' ' + ' '.join(text.split()[1:])
         if any([first_word == trigger_word for trigger_word in self.trigger_words]):
-            self.act_on_message(msg, permalink, team_id, channel_id, user_id, text)
+            self.act_on_message(web_client, msg, permalink, team_id, channel_id, user_id, text)
 
-    def act_on_message(self, msg, permalink, team_id, channel_id, user_id, text):
+    def act_on_message(self, web_client, msg, permalink, team_id, channel_id, user_id, text):
         self.logger.debug(f"Triggerred by {text}")
         line = ' '.join(text.split()[1:])
         self.channel_id = channel_id
@@ -517,8 +516,7 @@ class SlackbotShell(cmd.Cmd):
 
     def do_add_policy(self, title):
         """Add a minor policy change done via Slack's #modpolicy channel"""
-        permalink_response = self.sc.api_call(
-            'chat.getPermalink',
+        permalink_response = self.web_client.chat_getPermalink(
             channel=self.channel_id,
             message_ts=self.message['ts'])
         permalink = permalink_response['permalink']
@@ -1148,13 +1146,13 @@ class SlackbotShell(cmd.Cmd):
 
     def _slack_user_info(self, user_id):
         if user_id not in self.users:
-            response_user = self.sc.api_call('users.info', user=user_id)
+            response_user = self.web_client.users_info(user=user_id)
             if response_user['ok']:
                 self.users[user_id] = response_user['user']
 
     def _slack_team_info(self, team_id):
         if team_id not in self.teams:
-            response_team = self.sc.api_call('team.info')
+            response_team = self.web_client.team_info()
             if response_team['ok']:
                 self.teams[team_id] = response_team['team']
 
@@ -1162,13 +1160,13 @@ class SlackbotShell(cmd.Cmd):
         if team_id not in self.channels:
             self.channels[team_id] = {}
         if channel_id not in self.channels[team_id]:
-            response_channel = self.sc.api_call('conversations.info', channel=channel_id)
+            response_channel = self.web_client.conversations_info(channel=channel_id)
             channel_info = response_channel['channel'] if response_channel['ok'] else {}
             if channel_info.get('is_group') or channel_info.get('is_channel'):
                 priv = '🔒' if channel_info.get('is_private') else '#'
                 self.channels[team_id][channel_id] = priv + channel_info['name_normalized']
             elif channel_info.get('is_im'):
-                response_members = self.sc.api_call('conversations.members', channel=channel_id)
+                response_members = self.web_client.conversations_members(channel=channel_id)
                 for user_id in response_members['members']:
                     self._slack_user_info(user_id)
                 participants = [f"{self.users[user_id]['real_name']} <{self.users[user_id]['name']}@{user_id}>"

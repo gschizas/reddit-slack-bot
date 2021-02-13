@@ -3,10 +3,8 @@
 
 import os
 import sys
-import time
-import traceback
 
-import slackclient
+import slack
 
 from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
@@ -14,19 +12,20 @@ from bot_framework.yaml_wrapper import yaml
 from command_shell import SlackbotShell
 
 shell: SlackbotShell = None
+slack_client: slack.RTMClient = None
 logger = None
 
 
 def init():
-    global shell, logger
+    global shell, logger, slack_client
     shell = SlackbotShell()
     slack_api_token = os.environ['SLACK_API_TOKEN']
     shell.subreddit_name = os.environ.get('SUBREDDIT_NAME')
-    shell.sc = slackclient.SlackClient(slack_api_token)
+    slack_client = slack.RTMClient(token=slack_api_token)
     shell.logger = logger
     if shell.subreddit_name:
         base_user_agent = 'python:gr.terrasoft.reddit.slackmodbot'
-        user_agent = f'{base_user_agent}-{shell.subreddit_name}:v0.2 (by /u/gschizas)'
+        user_agent = f'{base_user_agent}-{shell.subreddit_name}:v0.3 (by /u/gschizas)'
         shell.reddit_session = praw_wrapper(user_agent=user_agent, scopes=['*'])
         if 'REDDIT_ALT_USER' in os.environ:
             alt_user = os.environ['REDDIT_ALT_USER']
@@ -58,12 +57,6 @@ def main():
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
-
-    if shell.sc.rtm_connect():
-        logger.info('Connection established')
-    else:
-        logger.critical('Connection failed')
-        sys.exit(1)
 
     # Disable features according to environment
 
@@ -111,19 +104,17 @@ def main():
         shell.shortcut_words = {}
     logger.debug(f"Listening for {','.join(shell.trigger_words)}")
 
-    while True:
-        try:
-            for msg in shell.sc.rtm_read():
-                shell.handle_message(msg)
-            time.sleep(0.5)
-        except Exception as ex:  # slackclient.server.SlackConnectionResetError as ex:
-            tb = sys.exc_info()[2]
-            logger.warning(''.join(traceback.format_exception(None, ex, tb)))
-            if shell.sc.rtm_connect():
-                logger.info("Connection established")
-            else:
-                logger.critical("Connection failed. Waiting 5 seconds")
-                time.sleep(5)
+    slack_client.start()
+
+
+@slack.RTMClient.run_on(event='message')
+def handle_message(**payload):
+    data = payload['data']
+    web_client = payload['web_client']
+    rtm_client = payload['rtm_client']
+    shell.web_client = web_client
+    shell.rtm_client = rtm_client
+    shell.handle_message(data, web_client, rtm_client)
 
 
 if __name__ == '__main__':
