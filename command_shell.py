@@ -397,7 +397,7 @@ class SlackbotShell(cmd.Cmd):
         posts_modqueue_length = len(list(self.sr.mod.modqueue(only='submissions', limit=None)))
         comments_modqueue_length = len(list(self.sr.mod.modqueue(only='comments', limit=None)))
         post_descr = 'posts' if posts_modqueue_length != 1 else 'post'
-        comment_descr = 'comments' if posts_modqueue_length != 1 else 'comment'
+        comment_descr = 'comments' if comments_modqueue_length != 1 else 'comment'
         if posts_modqueue_length == 0 and comments_modqueue_length == 0:
             with state_file('kitteh') as pref_cache:
                 creature = pref_cache.get(
