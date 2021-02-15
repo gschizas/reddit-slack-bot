@@ -21,7 +21,9 @@ def init():
     shell = SlackbotShell()
     slack_api_token = os.environ['SLACK_API_TOKEN']
     shell.subreddit_name = os.environ.get('SUBREDDIT_NAME')
-    slack_client = slack.RTMClient(token=slack_api_token)
+    slack_client = slack.RTMClient(
+        token=slack_api_token,
+        proxy=os.environ.get('HTTPS_PROXY'))
     shell.logger = logger
     if shell.subreddit_name:
         base_user_agent = 'python:gr.terrasoft.reddit.slackmodbot'
