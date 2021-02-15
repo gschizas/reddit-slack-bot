@@ -81,8 +81,9 @@ class SlackbotShell(cmd.Cmd):
         self.web_client: slack.WebClient = None
         self.rtm_client: slack.RTMClient = None
 
-    def _send_text(self, text, is_error=False):
-        icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
+    def _send_text(self, text, is_error=False, icon_emoji=None):
+        if icon_emoji is None:
+            icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
         self.web_client.chat_postMessage(
                          channel=self.channel_id,
                          text=text,
@@ -974,6 +975,8 @@ class SlackbotShell(cmd.Cmd):
                     self._send_text(text_to_send)
                 else:
                     self._send_text("Kudos not recorded")
+        elif args[1].lower() == 'frostmaiden':
+            self._send_text("You are welcome mortals! Have some more :snowflake:", icon_emoji=':snowflake:')
         elif args[0].lower() == 'view':
             if len(args) > 1 and re.match(r'\d{1,3}', args[1]):
                 days_to_check = int(args[1])
