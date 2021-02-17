@@ -989,7 +989,7 @@ class SlackbotShell(cmd.Cmd):
                     self._send_text(text_to_send)
                 else:
                     self._send_text("Kudos not recorded")
-        elif args[1].lower() == 'frostmaiden':
+        elif 'frostmaiden' in arg.lower():
             self._send_text("You are welcome mortals! Have some more :snowflake:", icon_emoji=':snowflake:')
         elif args[0].lower() == 'view':
             if len(args) > 1 and re.match(r'\d{1,3}', args[1]):
