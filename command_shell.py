@@ -85,35 +85,35 @@ class SlackbotShell(cmd.Cmd):
         if icon_emoji is None:
             icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
         self.web_client.chat_postMessage(
-                         channel=self.channel_id,
-                         text=text,
-                         icon_emoji=icon_emoji,
-                         username=self.trigger_words[0])
+            channel=self.channel_id,
+            text=text,
+            icon_emoji=icon_emoji,
+            username=self.trigger_words[0])
 
     def _send_file(self, file_data, title=None, filename=None, filetype=None):
         self.web_client.files_upload(
-                         channels=self.channel_id,
-                         icon_emoji=':robot_face:',
-                         username=self.trigger_words[0],
-                         file=file_data,
-                         filename=filename,
-                         title=title,
-                         filetype=filetype or 'auto')
+            channels=self.channel_id,
+            icon_emoji=':robot_face:',
+            username=self.trigger_words[0],
+            file=file_data,
+            filename=filename,
+            title=title,
+            filetype=filetype or 'auto')
 
     def _send_fields(self, text, fields):
         self.web_client.chat_postMessage(
-                         channel=self.channel_id,
-                         icon_emoji=':robot_face:',
-                         text=text,
-                         username=self.trigger_words[0],
-                         attachments=fields)
+            channel=self.channel_id,
+            icon_emoji=':robot_face:',
+            text=text,
+            username=self.trigger_words[0],
+            attachments=fields)
 
     def _send_blocks(self, blocks):
         self.web_client.chat_postMessage(
-                         channel=self.channel_id,
-                         icon_emoji=':robot_face:',
-                         blocks=blocks,
-                         username=self.trigger_words[0])
+            channel=self.channel_id,
+            icon_emoji=':robot_face:',
+            blocks=blocks,
+            username=self.trigger_words[0])
 
     def handle_message(self, msg, web_client, rtm_client):
         if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message', 'slackbot_response'):
@@ -1391,7 +1391,7 @@ class SlackbotShell(cmd.Cmd):
             full_data = json.load(f)
         country_data = full_data[country]
         data = {}
-        relevant_data = list(filter(lambda d:('new_cases' in d and 'new_deaths' in d), country_data['data']))
+        relevant_data = list(filter(lambda d: ('new_cases' in d and 'new_deaths' in d), country_data['data']))
         for data_for_day in relevant_data[-7:-1]:
             data |= data_for_day
             if 'new_vaccinations' or 'total_vaccinations' in data_for_day:
