@@ -75,6 +75,7 @@ class SlackbotShell(cmd.Cmd):
         self.users = {}
         self.teams = {}
         self.channels = {}
+        self.msg = None
         self.archive_session = requests.Session()
         self.archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
         self.web_client: slack.WebClient = None
@@ -86,6 +87,16 @@ class SlackbotShell(cmd.Cmd):
         self.web_client.chat_postMessage(
             channel=self.channel_id,
             text=text,
+            icon_emoji=icon_emoji,
+            username=self.trigger_words[0])
+
+    def _send_ephemeral(self, text, user, is_error=False, icon_emoji=None):
+        if icon_emoji is None:
+            icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
+        self.web_client.chat_postEphemeral(
+            channel=self.channel_id,
+            text=text,
+            user=user,
             icon_emoji=icon_emoji,
             username=self.trigger_words[0])
 
@@ -121,6 +132,7 @@ class SlackbotShell(cmd.Cmd):
         if 'message' in msg:
             msg.update(msg['message'])
             del msg['message']
+        self.msg = msg
 
         channel_id = msg['channel']
         team_id = msg.get('team', '')
@@ -942,6 +954,9 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(("You need to specify a user "
                              "(i.e. @pikos_apikos) or "
                              "'view' to see leaderboard"), is_error=True)
+            return
+        if self.msg.get('subtype') in ('message_replied', 'message_changed'):
+            self._send_ephemeral("Kudos not recorded. Replies and edits are ignored.", self.msg["user"])
             return
         if all_users := set(re.findall(r'<@(\w+)>', arg)):
             reason = html.unescape(arg.split('>')[-1].strip())
