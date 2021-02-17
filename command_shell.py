@@ -21,11 +21,10 @@ import zlib
 from contextlib import contextmanager
 
 import praw
-import prawcore
 import psycopg2
 import requests
-import xlsxwriter
 import slack
+import xlsxwriter
 from requests.adapters import HTTPAdapter
 from requests.structures import CaseInsensitiveDict
 from tabulate import tabulate
