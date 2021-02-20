@@ -21,6 +21,8 @@ flask = "*"
 celery = "*"
 yfinance = "*"
 psycopg2-binary = "*"
+psutil = "*"
+humanfriendly = "*"
 
 [dev-packages]
 

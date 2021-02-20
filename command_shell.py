@@ -20,7 +20,9 @@ import urllib.parse
 import zlib
 from contextlib import contextmanager
 
+import humanfriendly
 import praw
+import psutil
 import psycopg2
 import requests
 import slack
@@ -447,7 +449,11 @@ class SlackbotShell(cmd.Cmd):
 
     def do_uptime(self, args):
         """Show uptime"""
-        self._send_text(subprocess.check_output(['/usr/bin/uptime', '--pretty']).decode())
+        now = datetime.datetime.now()
+        server_uptime = now - datetime.datetime.fromtimestamp(psutil.boot_time())
+        process_uptime = now - datetime.datetime.fromtimestamp(psutil.Process(os.getpid()).create_time())
+        self._send_text((f"Server uptime: {humanfriendly.format_timespan(server_uptime)}\n"
+                         f"Process uptime: {humanfriendly.format_timespan(process_uptime)}"))
 
     def do_add_domain_tag(self, url_text, color):
         """Add a tag to a domain"""
