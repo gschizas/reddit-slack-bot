@@ -1106,10 +1106,10 @@ class SlackbotShell(cmd.Cmd):
             return
 
         oc_token = mock_config['environments'][environment]['openshift_token']
-        site = mock_config['site']
+        site = mock_config['environments'][environment]['site']
         login_command = ['oc', 'login', site, f'--token={oc_token}']
         result_text = subprocess.check_output(login_command).decode() + '\n' * 3
-        prefix = mock_config['prefix']
+        prefix = mock_config['environments'][environment]['prefix']
         self._send_text(f"Setting mock status to {mock_status} for project {environment}...")
         change_project_command = ['oc', 'project', environment.lower()]
         result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
@@ -1139,9 +1139,9 @@ class SlackbotShell(cmd.Cmd):
         if self.user_id not in mock_config['allowed_users']:
             self._send_text(f"You don't have permission to view mock status.", is_error=True)
         oc_token = mock_config['environments'][environment]['openshift_token']
-        site = mock_config['site']
+        site = mock_config['environments'][environment]['site']
         result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
-        prefix = mock_config['prefix']
+        prefix = mock_config['environments'][environment]['prefix']
         result_text += subprocess.check_output(['oc', 'project', environment.lower()]).decode() + '\n' * 3
         first_status = list(mock_config['environments'][environment]['status'].keys())[0]
         microservices = list(mock_config['environments'][environment]['status'][first_status].keys())
