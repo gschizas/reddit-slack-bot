@@ -1111,7 +1111,11 @@ class SlackbotShell(cmd.Cmd):
         result_text = subprocess.check_output(login_command).decode() + '\n' * 3
         prefix = mock_config['environments'][environment]['prefix']
         self._send_text(f"Setting mock status to {mock_status} for project {environment}...")
-        change_project_command = ['oc', 'project', environment.lower()]
+        project_name = environment.lower()
+        project_prefix = mock_config['environments'][environment].get('projectPrefix')
+        if project_prefix:
+            project_name = project_prefix + '-' + project_name
+        change_project_command = ['oc', 'project', project_name]
         result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
         statuses = mock_config['environments'][environment]['status'][mock_status]
         for microservice_info, status in statuses.items():
