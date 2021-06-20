@@ -862,7 +862,7 @@ class SlackbotShell(cmd.Cmd):
         if (username := self._extract_username(username)) is None:
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
-        u = self.reddit_session.redditor(username)
+        u = self.bot_reddit_session.redditor(username)
         all_comments = u.comments.new(limit=None)
         removed_comments = 0
         other_subreddits = 0
