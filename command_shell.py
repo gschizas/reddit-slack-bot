@@ -1324,6 +1324,7 @@ class SlackbotShell(cmd.Cmd):
 
         if thread_id.upper() == 'NEW':
             submission = sr.submit(wiki_title, wiki_text_body)
+            submission.mod.distinguish(how='yes', sticky=True)
             self._send_text(self.bot_reddit_session.config.reddit_url + submission.permalink)
         else:
             submission = self.bot_reddit_session.submission(thread_id)
