@@ -1071,6 +1071,11 @@ class SlackbotShell(cmd.Cmd):
         Display free disk space"""
         self._send_text(self._diskfree())
 
+    def do_disk_space_ex(self, arg):
+        """\
+        Display free disk space"""
+        self._send_text('```' + subprocess.check_output(['duf', '-only', 'local', '-output', 'mountpoint,size,avail,usage', '-style', 'unicode', '-width', '120']).decode() + '```')
+
     @staticmethod
     def _mock_config():
         if os.environ['MOCK_CONFIGURATION'].startswith('/'):
