@@ -1655,7 +1655,7 @@ class SlackbotShell(cmd.Cmd):
                 if computer_name:
                     if a_computer_name.lower() != a_computer_name.lower():
                         continue
-                self._cheese_db_view(SQL_CHEESE_QUEUE_ADD, {
+                self._cheese_db_exec(SQL_CHEESE_QUEUE_ADD, {
                     'machine_name': a_computer_name,
                     'job_data': json.dumps(job_data)
                 })
