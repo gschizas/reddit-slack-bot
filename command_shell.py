@@ -1605,27 +1605,37 @@ class SlackbotShell(cmd.Cmd):
         result_fields = []
         with open('data/cheese_agent.yml') as f:
             config = yaml.load(f)
-        for setup_info in config['setup']:
-            if setup_info['slack_id'] == self.user_id:
-                computer_name = setup_info['computer_name']
-                rows = self._cheese_db_query(SQL_CHEESE_VIEW, {'machine_name': computer_name})
+        args = arg.split()
+        if not args:
+            self._send_text("You must specify a subcommand", is_error=True)
+            return
+        subcommand = args[0].lower()
+        if subcommand == 'ngrok_status':
+            for setup_info in config['setup']:
+                if setup_info['slack_id'] == self.user_id:
+                    computer_name = setup_info['computer_name']
+                    rows = self._cheese_db_query(SQL_CHEESE_VIEW, {'machine_name': computer_name})
 
-                if rows:
-                    payload = rows[0][0]
-                    ngrok_address = payload['ngrok']['tunnels'][0]['public_url']
-                    result_fields.append(f"{computer_name}: {ngrok_address}")
-        if result_fields:
-            result_blocks = [{
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "Status"
-                },
-                "fields": [{"type": "plain_text", "text": result_field} for result_field in result_fields]
-            }]
-            self._send_blocks(result_blocks)
+                    if rows:
+                        payload = rows[0][0]
+                        ngrok_address = payload['ngrok']['tunnels'][0]['public_url']
+                        result_fields.append(f"{computer_name}: {ngrok_address}")
+            if result_fields:
+                result_blocks = [{
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "Status"
+                    },
+                    "fields": [{"type": "plain_text", "text": result_field} for result_field in result_fields]
+                }]
+                self._send_blocks(result_blocks)
+            else:
+                self._send_text("No Data", is_error=True)
+        elif subcommand == 'ngrok_restart':
+            pass
         else:
-            self._send_text("No Data", is_error=True)
+            self._send_text(f"Unrecognized subcommand {subcommand}", is_error=True)
 
     @staticmethod
     def _cheese_db_query(sql_cmd, cmd_vars):
