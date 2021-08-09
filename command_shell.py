@@ -1655,19 +1655,35 @@ class SlackbotShell(cmd.Cmd):
                 if computer_name:
                     if a_computer_name.lower() != a_computer_name.lower():
                         continue
-                self._cheese_db_query(SQL_CHEESE_QUEUE_ADD, {
+                self._cheese_db_view(SQL_CHEESE_QUEUE_ADD, {
                     'machine_name': a_computer_name,
-                    'job_data': job_data
+                    'job_data': json.dumps(job_data)
                 })
 
     @staticmethod
-    def _cheese_db_query(sql_cmd, cmd_vars):
+    def _cheese_db_view(sql_cmd, cmd_vars):
+        return SlackbotShell._cheese_db_query(sql_cmd, cmd_vars, get_rows=True)
+
+    @staticmethod
+    def _cheese_db_exec(sql_cmd, cmd_vars):
+        return SlackbotShell._cheese_db_query(sql_cmd, cmd_vars, get_rows=False)
+
+    @staticmethod
+    def _cheese_db_query(sql_cmd, cmd_vars, get_rows: bool):
+        rows = None
+        success = False
         database_url = os.environ['CHEESE_DATABASE_URL']
         conn = psycopg2.connect(database_url)
         conn.autocommit = True
         cur = conn.cursor()
         cur.execute(sql_cmd, vars=cmd_vars)
-        rows = cur.fetchall()
+        if get_rows:
+            rows = cur.fetchall()
+        else:
+            success = cur.rowcount > 0
         cur.close()
         conn.close()
-        return rows
+        if get_rows:
+            return rows
+        else:
+            return success
