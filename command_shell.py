@@ -1608,15 +1608,7 @@ class SlackbotShell(cmd.Cmd):
         for setup_info in config['setup']:
             if setup_info['slack_id'] == self.user_id:
                 computer_name = setup_info['computer_name']
-                database_url = os.environ['CHEESE_DATABASE_URL']
-                conn = psycopg2.connect(database_url)
-                conn.autocommit = True
-                cur = conn.cursor()
-                cmd_vars = {'machine_name': computer_name}
-                cur.execute(SQL_CHEESE_VIEW, vars=cmd_vars)
-                rows = cur.fetchall()
-                cur.close()
-                conn.close()
+                rows = self._cheese_db_query(SQL_CHEESE_VIEW, {'machine_name': computer_name})
 
                 if rows:
                     payload = rows[0][0]
@@ -1634,5 +1626,17 @@ class SlackbotShell(cmd.Cmd):
             self._send_blocks(result_blocks)
         else:
             self._send_text("No Data", is_error=True)
+
+    @staticmethod
+    def _cheese_db_query(sql_cmd, cmd_vars):
+        database_url = os.environ['CHEESE_DATABASE_URL']
+        conn = psycopg2.connect(database_url)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(sql_cmd, vars=cmd_vars)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
 
 
