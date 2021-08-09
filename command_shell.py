@@ -34,7 +34,8 @@ from tabulate import tabulate
 from bot_framework.common import normalize_text
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
-    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, SQL_CHEESE_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
+    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, SQL_CHEESE_VIEW, SQL_CHEESE_QUEUE_ADD, \
+    ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
     WIKI_PAGE_BAD_FORMAT, MID_DOT
 
 locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
