@@ -1612,7 +1612,7 @@ class SlackbotShell(cmd.Cmd):
         subcommand = args[0].lower()
         if subcommand == 'ngrok_status':
             for setup_info in config['setup']:
-                if setup_info['slack_id'] == self.user_id:
+                if self.user_id in setup_info['slack_ids']:
                     computer_name = setup_info['computer_name']
                     rows = self._cheese_db_query(SQL_CHEESE_VIEW, {'machine_name': computer_name})
 
