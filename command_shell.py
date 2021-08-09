@@ -34,7 +34,7 @@ from tabulate import tabulate
 from bot_framework.common import normalize_text
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
-    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
+    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, SQL_CHEESE_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
     WIKI_PAGE_BAD_FORMAT, MID_DOT
 
 locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
@@ -1300,7 +1300,7 @@ class SlackbotShell(cmd.Cmd):
         a post according to the included data.
 
         Note that there's no need for a separate wiki page for each post, the wiki page can be reused
-        
+
         Syntax:
         make_post NEW wiki_page
         make_post thread_id wiki_page
@@ -1599,3 +1599,40 @@ class SlackbotShell(cmd.Cmd):
 
     do_stock = do_stocks
     do_stonk = do_stocks
+
+    def do_cheese(self, arg):
+        """Cheese Service Agent"""
+        result_fields = []
+        with open('data/cheese_agent.yml') as f:
+            config = yaml.load(f)
+        for setup_info in config['setup']:
+            if setup_info['slack_id'] == self.user_id:
+                computer_name = setup_info['computer_name']
+                database_url = os.environ['CHEESE_DATABASE_URL']
+                conn = psycopg2.connect(database_url)
+                conn.autocommit = True
+                cur = conn.cursor()
+                cmd_vars = {'machine_name': computer_name}
+                cur.execute(SQL_CHEESE_VIEW, vars=cmd_vars)
+                rows = cur.fetchall()
+                cur.close()
+                conn.close()
+
+                if rows:
+                    payload = rows[0][0]
+                    ngrok_address = payload['ngrok']['tunnels'][0]['public_url']
+                    result_fields.append(f"{computer_name}: {ngrok_address}")
+        if result_fields:
+            result_blocks = [{
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Status"
+                },
+                "fields": [{"type": "plain_text", "text": result_field} for result_field in result_fields]
+            }]
+            self._send_blocks(result_blocks)
+        else:
+            self._send_text("No Data", is_error=True)
+
+

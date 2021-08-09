@@ -38,6 +38,7 @@ FROM kudos
 WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
 GROUP BY to_user
 ORDER BY 2 DESC;"""
+SQL_CHEESE_VIEW = """SELECT "objectData" FROM "machineState" WHERE "machineState"."machineName" = %(machine_name)s;"""
 ARCHIVE_URL = 'http://archive.is'
 CHROME_USER_AGENT = (
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
