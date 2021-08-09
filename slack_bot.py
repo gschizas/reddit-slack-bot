@@ -96,6 +96,9 @@ def main():
         del SlackbotShell.do_mock
         del SlackbotShell.do_check_mock
 
+    if 'CHEESE_DATABASE_URL' not in os.environ:
+        del SlackbotShell.do_cheese
+
     if shell.subreddit_name:
         shell.sr = shell.reddit_session.subreddit(shell.subreddit_name)
     shell.trigger_words = os.environ['BOT_NAME'].split()
