@@ -34,7 +34,8 @@ from tabulate import tabulate
 from bot_framework.common import normalize_text
 from bot_framework.yaml_wrapper import yaml
 from constants import SQL_SURVEY_PREFILLED_ANSWERS, SQL_SURVEY_TEXT, SQL_SURVEY_SCALE_MATRIX, SQL_SURVEY_PARTICIPATION, \
-    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, SQL_CHEESE_VIEW, ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
+    SQL_KUDOS_INSERT, SQL_KUDOS_VIEW, SQL_CHEESE_VIEW, SQL_CHEESE_QUEUE_ADD, \
+    ARCHIVE_URL, CHROME_USER_AGENT, MAGIC_8_BALL_OUTCOMES, DICE_REGEX, \
     WIKI_PAGE_BAD_FORMAT, MID_DOT
 
 locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
@@ -1638,9 +1639,26 @@ class SlackbotShell(cmd.Cmd):
             else:
                 self._send_text("No Data", is_error=True)
         elif subcommand == 'ngrok_restart':
-            pass
+            if len(args) < 2:
+                self._send_text("You need to specifiy a computer")
+            job_data = dict(kind='ngrok_restart', machinetext='Hello, world')
+            self._cheese_add_to_queue(config, job_data, computer_name=args[1])
+        elif subcommand == 'message':
+            self._cheese_add_to_queue(config, dict(kind='message', text='Hello, world'))
         else:
             self._send_text(f"Unrecognized subcommand {subcommand}", is_error=True)
+
+    def _cheese_add_to_queue(self, config, job_data, computer_name=None):
+        for setup_info in config['setup']:
+            if self.user_id in setup_info['slack_ids']:
+                a_computer_name = setup_info['computer_name']
+                if computer_name:
+                    if a_computer_name.lower() != a_computer_name.lower():
+                        continue
+                self._cheese_db_query(SQL_CHEESE_QUEUE_ADD, {
+                    'machine_name': a_computer_name,
+                    'job_data': job_data
+                })
 
     @staticmethod
     def _cheese_db_query(sql_cmd, cmd_vars):
