@@ -1640,9 +1640,11 @@ class SlackbotShell(cmd.Cmd):
                 self._send_text("No Data", is_error=True)
         elif subcommand == 'ngrok_restart':
             if len(args) < 2:
-                self._send_text("You need to specifiy a computer")
-            job_data = dict(kind='ngrok_restart', machinetext='Hello, world')
-            self._cheese_add_to_queue(config, job_data, computer_name=args[1])
+                self._send_text("You need to specifiy a computer", is_error=True)
+                return
+            computer_name = args[1]
+            job_data = dict(kind='ngrok_restart', machine=computer_name)
+            self._cheese_add_to_queue(config, job_data, computer_name=computer_name)
         elif subcommand == 'message':
             computer_name = args[1]
             if len(args) < 3:
