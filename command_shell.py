@@ -1633,7 +1633,6 @@ class SlackbotShell(cmd.Cmd):
                     "type": "section",
                     "fields": [{"type": "mrkdwn", "text": result_field} for result_field in result_fields]
                 }]
-                self._send_file(file_data=repr(result_blocks).encode(), filename='blocks.json')
                 self._send_blocks(result_blocks)
             else:
                 self._send_text("No Data", is_error=True)
