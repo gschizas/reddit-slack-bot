@@ -38,7 +38,7 @@ FROM kudos
 WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
 GROUP BY to_user
 ORDER BY 2 DESC;"""
-SQL_CHEESE_VIEW = """SELECT "objectData" FROM "machineState" WHERE "machineState"."machineName" = %(machine_name)s;"""
+SQL_CHEESE_VIEW = """SELECT "objectData", "lastUpdate" FROM "machineState" WHERE "machineState"."machineName" = %(machine_name)s;"""
 SQL_CHEESE_QUEUE_ADD = """\
 INSERT INTO public."jobQueue"(
     "machineName", "jobData")

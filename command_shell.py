@@ -1623,18 +1623,17 @@ class SlackbotShell(cmd.Cmd):
                     rows = self._cheese_db_view(SQL_CHEESE_VIEW, {'machine_name': computer_name})
 
                     if rows:
-                        payload = rows[0][0]
+                        payload = rows[0]['objectData']
+                        last_update = rows[0]['lastUpdate']
                         ngrok_address = payload['ngrok']['tunnels'][0]['public_url']
-                        result_fields.append(f"{computer_name}: {ngrok_address}")
+                        result_fields.append(f"*{computer_name}*: {ngrok_address}")
+                        result_fields.append(f"Last update: {last_update:%a %d %b %Y %H:%M:%S}")
             if result_fields:
                 result_blocks = [{
                     "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": "Status"
-                    },
-                    "fields": [{"type": "plain_text", "text": result_field} for result_field in result_fields]
+                    "fields": [{"type": "mrkdwn", "text": result_field} for result_field in result_fields]
                 }]
+                self._send_file(file_data=repr(result_blocks).encode(), filename='blocks.json')
                 self._send_blocks(result_blocks)
             else:
                 self._send_text("No Data", is_error=True)
@@ -1695,12 +1694,13 @@ class SlackbotShell(cmd.Cmd):
         cur = conn.cursor()
         cur.execute(sql_cmd, vars=cmd_vars)
         if get_rows:
+            descr = [col.name for col in cur.description]
             rows = cur.fetchall()
         else:
             success = cur.rowcount > 0
         cur.close()
         conn.close()
         if get_rows:
-            return rows
+            return [dict(zip(descr, row)) for row in rows]
         else:
             return success
