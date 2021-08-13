@@ -22,6 +22,7 @@ from contextlib import contextmanager
 
 import humanfriendly
 import praw
+import prawcore
 import psutil
 import psycopg2
 import requests
@@ -864,6 +865,17 @@ class SlackbotShell(cmd.Cmd):
             self._send_text(f'{username} is not a valid username', is_error=True)
             return
         u = self.bot_reddit_session.redditor(username)
+        try:
+            u._fetch()
+        except prawcore.exceptions.ResponseException as ex:
+            if ex.response.status_code == 400:
+                self._send_text(f'{username} may be shadowbanned')
+                return
+            elif ex.response.status_code == 404:
+                self._send_text(f'{username} not found')
+                return
+            raise
+
         all_comments = u.comments.new(limit=None)
         removed_comments = 0
         other_subreddits = 0
@@ -872,6 +884,13 @@ class SlackbotShell(cmd.Cmd):
         other_subreddit_history = {}
         cutoff_age = CUTOFF_AGES[timeframe]
         now = datetime.datetime.utcnow()
+
+        result = ""
+
+        try:
+            all_comments = list(all_comments)
+        except Exception as ex:
+            all_comments = []
 
         for c in all_comments:
             comment_subreddit_name = c.subreddit.display_name.lower()
@@ -890,7 +909,7 @@ class SlackbotShell(cmd.Cmd):
                 continue
             c.mod.remove()
             removed_comments += 1
-        result = (
+        result += (
             f"Removed {removed_comments} comments.\n"
             f"{other_subreddits} comments in other subreddits.\n"
             f"{already_removed} comments were already removed.\n"
