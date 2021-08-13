@@ -1644,7 +1644,16 @@ class SlackbotShell(cmd.Cmd):
             job_data = dict(kind='ngrok_restart', machinetext='Hello, world')
             self._cheese_add_to_queue(config, job_data, computer_name=args[1])
         elif subcommand == 'message':
-            self._cheese_add_to_queue(config, dict(kind='message', text='Hello, world'))
+            computer_name = args[1]
+            if len(args) < 3:
+                self._send_text("You need to specifiy a message", is_error=True)
+                return
+            elif len(args) < 2:
+                self._send_text("You need to specifiy a computer", is_error=True)
+                return
+            computer_name = args[1]
+            message_text = ' '.join(args[2:])
+            self._cheese_add_to_queue(config, dict(kind='message', text=message_text), computer_name=computer_name)
         else:
             self._send_text(f"Unrecognized subcommand {subcommand}", is_error=True)
 
