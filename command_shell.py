@@ -1620,7 +1620,7 @@ class SlackbotShell(cmd.Cmd):
             for setup_info in config['setup']:
                 if self.user_id in setup_info['slack_ids']:
                     computer_name = setup_info['computer_name']
-                    rows = self._cheese_db_query(SQL_CHEESE_VIEW, {'machine_name': computer_name})
+                    rows = self._cheese_db_view(SQL_CHEESE_VIEW, {'machine_name': computer_name})
 
                     if rows:
                         payload = rows[0][0]
