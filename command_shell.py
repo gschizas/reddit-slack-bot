@@ -1645,6 +1645,12 @@ class SlackbotShell(cmd.Cmd):
             computer_name = args[1]
             job_data = dict(kind='ngrok_restart', machine=computer_name)
             self._cheese_add_to_queue(config, job_data, computer_name=computer_name)
+        elif subcommand == 'citrix_restart':
+            if len(args) < 2:
+                self._send_text("You need to specify a computer", is_error=True)
+            computer_name = args[1]
+            job_data = dict(kind='citrix_restart', machine=computer_name)
+            self._cheese_add_to_queue(config, job_data, computer_name=computer_name)
         elif subcommand == 'message':
             computer_name = args[1]
             if len(args) < 3:
