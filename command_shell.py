@@ -1686,7 +1686,7 @@ class SlackbotShell(cmd.Cmd):
             if self.user_id in setup_info['slack_ids']:
                 a_computer_name = setup_info['computer_name']
                 if computer_name:
-                    if a_computer_name.lower() != a_computer_name.lower():
+                    if a_computer_name.lower() != computer_name.lower():
                         continue
                 self._cheese_db_exec(SQL_CHEESE_QUEUE_ADD, {
                     'machine_name': a_computer_name,
