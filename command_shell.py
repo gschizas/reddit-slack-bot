@@ -1669,6 +1669,30 @@ class SlackbotShell(cmd.Cmd):
             computer_name = args[1]
             job_data = dict(kind='citrix_restart', machine=computer_name)
             self._cheese_add_to_queue(config, job_data, computer_name=computer_name)
+        elif subcommand == 'citrix_status':
+            for setup_info in config['setup']:
+                if self.user_id in setup_info['slack_ids']:
+                    computer_name = setup_info['computer_name']
+                    rows = self._cheese_db_view(SQL_CHEESE_VIEW, {'machine_name': computer_name})
+
+                    if rows:
+                        payload = rows[0]['objectData']
+                        last_update = rows[0]['lastUpdate']
+                        services_info = payload['citrix_services_info']
+                        for si in services_info:
+                            result_fields.append(f"{si['ShortName']} _{si['Description']}_")
+                            result_fields.append(f"{si['Status']['CurrentState']}")
+            if result_fields:
+                result_blocks = [{
+                    "type": "section",
+                    "fields": [{"type": "mrkdwn", "text": result_field} for result_field in result_fields]
+                }]
+                self._send_ephemeral(blocks=result_blocks)
+            if len(args) < 2:
+                self._send_text("You need to specify a computer", is_error=True)
+            computer_name = args[1]
+            job_data = dict(kind='citrix_restart', machine=computer_name)
+            self._cheese_add_to_queue(config, job_data, computer_name=computer_name)
         elif subcommand == 'message':
             if len(args) < 3:
                 self._send_text("You need to specifiy a message", is_error=True)
