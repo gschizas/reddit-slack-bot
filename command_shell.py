@@ -1670,6 +1670,7 @@ class SlackbotShell(cmd.Cmd):
             job_data = dict(kind='citrix_restart', machine=computer_name)
             self._cheese_add_to_queue(config, job_data, computer_name=computer_name)
         elif subcommand == 'citrix_status':
+            result_blocks = []
             for setup_info in config['setup']:
                 if self.user_id in setup_info['slack_ids']:
                     computer_name = setup_info['computer_name']
@@ -1678,15 +1679,38 @@ class SlackbotShell(cmd.Cmd):
                     if rows:
                         payload = rows[0]['objectData']
                         last_update = rows[0]['lastUpdate']
+                        result_blocks.append({
+                            "type": "header",
+                            "text": {
+                                "type": "plain_text",
+                                "text": f"Citrix Services Status for {computer_name}"}})
+                        result_blocks.append({
+                            "type": "context",
+                            "elements": [
+                                {
+                                    "type": "plain_text",
+                                    "text": f"Last Update: {last_update:%a %d %b %Y %H:%M:%S}"
+                                }
+                            ]
+                        })
                         services_info = payload['citrix_services_info']
                         for si in services_info:
-                            result_fields.append(f"{si['ShortName']} _{si['Description']}_")
-                            result_fields.append(f"{si['Status']['CurrentState']}")
-            if result_fields:
-                result_blocks = [{
-                    "type": "section",
-                    "fields": [{"type": "mrkdwn", "text": result_field} for result_field in result_fields]
-                }]
+                            status_emoji = {
+                                'SERVICE_STOPPED': 'x',
+                                'SERVICE_START_PENDING': 'black_right_pointing_triangle_with_double_vertical_bar',
+                                'SERVICE_STOP_PENDING': 'black_square_for_stop',
+                                'SERVICE_RUNNING': 'white_check_mark',
+                                'SERVICE_CONTINUE_PENDING': 'arrow_double_up',
+                                'SERVICE_PAUSE_PENDING': 'arrow_double_down',
+                                'SERVICE_PAUSED': 'double_vertical_bar'}.get(si['CurrentState'], 'question')
+                            result_blocks.append({
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": f":{status_emoji}: {si['ShortName']} ({si['Description']})"
+                                }
+                            })
+            if result_blocks:
                 self._send_ephemeral(blocks=result_blocks)
             if len(args) < 2:
                 self._send_text("You need to specify a computer", is_error=True)
