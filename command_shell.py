@@ -1702,7 +1702,7 @@ class SlackbotShell(cmd.Cmd):
                                 'SERVICE_RUNNING': 'white_check_mark',
                                 'SERVICE_CONTINUE_PENDING': 'arrow_double_up',
                                 'SERVICE_PAUSE_PENDING': 'arrow_double_down',
-                                'SERVICE_PAUSED': 'double_vertical_bar'}.get(si['CurrentState'], 'question')
+                                'SERVICE_PAUSED': 'double_vertical_bar'}.get(si['Status']['CurrentState'], 'question')
                             result_blocks.append({
                                 "type": "section",
                                 "text": {
