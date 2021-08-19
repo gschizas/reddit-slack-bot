@@ -61,7 +61,7 @@ def state_file(path):
 
 class SlackbotShell(cmd.Cmd):
     def __init__(self, **kwargs):
-        super().__init__(self, stdout=io.StringIO(), **kwargs)
+        super().__init__(stdout=io.StringIO(), **kwargs)
         self.trigger_words = []
         self.channel_id = None
         self.team_id = None
