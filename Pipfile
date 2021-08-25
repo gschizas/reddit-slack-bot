@@ -23,6 +23,7 @@ yfinance = "*"
 psycopg2-binary = "*"
 psutil = "*"
 humanfriendly = "*"
+click = "*"
 
 [dev-packages]
 
