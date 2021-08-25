@@ -7,12 +7,17 @@ import psycopg2
 from bot_framework.yaml_wrapper import yaml
 from commands import gyrobot, chat
 
+config = None
 
+
+def __init__():
+    global config
+    config = _config()
 
 
 def _config():
     with open('data/cheese_agent.yml') as f:
-        _config = yaml.load(f)
+        return yaml.load(f)
 
 
 def _cheese_db_view(sql_cmd, cmd_vars):
@@ -84,7 +89,7 @@ def ngrok_status(ctx):
 def ngrok_restart(computer):
     computer_name = computer
     job_data = dict(kind='ngrok_restart', machine=computer_name)
-    _cheese_add_to_queue(config, job_data, computer_name=computer_name)
+    _cheese_add_to_queue(job_data, computer_name=computer_name)
 
 
 @cheese.group('citrix')
@@ -96,7 +101,7 @@ def citrix():
 @click.argument('computer')
 def citrix_restart(computer):
     job_data = dict(kind='citrix_restart', machine=computer)
-    _cheese_add_to_queue(config, job_data, computer_name=computer)
+    _cheese_add_to_queue(job_data, computer_name=computer)
 
 
 @citrix.command('status')
@@ -149,7 +154,7 @@ def citrix_status(ctx, computer):
         chat(ctx).send_text("You need to specify a computer", is_error=True)
     computer_name = args[1]
     job_data = dict(kind='citrix_restart', machine=computer_name)
-    _cheese_add_to_queue(config, job_data, computer_name=computer_name)
+    _cheese_add_to_queue(job_data, computer_name=computer_name)
 
 
 @cheese.command('message')
@@ -158,10 +163,10 @@ def citrix_status(ctx, computer):
 @click.pass_context
 def message(ctx, computer, message):
     message_text = ' '.join(message)
-    _cheese_add_to_queue(config, dict(kind='message', text=message_text), computer_name=computer)
+    _cheese_add_to_queue(dict(kind='message', text=message_text), computer_name=computer)
 
 
-def _cheese_add_to_queue(self, config, job_data, computer_name=None):
+def _cheese_add_to_queue(self, job_data, computer_name=None):
     for setup_info in config['setup']:
         if self.user_id in setup_info['slack_ids']:
             a_computer_name = setup_info['computer_name']
