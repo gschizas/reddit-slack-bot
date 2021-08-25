@@ -589,7 +589,7 @@ def configure_enhanced_crowd_control_list(ctx):
         from_date_text = from_date.isoformat() if from_date else "-\u221e"
         to_date_text = to_date.isoformat() if to_date else "+\u221e"
         action_emoji = '\u274c' if thread['action'] == 'remove' else '\u2611'
-        text += (f"{1 + thread_index}. {action_emoji} {self.reddit_session.config.reddit_url}{permalink}\t"
+        text += (f"{1 + thread_index}. {action_emoji} {reddit_session(ctx).config.reddit_url}{permalink}\t"
                  f"(on {submission_date:%Y-%m-%d %H:%M:%S UTC}) "
                  f"(monitoring {from_date_text} \u2014 {to_date_text})")
         text += "\n"
