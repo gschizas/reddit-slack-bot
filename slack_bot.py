@@ -150,7 +150,11 @@ def handle_message(**payload):
     line = ' '.join(text.split()[1:])
     try:
         line = precmd(line)
-        commands.gyrobot.main(args=line.split(),
+        args = line.split()
+        if args[0].lower() == 'help':
+            args.pop(0)
+            args.append('--help')
+        commands.gyrobot.main(args=args,
                               prog_name=trigger_words[0],
                               standalone_mode=False,
                               obj={
