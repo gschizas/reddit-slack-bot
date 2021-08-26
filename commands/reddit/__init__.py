@@ -138,7 +138,8 @@ def modqueue_grouped(ctx):
     grouped_items = [f"{item[1]} items from <{r.config.reddit_url}/u/{item[0].name}|{item[0].name}>"
                      for item in grouped_step_3]
     final_text = '\n'.join(grouped_items)
-    chat(ctx).send_fields("Modqueue by redditor", {"type": "section", "text": {"type": "mrkdwn", "text": final_text}})
+    fields = [{"type": "section", "text": {"type": "mrkdwn", "text": final_text}}]
+    chat(ctx).send_fields(text = "Modqueue by redditor", fields=fields)
 
 
 @modqueue.command('length', default_command=True)
