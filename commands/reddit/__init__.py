@@ -132,13 +132,26 @@ def modqueue_comments(ctx):
 @click.pass_context
 def modqueue_grouped(ctx):
     modqueue_list = list(subreddit(ctx).mod.modqueue(limit=None))
-    grouped_step_1 = collections.Counter(modqueue_list)
+    if len(modqueue_list) < 1:
+        chat(ctx).send_text('Modqueue is empty!', is_error=True)
+        return
+    grouped_step_1 = collections.Counter([mq.author for mq in modqueue_list])
     grouped_step_2 = sorted(grouped_step_1.items(), key=lambda x: -x[1])
     grouped_step_3 = [item for item in grouped_step_2 if item[1] > 1]
     grouped_items = [f"{item[1]} items from <{reddit_session(ctx).config.reddit_url}/u/{item[0].name}|{item[0].name}>"
                      for item in grouped_step_3]
-    final_text = '\n'.join(grouped_items)
-    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": final_text}}]
+    if len(grouped_items) < 1:
+        chat(ctx).send_text('No duplicate entries in modqueue!', is_error=True)
+        return
+    inner_text = ''
+    blocks = []
+    for item in grouped_items:
+        if len(inner_text) < 2000:
+            inner_text += item + '\n'
+        else:
+            blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": inner_text.strip('\n')}})
+            inner_text = ''
+    blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": inner_text}})
     chat(ctx).send_blocks(blocks)
 
 
