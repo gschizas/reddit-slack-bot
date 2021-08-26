@@ -1,4 +1,5 @@
 import base64
+import collections
 import datetime
 import json
 import os
@@ -125,6 +126,19 @@ def modqueue_comments(ctx):
     else:
         text = "No comments in modqueue"
     chat(ctx).send_text(text)
+
+
+@modqueue.command('grouped')
+@click.pass_context
+def modqueue_grouped(ctx):
+    modqueue_list = list(subreddit(ctx).mod.modqueue(limit=None))
+    grouped_step_1 = collections.Counter(modqueue_list)
+    grouped_step_2 = sorted(grouped_step_1.items(), key=lambda x: -x[1])
+    grouped_step_3 = [item for item in grouped_step_2 if item[1] > 1]
+    grouped_items = [f"{item[1]} items from <{r.config.reddit_url}/u/{item[0].name}|{item[0].name}>"
+                     for item in grouped_step_3]
+    final_text = '\n'.join(grouped_items)
+    chat(ctx).send_fields({"type": "section", "text": {"type": "mrkdwn", "text": final_text}})
 
 
 @modqueue.command('length', default_command=True)
