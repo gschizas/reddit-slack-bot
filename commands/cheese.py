@@ -159,6 +159,7 @@ def citrix_status(ctx, computer):
 def message(ctx, computer, message):
     message_text = ' '.join(message)
     _cheese_add_to_queue(dict(kind='message', text=message_text), computer_name=computer)
+    chat(ctx).send_ephemeral(f"Restaring {computer} citrix services")
 
 
 def _cheese_add_to_queue(self, job_data, computer_name=None):
