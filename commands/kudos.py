@@ -46,7 +46,7 @@ def kudos(ctx):
     kudos view to see all kudos so far
     kudos view 15 to see kudos given last 15 days
     """
-    chat(ctx).send_text('kudos')
+    pass
     # if len(args) == 0:
     #     chat(ctx).send_text(("You need to specify a user "
     #                          "(i.e. @pikos_apikos) or "
