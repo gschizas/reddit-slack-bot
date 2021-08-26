@@ -11,13 +11,13 @@ import click
 import praw
 import prawcore
 import requests
-from requests.structures import CaseInsensitiveDict
 from requests.adapters import HTTPAdapter
+from requests.structures import CaseInsensitiveDict
 
+from bot_framework.yaml_wrapper import yaml
 from commands import gyrobot, chat, subreddit, DefaultCommandGroup, reddit_session, logger, bot_reddit_session, \
     ClickAliasedGroup
 from state_file import state_file
-from bot_framework.yaml_wrapper import yaml
 
 ARCHIVE_URL = 'http://archive.is'
 CHROME_USER_AGENT = (
