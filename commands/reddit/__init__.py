@@ -135,7 +135,7 @@ def modqueue_grouped(ctx):
     grouped_step_1 = collections.Counter(modqueue_list)
     grouped_step_2 = sorted(grouped_step_1.items(), key=lambda x: -x[1])
     grouped_step_3 = [item for item in grouped_step_2 if item[1] > 1]
-    grouped_items = [f"{item[1]} items from <{r.config.reddit_url}/u/{item[0].name}|{item[0].name}>"
+    grouped_items = [f"{item[1]} items from <{reddit_session(ctx).config.reddit_url}/u/{item[0].name}|{item[0].name}>"
                      for item in grouped_step_3]
     final_text = '\n'.join(grouped_items)
     blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": final_text}}]
