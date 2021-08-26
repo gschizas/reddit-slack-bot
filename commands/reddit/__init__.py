@@ -326,8 +326,6 @@ def nuke_user(ctx, username: str, timeframe: str = None, remove_submissions: boo
     Accepted values are 24 (default), 48, 72, A_WEEK, TWO_WEEKS, A_MONTH, THREE_MONTHS, FOREVER_AND_EVER
     Add SUBMISSIONS or POSTS to remove submissions as well.
     """
-    # global sc
-    click.echo_via_pager('test')
     # FOREVER_AND_EVER is 100 years. Should be enough.
 
     timeframe = timeframe or '24'
