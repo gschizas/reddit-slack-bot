@@ -9,6 +9,14 @@ from commands import gyrobot, chat
 
 config = None
 
+SQL_CHEESE_VIEW = """\
+SELECT "objectData", "lastUpdate"
+FROM "machineState"
+WHERE "machineState"."machineName" = %(machine_name)s;"""
+SQL_CHEESE_QUEUE_ADD = """\
+INSERT INTO public."jobQueue"("machineName", "jobData")
+VALUES (%(machine_name)s, %(job_data)s);"""
+
 
 def __init__():
     global config
@@ -173,11 +181,3 @@ def _cheese_add_to_queue(self, job_data, computer_name=None):
                 'machine_name': a_computer_name,
                 'job_data': json.dumps(job_data)
             })
-
-
-SQL_CHEESE_VIEW = """SELECT "objectData", "lastUpdate" FROM "machineState" WHERE "machineState"."machineName" = %(machine_name)s;"""
-SQL_CHEESE_QUEUE_ADD = """\
-INSERT INTO public."jobQueue"(
-    "machineName", "jobData")
-    VALUES (%(machine_name)s, %(job_data)s);
-"""
