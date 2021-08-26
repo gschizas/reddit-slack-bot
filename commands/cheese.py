@@ -164,10 +164,10 @@ def citrix_status(ctx, computer):
 @click.argument('computer', nargs=1)
 @click.argument('message', nargs=-1)
 @click.pass_context
-def message(ctx, computer, message):
+def send_message(ctx, computer, message):
     message_text = ' '.join(message)
     _cheese_add_to_queue(dict(kind='message', text=message_text), computer_name=computer)
-    chat(ctx).send_ephemeral(f"Restaring {computer} citrix services")
+    chat(ctx).send_ephemeral(f"Send message to {computer}")
 
 
 def _cheese_add_to_queue(self, job_data, computer_name=None):
