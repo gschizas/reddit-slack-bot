@@ -150,11 +150,6 @@ def citrix_status(ctx, computer):
                     })
     if result_blocks:
         chat(ctx).send_ephemeral(blocks=result_blocks)
-    if len(args) < 2:
-        chat(ctx).send_text("You need to specify a computer", is_error=True)
-    computer_name = args[1]
-    job_data = dict(kind='citrix_restart', machine=computer_name)
-    _cheese_add_to_queue(job_data, computer_name=computer_name)
 
 
 @cheese.command('message')
