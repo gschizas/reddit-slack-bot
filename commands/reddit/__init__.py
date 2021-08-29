@@ -340,12 +340,14 @@ def nuke_user(ctx, username: str, timeframe: str = None, remove_submissions: boo
         u._fetch()
     except prawcore.exceptions.ResponseException as ex:
         if ex.response.status_code == 400:
-            chat(ctx).send_text(f'{username} may be shadowbanned')
+            chat(ctx).send_text(f'{username} may be shadowbanned', is_error=True)
             return
         elif ex.response.status_code == 404:
-            chat(ctx).send_text(f'{username} not found')
+            chat(ctx).send_text(f'{username} not found', is_error=True)
             return
         raise
+    if hasattr(u, 'is_suspended') and u.is_suspended:
+        chat(ctx).send_text(f"{username} is suspended", is_error=True)
 
     all_comments = u.comments.new(limit=None)
     removed_comments = 0
@@ -360,7 +362,11 @@ def nuke_user(ctx, username: str, timeframe: str = None, remove_submissions: boo
 
     try:
         all_comments = list(all_comments)
+    except prawcore.exceptions.Forbidden as ex:
+        chat(ctx).send_text(f"User `{username}` is probably suspended", is_error=True)
+        return
     except Exception as ex:
+        logger(ctx).warn(type(ex))
         all_comments = []
 
     for c in all_comments:
