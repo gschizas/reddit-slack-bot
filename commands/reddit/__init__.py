@@ -161,19 +161,23 @@ def modqueue_length(ctx):
     """Show modqueue length"""
     posts_modqueue_length = len(list(subreddit(ctx).mod.modqueue(only='submissions', limit=None)))
     comments_modqueue_length = len(list(subreddit(ctx).mod.modqueue(only='comments', limit=None)))
+    modmail_open_length = len(list(subreddit(ctx).modmail.conversations(limit=1000)))
     post_descr = 'posts' if posts_modqueue_length != 1 else 'post'
     comment_descr = 'comments' if comments_modqueue_length != 1 else 'comment'
+    modmail_descr = 'modmails' if modmail_open_length != 1 else 'modmail'
     if posts_modqueue_length == 0 and comments_modqueue_length == 0:
         with state_file('kitteh') as pref_cache:
-            creature = pref_cache.get(
-                chat(ctx).user_id, pref_cache.get(
-                    'default',
-                    ("The queue is clean! Kitteh is pleased."
-                     "https://www.redditstatic.com/desktop2x/img/snoomoji/cat_blep.png")))
+            default_creature = ("The queue is clean! Kitteh is pleased. "
+                                "https://www.redditstatic.com/desktop2x/img/snoomoji/cat_blep.png")
+            default_team_creature = pref_cache.get('default', default_creature)
+            creature = pref_cache.get(chat(ctx).user_id, default_team_creature)
+        if modmail_open_length > 0:
+            creature += f"\nBut {modmail_open_length} {modmail_descr} remain"
         chat(ctx).send_text(creature)
     else:
-        text = (f"Modqueue contains {posts_modqueue_length} {post_descr} and "
-                f"{comments_modqueue_length} {comment_descr}")
+        text = (f"Modqueue contains {posts_modqueue_length} {post_descr}, "
+                f"{comments_modqueue_length} {comment_descr} and "
+                f"{modmail_open_length} {modmail_descr}")
         chat(ctx).send_text(text)
 
 
