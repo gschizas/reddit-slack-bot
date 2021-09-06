@@ -585,8 +585,7 @@ def configure_enhanced_crowd_control(ctx):
 
     Syntax:
     list/show: list all current threads
-    add/addremove THREAD_ID or URL: add a new thread to the monitored threads
-    allow/addallow THREAD_ID or URL: add a new thread to the disabled crowd control threads
+    add THREAD_ID or URL: add a new thread to the monitored threads
     del/delete/remove THREAD_ID or URL: delete the thread from the monitored threads
     """
     config_file = pathlib.Path(f'config/enhanced_crowd_control.yml')
@@ -632,7 +631,7 @@ def configure_enhanced_crowd_control_list(ctx):
     chat(ctx).send_text(text)
 
 
-@configure_enhanced_crowd_control.command('add', aliases=['addremove', 'allow', 'addallow'])
+@configure_enhanced_crowd_control.command('add')
 @click.argument('thread_id')
 @click.pass_context
 def configure_enhanced_crowd_control_add(ctx, thread_id):
@@ -647,9 +646,8 @@ def configure_enhanced_crowd_control_add(ctx, thread_id):
         s._fetch()
         submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
         permalink = s.permalink
-        subcommand = ctx.command.name
         monitored_threads.append({
-            'action': 'remove' if subcommand in ('add', 'addremove') else 'allow',
+            'action': 'remove',
             'id': thread_id,
             'last': None,
             'date': submission_date,
