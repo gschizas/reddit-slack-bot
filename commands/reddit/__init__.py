@@ -647,6 +647,7 @@ def configure_enhanced_crowd_control_add(ctx, thread_id):
         s._fetch()
         submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
         permalink = s.permalink
+        subcommand = ctx.command.name
         monitored_threads.append({
             'action': 'remove' if subcommand in ('add', 'addremove') else 'allow',
             'id': thread_id,
