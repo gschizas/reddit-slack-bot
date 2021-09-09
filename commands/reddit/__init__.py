@@ -69,7 +69,7 @@ def _send_usernote(ctx, redditor_username, notes, warnings, usernote_colors, mod
         link_href = '???'
         if link_parts[0] == 'l':
             if len(link_parts) == 2:
-                link_href = f'{reddit_session().config.reddit_url}/r/{subreddit(ctx).display_name}/comments/{link_parts[1]}'
+                link_href = f'{reddit_session(ctx).config.reddit_url}/r/{subreddit(ctx).display_name}/comments/{link_parts[1]}'
             elif len(link_parts) == 3:
                 link_href = (
                     f'{reddit_session(ctx).config.reddit_url}/r/{subreddit(ctx).display_name}/comments/'
