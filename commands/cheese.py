@@ -7,8 +7,6 @@ import psycopg2
 from bot_framework.yaml_wrapper import yaml
 from commands import gyrobot, chat
 
-config = None
-
 SQL_CHEESE_VIEW = """\
 SELECT "objectData", "lastUpdate"
 FROM "machineState"
@@ -18,12 +16,7 @@ INSERT INTO public."jobQueue"("machineName", "jobData")
 VALUES (%(machine_name)s, %(job_data)s);"""
 
 
-def __init__():
-    global config
-    config = _config()
-
-
-def _config():
+def config():
     with open('data/cheese_agent.yml') as f:
         return yaml.load(f)
 
@@ -64,6 +57,7 @@ def cheese():
 
 
 @cheese.group('ngrok')
+@click.pass_context
 def ngrok(ctx):
     pass
 
@@ -71,7 +65,8 @@ def ngrok(ctx):
 @ngrok.command('status')
 @click.pass_context
 def ngrok_status(ctx):
-    for setup_info in config['setup']:
+    result_fields = []
+    for setup_info in config()['setup']:
         if chat(ctx).user_id in setup_info['slack_ids']:
             computer_name = setup_info['computer_name']
             rows = _cheese_db_view(SQL_CHEESE_VIEW, {'machine_name': computer_name})
@@ -117,7 +112,7 @@ def citrix_restart(computer):
 @click.pass_context
 def citrix_status(ctx, computer):
     result_blocks = []
-    for setup_info in config['setup']:
+    for setup_info in config()['setup']:
         if chat(ctx).user_id in setup_info['slack_ids']:
             computer_name = setup_info['computer_name']
             rows = _cheese_db_view(SQL_CHEESE_VIEW, {'machine_name': computer_name})
@@ -171,7 +166,7 @@ def send_message(ctx, computer, message):
 
 
 def _cheese_add_to_queue(self, job_data, computer_name=None):
-    for setup_info in config['setup']:
+    for setup_info in config()['setup']:
         if self.user_id in setup_info['slack_ids']:
             a_computer_name = setup_info['computer_name']
             if computer_name:
