@@ -52,12 +52,6 @@ def convert(ctx, value_text, currency_from, _literal_to, currency_to):
     """Convert money from one currency to another.
 
     Example: convert 100.0 USD TO EUR"""
-    # arg_parts = arg.split()
-    # if len(arg_parts) != 4:
-    #     ctx.obj['chat'].send_text(f"Argument count error.")
-    #     return
-    #
-    # value_text, currency_from, _, currency_to = arg_parts
 
     try:
         value = float(value_text)
