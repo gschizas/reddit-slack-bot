@@ -16,6 +16,11 @@ def _mock_config():
         config_file = pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']
     with config_file.open() as f:
         mock_config = json.load(f)
+    with config_file.with_suffix('.credentials.json').open() as f:
+        credentials = json.load(f)
+    for env in mock_config['environments']:
+        if env in credentials:
+            mock_config['environments'][env]['openshift_token'] = credentials[env]
     return mock_config
 
 
