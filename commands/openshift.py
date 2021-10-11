@@ -113,4 +113,4 @@ def check_mock(ctx, environment):
         env_var_list = _masked_oc_password(env_var_list)
         result_text += env_var_list + '\n\n'
     result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
-    chat(ctx).send_file(result_text, title='OpenShift Data', filename='openshift-data.txt')
+    chat(ctx).send_file(result_text.encode(), title='OpenShift Data', filename='openshift-data.txt')
