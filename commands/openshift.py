@@ -39,6 +39,16 @@ def _masked_oc_password(variable_list):
     return result
 
 
+def _get_project_name(mock_config, environment):
+    project_name = environment.lower()
+    project_prefix = mock_config['environments'][environment].get('projectPrefix')
+    if project_prefix:
+        project_name = project_prefix + '-' + project_name
+    return project_name
+
+
+
+
 class OpenShiftEnvironment(click.ParamType):
     name = 'environment'
 
@@ -73,10 +83,7 @@ def mock(ctx, environment, mock_status):
     result_text = subprocess.check_output(login_command).decode() + '\n' * 3
     prefix = mock_config['environments'][environment]['prefix']
     chat(ctx).send_text(f"Setting mock status to {mock_status} for project {environment}...")
-    project_name = environment.lower()
-    project_prefix = mock_config['environments'][environment].get('projectPrefix')
-    if project_prefix:
-        project_name = project_prefix + '-' + project_name
+    project_name = _get_project_name(mock_config, environment)
     change_project_command = ['oc', 'project', project_name]
     result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
     statuses = mock_config['environments'][environment]['status'][mock_status]
@@ -105,7 +112,8 @@ def check_mock(ctx, environment):
     site = mock_config['environments'][environment]['site']
     result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
     prefix = mock_config['environments'][environment]['prefix']
-    result_text += subprocess.check_output(['oc', 'project', environment.lower()]).decode() + '\n' * 3
+    project_name = _get_project_name(mock_config, environment)
+    result_text += subprocess.check_output(['oc', 'project', project_name]).decode() + '\n' * 3
     first_status = list(mock_config['environments'][environment]['status'].keys())[0]
     microservices = list(mock_config['environments'][environment]['status'][first_status].keys())
     for microservice in microservices:
