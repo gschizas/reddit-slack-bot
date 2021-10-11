@@ -39,8 +39,18 @@ def _masked_oc_password(variable_list):
     return result
 
 
+class OpenShiftEnvironment(click.ParamType):
+    name = 'environment'
+
+    def convert(self, value, param, ctx):
+        valid_environments = [e.upper() for e in _mock_config()['environments']]
+        if value.upper() not in valid_environments:
+            self.fail(f"{value} is not in the environments {', '.join(valid_environments)}", param, ctx)
+        return value.upper()
+
+
 @gyrobot.command('mock')
-@click.argument('environment')
+@click.argument('environment', type=OpenShiftEnvironment())
 @click.argument('mock_status')
 @click.pass_context
 def mock(ctx, environment, mock_status):
@@ -49,14 +59,8 @@ def mock(ctx, environment, mock_status):
     if chat(ctx).user_id not in mock_config['allowed_users']:
         chat(ctx).send_text(f"You don't have permission to switch mock status.", is_error=True)
         return
-    environment = environment.upper()
     mock_status = mock_status.upper()
     env_vars = mock_config['env_vars']
-    valid_environments = [e.upper() for e in mock_config['environments']]
-    if environment not in valid_environments:
-        chat(ctx).send_text((f"Invalid project `{environment}`. "
-                             f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
-        return
     valid_mock_statuses = [k.upper() for k in mock_config['environments'][environment]['status'].keys()]
     if mock_status not in valid_mock_statuses:
         chat(ctx).send_text((f"Invalid status `{mock_status}`. "
@@ -90,17 +94,11 @@ def mock(ctx, environment, mock_status):
 
 
 @gyrobot.command('check_mock')
-@click.argument('environment')
+@click.argument('environment', type=OpenShiftEnvironment())
 @click.pass_context
 def check_mock(ctx, environment):
     """View current status of environment"""
     mock_config = _mock_config()
-    environment = environment.upper()
-    valid_environments = [e.upper() for e in mock_config['environments']]
-    if environment not in valid_environments:
-        chat(ctx).send_text((f"Invalid project `{environment}`. "
-                             f"Environment must be one of {', '.join(valid_environments)}"), is_error=True)
-        return
     if chat(ctx).user_id not in mock_config['allowed_users']:
         chat(ctx).send_text(f"You don't have permission to view mock status.", is_error=True)
     oc_token = mock_config['environments'][environment]['openshift_token']
