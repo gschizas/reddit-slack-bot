@@ -40,7 +40,7 @@ def _masked_oc_password(variable_list):
 
 
 def _get_project_name(mock_config, environment):
-    project_name = environment.lower()
+    project_name = mock_config['environments'][environment].get('projectNameOverride', environment.lower())
     project_prefix = mock_config['environments'][environment].get('projectPrefix')
     if project_prefix:
         project_name = project_prefix + '-' + project_name
