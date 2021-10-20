@@ -115,7 +115,7 @@ def handle_message(**payload):
     web_client = payload['web_client']
     rtm_client = payload['rtm_client']
 
-    if msg.get('subtype') in ('message_deleted', 'file_share', 'bot_message', 'slackbot_response'):
+    if msg.get('subtype') in ('message_deleted', 'message_replied', 'file_share', 'bot_message', 'slackbot_response'):
         logger.debug(f"Found message of subtype {msg.get('subtype')}")
         return
     if 'message' in msg:
