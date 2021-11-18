@@ -233,7 +233,7 @@ def youtube_info(ctx, url):
         chat(ctx).send_text(repr(e), is_error=True)
 
 
-@gyrobot.command('youtube_info')
+@gyrobot.command('add_domain_tag')
 @click.argument('url')
 @click.argument('color')
 @click.pass_context
