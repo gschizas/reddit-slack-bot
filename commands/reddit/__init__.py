@@ -228,7 +228,7 @@ def youtube_info(ctx, url):
         return
     try:
         author_url = media['oembed']['author_url']
-        chat(ctx).send_text(author_url)
+        chat(ctx).send_text(f"Author URL: {author_url}")
     except Exception as e:
         chat(ctx).send_text(repr(e), is_error=True)
 
