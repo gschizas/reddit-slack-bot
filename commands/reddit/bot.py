@@ -23,7 +23,7 @@ def make():
 
 @make.command('post')
 @click.argument('thread_id')
-@click.argument('wiki_page')
+@click.argument('wiki_page_name')
 @click.argument('revision_id', required=False)
 @click.pass_context
 def make_post(ctx, thread_id, wiki_page_name, revision_id=None):
