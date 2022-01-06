@@ -219,8 +219,8 @@ def usernotes(ctx, user, verbose=None):
 @click.pass_context
 def youtube_info(ctx, url):
     """Get YouTube media URL"""
-    logger(ctx).debug(url)
-    post = reddit_session(ctx).submission(url=url[1:-1])
+    thread_id = _extract_real_thread_id(url)
+    post = reddit_session(ctx).submission(thread_id)
     post._fetch()
     media = getattr(post, 'media', None)
     if not media:
