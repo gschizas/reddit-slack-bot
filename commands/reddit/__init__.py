@@ -175,8 +175,13 @@ def modqueue_length(ctx):
             creature += f"\nBut {modmail_open_length} {modmail_descr} remain"
         chat(ctx).send_text(creature)
     else:
-        text = (f"Modqueue contains {posts_modqueue_length} {post_descr}, "
-                f"{comments_modqueue_length} {comment_descr} and "
+        reddit_url = reddit_session(ctx).config.reddit_url
+        subreddit_name = subreddit(ctx).display_name
+        modqueue_comments_url = f"{reddit_url}/r/{subreddit_name}/about/modqueue?only=comments"
+        modqueue_posts_url = f"{reddit_url}/r/{subreddit_name}/about/modqueue?only=links"
+
+        text = (f"Modqueue contains <{modqueue_posts_url}|{posts_modqueue_length} {post_descr}>, "
+                f"<{modqueue_comments_url}|{comments_modqueue_length} {comment_descr}> and "
                 f"{modmail_open_length} {modmail_descr}")
         chat(ctx).send_text(text)
 
