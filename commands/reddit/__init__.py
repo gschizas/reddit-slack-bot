@@ -18,6 +18,8 @@ from requests.structures import CaseInsensitiveDict
 from bot_framework.yaml_wrapper import yaml
 from commands import gyrobot, chat, subreddit, DefaultCommandGroup, reddit_session, logger, bot_reddit_session, \
     ClickAliasedGroup
+from commands.reddit import _extract_username, _extract_real_thread_id
+from commands.reddit.common import extract_username, extract_real_thread_id
 from state_file import state_file
 
 ARCHIVE_URL = 'http://archive.is'
@@ -28,31 +30,6 @@ CHROME_USER_AGENT = (
 
 _archive_session = requests.Session()
 _archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
-
-
-def _extract_username(username):
-    if re.match('^[a-zA-Z0-9_-]+$', username):
-        pass
-    elif m := re.match(r'^<https://www.reddit.com/user/(?P<username>[a-zA-Z0-9_-]+)(?:\|\1)?>$', username):
-        username = m.group('username')
-    elif re.match(r'^u/[a-zA-Z0-9_-]+$', username):
-        username = username.split('/')[-1]
-    else:
-        username = None
-    return username
-
-
-def _extract_real_thread_id(thread_id):
-    if '/' in thread_id:
-        if thread_id.startswith('<') and thread_id.endswith('>'):  # slack link
-            thread_id = thread_id[1:-1]
-        if thread_id.startswith('http://') or thread_id.startswith('https://'):
-            thread_id = thread_id.split('/')[6]
-        elif thread_id.startswith('/'):
-            thread_id = thread_id.split('/')[4]
-        else:
-            thread_id = thread_id.split('/')[3]
-    return thread_id
 
 
 def _send_usernote(ctx, redditor_username, notes, warnings, usernote_colors, mod_names, verbose):
@@ -197,7 +174,7 @@ def modqueue_length(ctx):
 def usernotes(ctx, user, verbose=None):
     """Display usernotes of a user"""
     redditor_username = user
-    if (redditor_username := _extract_username(redditor_username)) is None:
+    if (redditor_username := extract_username(redditor_username)) is None:
         chat(ctx).send_text(f'{redditor_username} is not a valid username', is_error=True)
         return
     verbose = verbose or ''
@@ -224,7 +201,7 @@ def usernotes(ctx, user, verbose=None):
 @click.pass_context
 def youtube_info(ctx, url):
     """Get YouTube media URL"""
-    thread_id = _extract_real_thread_id(url)
+    thread_id = extract_real_thread_id(url)
     post = reddit_session(ctx).submission(thread_id)
     post._fetch()
     media = getattr(post, 'media', None)
@@ -274,7 +251,7 @@ def nuke():
 def nuke_thread(ctx, thread_id):
     """Nuke whole thread (except distinguished comments)
     Thread ID should be either the submission URL or the submission id"""
-    thread_id = _extract_real_thread_id(thread_id)
+    thread_id = extract_real_thread_id(thread_id)
     post = reddit_session(ctx).submission(thread_id)
     post.comments.replace_more(limit=None)
     comments = post.comments.list()
@@ -308,7 +285,7 @@ def nuke_thread(ctx, thread_id):
 def undo_nuke_thread(ctx, thread_id):
     """Undo previous nuke thread
     Thread ID should be either the submission URL or the submission id"""
-    thread_id = _extract_real_thread_id(thread_id)
+    thread_id = extract_real_thread_id(thread_id)
     with state_file('nuke_thread') as state:
         if thread_id not in state:
             chat(ctx).send_text(f"Could not find thread {thread_id}", is_error=True)
@@ -341,7 +318,7 @@ def nuke_user(ctx, username: str, timeframe: str = None, remove_submissions: boo
     if timeframe not in CUTOFF_AGES:
         chat(ctx).send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
         return
-    if (username := _extract_username(username)) is None:
+    if (username := extract_username(username)) is None:
         chat(ctx).send_text(f'{username} is not a valid username', is_error=True)
         return
     u = bot_reddit_session(ctx).redditor(username)
@@ -486,7 +463,7 @@ def archive_user(ctx, username):
     account history when nuking the user's contribution (especially when
     the user then deletes their account).
     Only one argument, the username"""
-    if (username := _extract_username(username)) is None:
+    if (username := extract_username(username)) is None:
         chat(ctx).send_text(f'{username} is not a valid username', is_error=True)
         return
     user = reddit_session(ctx).redditor(username)
@@ -641,7 +618,7 @@ def configure_enhanced_crowd_control_list(ctx):
 @click.pass_context
 def configure_enhanced_crowd_control_add(ctx, thread_id):
     monitored_threads = ctx.obj['monitored_threads']
-    thread_id = _extract_real_thread_id(thread_id)
+    thread_id = extract_real_thread_id(thread_id)
     found = [t for t in monitored_threads if t['id'] == thread_id]
     if found:
         chat(ctx).send_text(f"Ignoring addition request, {thread_id} has already been added", is_error=True)
@@ -668,7 +645,7 @@ def configure_enhanced_crowd_control_add(ctx, thread_id):
 @click.pass_context
 def configure_enhanced_crowd_control_list(ctx, thread_id):
     monitored_threads = ctx.obj['monitored_threads']
-    thread_id = _extract_real_thread_id(thread_id)
+    thread_id = extract_real_thread_id(thread_id)
     remove_me = None
     if re.match(r'^\d+$', thread_id):
         remove_me = int(thread_id) - 1
