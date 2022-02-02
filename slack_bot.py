@@ -31,6 +31,7 @@ if 'CHEESE_DATABASE_URL' in os.environ:
 
 if 'SUBREDDIT_NAME' in os.environ:
     import commands.reddit
+    import commands.reddit.nuke
 
 if 'REDDIT_ALT_USER' in os.environ:
     import commands.reddit.bot

@@ -10,14 +10,13 @@ import zlib
 
 import click
 import praw
-import prawcore
 import requests
 from requests.adapters import HTTPAdapter
 from requests.structures import CaseInsensitiveDict
 
 from bot_framework.yaml_wrapper import yaml
-from commands import gyrobot, chat, subreddit, DefaultCommandGroup, reddit_session, logger, bot_reddit_session, \
-    ClickAliasedGroup
+from commands import gyrobot, chat, subreddit, DefaultCommandGroup, reddit_session, logger, ClickAliasedGroup
+from commands.reddit.common import extract_username, extract_real_thread_id
 from state_file import state_file
 
 ARCHIVE_URL = 'http://archive.is'
@@ -28,31 +27,6 @@ CHROME_USER_AGENT = (
 
 _archive_session = requests.Session()
 _archive_session.mount(ARCHIVE_URL, HTTPAdapter(max_retries=5))
-
-
-def _extract_username(username):
-    if re.match('^[a-zA-Z0-9_-]+$', username):
-        pass
-    elif m := re.match(r'^<https://www.reddit.com/user/(?P<username>[a-zA-Z0-9_-]+)(?:\|\1)?>$', username):
-        username = m.group('username')
-    elif re.match(r'^u/[a-zA-Z0-9_-]+$', username):
-        username = username.split('/')[-1]
-    else:
-        username = None
-    return username
-
-
-def _extract_real_thread_id(thread_id):
-    if '/' in thread_id:
-        if thread_id.startswith('<') and thread_id.endswith('>'):  # slack link
-            thread_id = thread_id[1:-1]
-        if thread_id.startswith('http://') or thread_id.startswith('https://'):
-            thread_id = thread_id.split('/')[6]
-        elif thread_id.startswith('/'):
-            thread_id = thread_id.split('/')[4]
-        else:
-            thread_id = thread_id.split('/')[3]
-    return thread_id
 
 
 def _send_usernote(ctx, redditor_username, notes, warnings, usernote_colors, mod_names, verbose):
@@ -197,7 +171,7 @@ def modqueue_length(ctx):
 def usernotes(ctx, user, verbose=None):
     """Display usernotes of a user"""
     redditor_username = user
-    if (redditor_username := _extract_username(redditor_username)) is None:
+    if (redditor_username := extract_username(redditor_username)) is None:
         chat(ctx).send_text(f'{redditor_username} is not a valid username', is_error=True)
         return
     verbose = verbose or ''
@@ -224,7 +198,7 @@ def usernotes(ctx, user, verbose=None):
 @click.pass_context
 def youtube_info(ctx, url):
     """Get YouTube media URL"""
-    thread_id = _extract_real_thread_id(url)
+    thread_id = extract_real_thread_id(url)
     post = reddit_session(ctx).submission(thread_id)
     post._fetch()
     media = getattr(post, 'media', None)
@@ -261,176 +235,6 @@ def add_domain_tag(ctx, url, color):
         toolbox_data['domainTags'].append({'name': final_url, 'color': color})
     subreddit(ctx).wiki['toolbox'].edit(json.dumps(toolbox_data), 'Updated by slack')
     chat(ctx).send_text(f"Added color {color} for domain {final_url}")
-
-
-@gyrobot.group('nuke')
-def nuke():
-    pass
-
-
-@nuke.command('thread')
-@click.argument('thread_id')
-@click.pass_context
-def nuke_thread(ctx, thread_id):
-    """Nuke whole thread (except distinguished comments)
-    Thread ID should be either the submission URL or the submission id"""
-    thread_id = _extract_real_thread_id(thread_id)
-    post = reddit_session(ctx).submission(thread_id)
-    post.comments.replace_more(limit=None)
-    comments = post.comments.list()
-    post.mod.remove()
-    comments_removed = []
-    comments_distinguished = 0
-    comments_already_removed = 0
-    for comment in comments:
-        if comment.distinguished:
-            comments_distinguished += 1
-            continue
-        if comment.banned_by:
-            comments_already_removed += 1
-            continue
-        comment.mod.remove()
-        comments_removed.append(comment.id)
-    post.mod.lock()
-    result = (
-        f"{len(comments_removed)} comments were removed.\n"
-        f"{comments_distinguished} distinguished comments were kept.\n"
-        f"{comments_already_removed} comments were already removed.\n"
-        "Submission was locked")
-    with state_file('nuke_thread') as state:
-        state[thread_id] = comments_removed
-    chat(ctx).send_text(result)
-
-
-@nuke.command('thread_undo')
-@click.argument('thread_id')
-@click.pass_context
-def undo_nuke_thread(ctx, thread_id):
-    """Undo previous nuke thread
-    Thread ID should be either the submission URL or the submission id"""
-    thread_id = _extract_real_thread_id(thread_id)
-    with state_file('nuke_thread') as state:
-        if thread_id not in state:
-            chat(ctx).send_text(f"Could not find thread {thread_id}", is_error=True)
-            return
-        removed_comments = state.pop(thread_id)
-        for comment_id in removed_comments:
-            comment = reddit_session(ctx).comment(comment_id)
-            comment.mod.approve()
-        chat(ctx).send_text(f"Nuking {len(removed_comments)} comments was undone")
-
-
-CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH': 30, 'THREE_MONTHS': 90,
-               'FOREVER_AND_EVER': 36525}
-
-
-@nuke.command('user')
-@click.argument('username')
-@click.argument('timeframe', required=False, type=click.Choice(list(CUTOFF_AGES.keys()), case_sensitive=False))
-@click.option('-s', '-p', '--submissions', '--posts', 'remove_submissions', default=False, type=click.BOOL)
-@click.pass_context
-def nuke_user(ctx, username: str, timeframe: str = None, remove_submissions: bool = False):
-    """\
-    Nuke the comments of a user. Append the timeframe to search.
-    Accepted values are 24 (default), 48, 72, A_WEEK, TWO_WEEKS, A_MONTH, THREE_MONTHS, FOREVER_AND_EVER
-    Add SUBMISSIONS or POSTS to remove submissions as well.
-    """
-    # FOREVER_AND_EVER is 100 years. Should be enough.
-
-    timeframe = timeframe or '24'
-    if timeframe not in CUTOFF_AGES:
-        chat(ctx).send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
-        return
-    if (username := _extract_username(username)) is None:
-        chat(ctx).send_text(f'{username} is not a valid username', is_error=True)
-        return
-    u = bot_reddit_session(ctx).redditor(username)
-    try:
-        u._fetch()
-    except prawcore.exceptions.ResponseException as ex:
-        if ex.response.status_code == 400:
-            chat(ctx).send_text(f'{username} may be shadowbanned', is_error=True)
-            return
-        elif ex.response.status_code == 404:
-            chat(ctx).send_text(f'{username} not found', is_error=True)
-            return
-        raise
-    if hasattr(u, 'is_suspended') and u.is_suspended:
-        chat(ctx).send_text(f"{username} is suspended", is_error=True)
-
-    all_comments = u.comments.new(limit=None)
-    removed_comments = 0
-    other_subreddits = 0
-    already_removed = 0
-    too_old = 0
-    other_subreddit_history = {}
-    cutoff_age = CUTOFF_AGES[timeframe]
-    now = datetime.datetime.utcnow()
-
-    result = ""
-
-    try:
-        all_comments = list(all_comments)
-    except prawcore.exceptions.Forbidden as ex:
-        chat(ctx).send_text(f"User `{username}` is probably suspended", is_error=True)
-        return
-    except Exception as ex:
-        logger(ctx).warn(type(ex))
-        all_comments = []
-
-    for c in all_comments:
-        comment_subreddit_name = c.subreddit.display_name.lower()
-        if comment_subreddit_name != subreddit(ctx).display_name.lower():
-            other_subreddits += 1
-            other_subreddit_history[comment_subreddit_name] = \
-                other_subreddit_history.get(comment_subreddit_name, 0) + 1
-            continue
-        if c.banned_by and c.banned_by != 'AutoModerator':
-            already_removed += 1
-            continue
-        comment_created = datetime.datetime.fromtimestamp(c.created_utc)
-        comment_age = now - comment_created
-        if comment_age.days > cutoff_age:
-            too_old += 1
-            continue
-        c.mod.remove()
-        removed_comments += 1
-    result += (
-        f"Removed {removed_comments} comments.\n"
-        f"{other_subreddits} comments in other subreddits.\n"
-        f"{already_removed} comments were already removed.\n"
-        f"{too_old} comments were too old for the {timeframe} timeframe.\n"
-    )
-    if remove_submissions:
-        all_submissions = u.submissions.new(limit=None)
-        already_removed_submissions = 0
-        removed_submissions = 0
-        other_subreddit_submissions = 0
-        too_old_submissions = 0
-        for s in all_submissions:
-            submission_subreddit_name = s.subreddit.display_name.lower()
-            if submission_subreddit_name != subreddit(ctx).display_name.lower():
-                other_subreddits += 1
-                other_subreddit_history[submission_subreddit_name] = \
-                    other_subreddit_history.get(submission_subreddit_name, 0) + 1
-                continue
-            if s.banned_by and s.banned_by != 'AutoModerator':
-                already_removed_submissions += 1
-                continue
-            submission_created = datetime.datetime.fromtimestamp(s.created_utc)
-            submission_age = now - submission_created
-            if submission_age.days > cutoff_age:
-                too_old += 1
-                continue
-            s.mod.remove()
-            removed_submissions += 1
-        result += (
-            f"Removed {removed_submissions} submissions.\n"
-            f"{other_subreddit_submissions} submissions in other subreddits.\n"
-            f"{already_removed_submissions} submissions were already removed.\n"
-            f"{too_old_submissions} submissions were too old for the {timeframe} timeframe.\n"
-        )
-    chat(ctx).send_text(result)
 
 
 @gyrobot.command('add_policy')
@@ -486,7 +290,7 @@ def archive_user(ctx, username):
     account history when nuking the user's contribution (especially when
     the user then deletes their account).
     Only one argument, the username"""
-    if (username := _extract_username(username)) is None:
+    if (username := extract_username(username)) is None:
         chat(ctx).send_text(f'{username} is not a valid username', is_error=True)
         return
     user = reddit_session(ctx).redditor(username)
@@ -641,7 +445,7 @@ def configure_enhanced_crowd_control_list(ctx):
 @click.pass_context
 def configure_enhanced_crowd_control_add(ctx, thread_id):
     monitored_threads = ctx.obj['monitored_threads']
-    thread_id = _extract_real_thread_id(thread_id)
+    thread_id = extract_real_thread_id(thread_id)
     found = [t for t in monitored_threads if t['id'] == thread_id]
     if found:
         chat(ctx).send_text(f"Ignoring addition request, {thread_id} has already been added", is_error=True)
@@ -668,7 +472,7 @@ def configure_enhanced_crowd_control_add(ctx, thread_id):
 @click.pass_context
 def configure_enhanced_crowd_control_list(ctx, thread_id):
     monitored_threads = ctx.obj['monitored_threads']
-    thread_id = _extract_real_thread_id(thread_id)
+    thread_id = extract_real_thread_id(thread_id)
     remove_me = None
     if re.match(r'^\d+$', thread_id):
         remove_me = int(thread_id) - 1
