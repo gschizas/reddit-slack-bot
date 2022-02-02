@@ -65,7 +65,7 @@ def make_post(ctx, thread_id, wiki_page_name, revision_id=None):
         submission.mod.distinguish(how='yes', sticky=True)
         chat(ctx).send_text(bot_reddit_session(ctx).config.reddit_url + submission.permalink)
     else:
-        submission = self.bot_reddit_session.submission(thread_id)
+        submission = bot_reddit_session(ctx).submission(thread_id)
         submission.edit(wiki_text_body)
         chat(ctx).send_text(bot_reddit_session(ctx).config.reddit_url + submission.permalink)
 
