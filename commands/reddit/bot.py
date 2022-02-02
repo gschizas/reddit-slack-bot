@@ -34,9 +34,17 @@ def make_post(ctx, thread_id, wiki_page_name, revision_id=None):
     Note that there's no need for a separate wiki page for each post, the wiki page can be reused
 
     Syntax:
-    make_post NEW wiki_page
-    make_post thread_id wiki_page
-    make_post thread_id wiki_page version_id"""
+
+    make_post NEW wiki_page\n
+    make_post thread_id wiki_page\n
+    make_post thread_id wiki_page version_id\n
+
+    The wiki page should be of the following format:
+
+    # Page title (note there's a space after the "#")\n
+    (blank line)\x20\x20
+    The rest of the text goes here. Normal Markdown (snudown)\x20\x20
+    """
 
     revision_id = revision_id or 'LATEST'
 
