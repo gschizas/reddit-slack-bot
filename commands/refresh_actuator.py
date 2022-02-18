@@ -4,16 +4,13 @@ import subprocess
 
 import click
 import requests
-import urllib3
+
 from ruamel.yaml import YAML
 
 from commands import gyrobot, chat
 
-urllib3.disable_warnings()
-
 usernames = dict()
 yaml = YAML()
-urllib3.disable_warnings()
 
 
 def _actuator_config():
@@ -60,7 +57,6 @@ def refresh_actuator(ctx, namespace, deployment):
     namespace_obj = _actuator_config()[namespace]
     server_url = namespace_obj['url']
     ses = requests.session()
-    ses.verify = False
     openshift_token = namespace_obj['openshift_token']
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
     all_pods = ses.get(
