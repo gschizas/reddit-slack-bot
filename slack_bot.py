@@ -26,6 +26,9 @@ locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
 if 'MOCK_CONFIGURATION' in os.environ:
     import commands.openshift
 
+if 'OPENSHIFT_ACTUATOR_REFRESH' in os.environ:
+    import commands.refresh_actuator
+
 if 'CHEESE_DATABASE_URL' in os.environ:
     import commands.cheese
 
