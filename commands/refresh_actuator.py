@@ -1,5 +1,6 @@
 import os
 import pathlib
+import subprocess
 
 import click
 import requests
@@ -64,5 +65,12 @@ def refresh_actuator(ctx, namespace, deployment):
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
     all_pods = ses.get(
         server_url + "api/v1/namespaces/omni-dev/pods",
-        params={'labelSelector': f'deployment={deployment}'}).content
+        params={'labelSelector': f'deployment={deployment}'}).json()
+    pods_to_refresh = [pod['metadata']['name'] for pod in all_pods]
+    for pod_to_refresh in pods_to_refresh:
+        port_fwd = subprocess.Popen(['oc', 'port-forward', pod_to_refresh, '9999:8778'])
+        refresh_result = requests.get("http://localhost:9999/actuator/configprops")
+        print(refresh_result.text)
+        port_fwd.terminate()
+
     chat(ctx).send_file(file_data=all_pods, filename='pods.json')
