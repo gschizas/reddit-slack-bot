@@ -62,7 +62,9 @@ def refresh_actuator(ctx, namespace, deployment):
     all_pods = ses.get(
         server_url + "api/v1/namespaces/omni-dev/pods",
         params={'labelSelector': f'deployment={deployment}'}).json()
-    pods_to_refresh = [pod['metadata']['name'] for pod in all_pods]
+
+    subprocess.check_output(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'])
+    pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
     for pod_to_refresh in pods_to_refresh:
         port_fwd = subprocess.Popen(['oc', 'port-forward', pod_to_refresh, '9999:8778'])
         refresh_result = requests.get("http://localhost:9999/actuator/configprops")
