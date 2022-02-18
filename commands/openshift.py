@@ -6,7 +6,7 @@ import subprocess
 
 import click
 
-from commands import gyrobot, chat, logger
+from commands import gyrobot, chat
 
 
 def _mock_config():
@@ -45,8 +45,6 @@ def _get_project_name(mock_config, environment):
     if project_prefix:
         project_name = project_prefix + '-' + project_name
     return project_name
-
-
 
 
 class OpenShiftEnvironment(click.ParamType):
