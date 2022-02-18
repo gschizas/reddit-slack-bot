@@ -69,6 +69,6 @@ def refresh_actuator(ctx, namespace, deployment):
         port_fwd = subprocess.Popen(['oc', 'port-forward', pod_to_refresh, '9999:8778'])
         refresh_result = requests.get("http://localhost:9999/actuator/configprops")
         print(refresh_result.text)
+        import time
+        time.sleep(1)
         port_fwd.terminate()
-
-    chat(ctx).send_file(file_data=all_pods, filename='pods.json')
