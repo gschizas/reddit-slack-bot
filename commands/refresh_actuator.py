@@ -67,7 +67,10 @@ def refresh_actuator(ctx, namespace, deployment):
         server_url + "api/v1/namespaces/omni-dev/pods",
         params={'labelSelector': f'deployment={deployment}'}).json()
 
-    subprocess.check_output(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'])
+    login_cmd = subprocess.run(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'], capture_output=True)
+    if login_cmd.returncode != 0:
+        chat(ctx).send_text("Error while logging in:\n```" + login_cmd.stderr.decode().strip() + "```", is_error=True)
+        return
     pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
     for pod_to_refresh in pods_to_refresh:
         port_fwd = subprocess.Popen(['oc', 'port-forward', pod_to_refresh, '9999:8778'])
