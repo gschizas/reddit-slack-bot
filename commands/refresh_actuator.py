@@ -56,6 +56,10 @@ class OpenShiftNamespace(click.ParamType):
 def refresh_actuator(ctx, namespace, deployment):
     namespace_obj = _actuator_config()[namespace]
     server_url = namespace_obj['url']
+    allowed_users = namespace_obj['users']
+    if chat(ctx).user_id not in allowed_users:
+        chat(ctx).send_text(f"You don't have permission to refresh actuator.", is_error=True)
+        return
     ses = requests.session()
     openshift_token = namespace_obj['openshift_token']
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
