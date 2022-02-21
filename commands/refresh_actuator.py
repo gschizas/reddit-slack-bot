@@ -7,7 +7,7 @@ import click
 import requests
 from ruamel.yaml import YAML
 
-from commands import gyrobot, chat
+from commands import gyrobot, chat, logger
 
 usernames = dict()
 yaml = YAML()
@@ -73,8 +73,21 @@ def refresh_actuator(ctx, namespace, deployment):
         return
     pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
     for pod_to_refresh in pods_to_refresh:
-        port_fwd = subprocess.Popen(['oc', 'port-forward', pod_to_refresh, '9999:8778'])
-        time.sleep(1)
+        port_fwd = subprocess.Popen(['oc', 'port-forward', pod_to_refresh, '9999:8778'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while True:
+            if port_fwd.poll() is not None:
+                if port_fwd.returncode != 0:
+                    port_fwd.stderr.flush()
+                    err_line = port_fwd.stderr.readline()
+                    logger(ctx).debug(err_line.decode().strip())
+                break
+            out_line = port_fwd.stdout.readline()
+            logger(ctx).debug(out_line.decode().strip())
+            if out_line == b'Forwarding from 127.0.0.1:9999 -> 8778\n':
+                logger(ctx).debug("Port forward Listening ok")
+                break
+            time.sleep(0.2)
         refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies={'http': None, 'https': None})
+        # refresh_result = requests.get("http://localhost:9999/actuator/configprops", proxies={'http': None, 'https': None})
         chat(ctx).send_file(file_data=refresh_result.content, filename=f'actuator-refresh-{pod_to_refresh}.json')
         port_fwd.terminate()
