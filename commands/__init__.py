@@ -1,3 +1,5 @@
+import logging
+
 import click
 import praw
 
@@ -130,7 +132,7 @@ def chat(ctx) -> SlackWrapper:
     return ctx.obj['chat']
 
 
-def logger(ctx):
+def logger(ctx) -> logging.Logger:
     return ctx.obj['logger']
 
 
