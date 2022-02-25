@@ -63,9 +63,10 @@ def refresh_actuator(ctx, namespace, deployment):
     ses = requests.session()
     openshift_token = namespace_obj['openshift_token']
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
-    all_pods = ses.get(
+    all_pods_raw = ses.get(
         server_url + "api/v1/namespaces/omni-dev/pods",
-        params={'labelSelector': f'deployment={deployment}'}).json()
+        params={'labelSelector': f'deployment={deployment}'})
+    all_pods = all_pods_raw.json()
 
     login_cmd = subprocess.run(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'], capture_output=True)
     if login_cmd.returncode != 0:
