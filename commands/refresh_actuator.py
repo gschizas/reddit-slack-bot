@@ -49,6 +49,14 @@ class OpenShiftNamespace(click.ParamType):
         return value.lower()
 
 
+def _user_allowed(slack_user_id, allowed_users):
+    if '*' in allowed_users:
+        return True
+    if slack_user_id in allowed_users:
+        return True
+    return False
+
+
 @actuator.command('refresh')
 @click.argument('namespace', type=OpenShiftNamespace())
 @click.argument('deployment', type=str)
@@ -57,7 +65,7 @@ def refresh_actuator(ctx, namespace, deployment):
     namespace_obj = _actuator_config()[namespace]
     server_url = namespace_obj['url']
     allowed_users = namespace_obj['users']
-    if chat(ctx).user_id not in allowed_users:
+    if not _user_allowed(chat(ctx).user_id, allowed_users):
         chat(ctx).send_text(f"You don't have permission to refresh actuator.", is_error=True)
         return
     allowed_channels = namespace_obj['channels']
