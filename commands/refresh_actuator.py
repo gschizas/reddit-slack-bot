@@ -23,9 +23,9 @@ def _read_config(env_var):
         config_file = pathlib.Path(os.environ[env_var])
     else:
         config_file = pathlib.Path('config') / os.environ[env_var]
-    with config_file.open() as f:
+    with config_file.open(encoding='utf8') as f:
         actuator_config = yaml.load(f)
-    with config_file.with_suffix('.credentials.yml').open() as f:
+    with config_file.with_suffix('.credentials.yml').open(encoding='utf8') as f:
         credentials = yaml.load(f)
     for env in actuator_config:
         if env in credentials:
@@ -55,7 +55,7 @@ def _user_allowed(slack_user_id, allowed_users):
     if slack_user_id in allowed_users:
         return True
     allowed_groups = [g[1:] for g in allowed_users if g.startswith('@')]
-    with open('data/crowd_users.yml') as f:
+    with open('data/crowd_users.yml', encoding='utf8') as f:
         all_users = yaml.load(f)
     crowd_users = list(filter(lambda x: x.get('$slack-user-id') == slack_user_id, all_users))
     if len(crowd_users) != 1:
