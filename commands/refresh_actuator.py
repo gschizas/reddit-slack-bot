@@ -79,7 +79,7 @@ def refresh_actuator(ctx, namespace, deployment):
         chat(ctx).send_text(f"You don't have permission to refresh actuator.", is_error=True)
         return
     allowed_channels = namespace_obj['channels']
-    channel_name = chat(ctx).channels.get(chat(ctx).channel_id)
+    channel_name = chat(ctx).channel_name
     if channel_name not in allowed_channels:
         chat(ctx).send_text(f"Refresh actuator commands are not allowed in {channel_name}", is_error=True)
         return

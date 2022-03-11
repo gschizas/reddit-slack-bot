@@ -97,3 +97,7 @@ class SlackWrapper:
                 participants = [f"{self.users[user_id]['real_name']} <{self.users[user_id]['name']}@{user_id}>"
                                 for user_id in response_members['members']]
                 self.channels[team_id][channel_id] = '🧑' + ' '.join(participants)
+
+    @property
+    def channel_name(self):
+        return self.channels[self.team_id].get(self.channel_id)
