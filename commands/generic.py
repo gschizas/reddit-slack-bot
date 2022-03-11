@@ -30,7 +30,7 @@ def binary(ctx):
     rest_of_text = ' '.join(ctx.args)
     rest_of_text = re.sub(r'(\S{8})\s?', r'\1 ', rest_of_text)
     decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
-    ctx.obj['chat'].send_text(''.join(decoded_text))
+    chat(ctx).send_text(''.join(decoded_text))
 
 
 @gyrobot.command('cointoss')
