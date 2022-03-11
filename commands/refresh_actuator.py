@@ -9,8 +9,9 @@ from ruamel.yaml import YAML
 
 from commands import gyrobot, chat, logger
 
-usernames = dict()
 yaml = YAML()
+all_users = []
+all_users_last_update = 0
 
 
 def _actuator_config():
@@ -50,13 +51,18 @@ class OpenShiftNamespace(click.ParamType):
 
 
 def _user_allowed(slack_user_id, allowed_users):
+    global all_users, all_users_last_update
     if '*' in allowed_users:
         return True
     if slack_user_id in allowed_users:
         return True
     allowed_groups = [g[1:] for g in allowed_users if g.startswith('@')]
-    with open('data/crowd_users.yml', encoding='utf8') as f:
-        all_users = yaml.load(f)
+
+    all_users_file = pathlib.Path('data/crowd_users.yml')
+    if all_users is None or all_users_file.stat().st_mtime != all_users_last_update:
+        with all_users_file.open(encoding='utf8') as f:
+            all_users = yaml.load(f)
+        all_users_last_update = all_users_file.stat().st_mtime
     crowd_users = list(filter(lambda x: x.get('$slack-user-id') == slack_user_id, all_users))
     if len(crowd_users) != 1:
         return False
