@@ -54,6 +54,16 @@ def _user_allowed(slack_user_id, allowed_users):
         return True
     if slack_user_id in allowed_users:
         return True
+    allowed_groups = [g[1:] for g in allowed_users if g.startswith('@')]
+    with open('data/crowd_users.yml') as f:
+        all_users = yaml.load(f)
+    crowd_users = list(filter(lambda x: x.get('$slack-user-id') == slack_user_id, all_users))
+    if len(crowd_users) != 1:
+        return False
+    crowd_user = crowd_users[0]
+    user_groups = crowd_user['groups']
+    if set(allowed_groups).intersection(user_groups):
+        return True
     return False
 
 
