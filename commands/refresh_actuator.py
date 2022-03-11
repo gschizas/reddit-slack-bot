@@ -60,6 +60,11 @@ def refresh_actuator(ctx, namespace, deployment):
     if chat(ctx).user_id not in allowed_users:
         chat(ctx).send_text(f"You don't have permission to refresh actuator.", is_error=True)
         return
+    allowed_channels = namespace_obj['channels']
+    channel_name = chat(ctx).channels.get(chat(ctx).channel_id)
+    if channel_name not in allowed_channels:
+        chat(ctx).send_text(f"Refresh actuator commands are not allowed in {channel_name}", is_error=True)
+        return
     ses = requests.session()
     openshift_token = namespace_obj['openshift_token']
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
