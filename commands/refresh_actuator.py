@@ -102,6 +102,9 @@ def refresh_actuator(ctx, namespace, deployment):
         chat(ctx).send_text("Error while logging in:\n```" + login_cmd.stderr.decode().strip() + "```", is_error=True)
         return
     pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
+    if len(pods_to_refresh) == 0:
+        chat(ctx).send_text(f"Couldn't find any pods on {namespace} to refresh for {deployment}", is_error=True)
+        return
     for pod_to_refresh in pods_to_refresh:
         port_fwd = subprocess.Popen(['oc', 'port-forward', pod_to_refresh, '9999:8778'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
