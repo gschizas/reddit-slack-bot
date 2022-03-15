@@ -93,7 +93,7 @@ def refresh_actuator(ctx, namespace, deployment):
     openshift_token = namespace_obj['openshift_token']
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
     all_pods_raw = ses.get(
-        server_url + "api/v1/namespaces/omni-dev/pods",
+        server_url + f"api/v1/namespaces/{namespace.lower()}/pods",
         params={'labelSelector': f'deployment={deployment}'})
     all_pods = all_pods_raw.json()
 
