@@ -95,6 +95,9 @@ def refresh_actuator(ctx, namespace, deployment):
     all_pods_raw = ses.get(
         server_url + f"api/v1/namespaces/{namespace.lower()}/pods",
         params={'labelSelector': f'deployment={deployment}'})
+    if not all_pods_raw.ok:
+        chat(ctx).send_file(file_data=all_pods_raw.content, filename='error.txt')
+        return
     all_pods = all_pods_raw.json()
 
     login_cmd = subprocess.run(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'], capture_output=True)
