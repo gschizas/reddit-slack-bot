@@ -1,3 +1,5 @@
+import slack
+
 class SlackWrapper:
     def __init__(self, bot_name):
         self.bot_name = bot_name
@@ -45,14 +47,17 @@ class SlackWrapper:
             username=self.bot_name)
 
     def send_file(self, file_data, title=None, filename=None, filetype=None):
-        self.web_client.files_upload(
-            channels=self.channel_id,
-            icon_emoji=':robot_face:',
-            username=self.bot_name,
-            file=file_data,
-            filename=filename,
-            title=title,
-            filetype=filetype or 'auto')
+        try:
+            self.web_client.files_upload(
+                channels=self.channel_id,
+                icon_emoji=':robot_face:',
+                username=self.bot_name,
+                file=file_data,
+                filename=filename,
+                title=title,
+                filetype=filetype or 'auto')
+        except slack.errors.SlackApiError as ex:
+            self.send_text(text=ex, is_error=True)
 
     def send_fields(self, text, fields):
         self.web_client.chat_postMessage(
