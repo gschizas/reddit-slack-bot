@@ -3,6 +3,7 @@ import os
 import pathlib
 import re
 import subprocess
+from string import Template
 
 import click
 
@@ -85,11 +86,21 @@ def mock(ctx, environment, mock_status):
     change_project_command = ['oc', 'project', project_name]
     result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
     statuses = mock_config['environments'][environment]['status'][mock_status]
+    vartemplates = mock_config['environments'][environment].get('vartemplate', {})
+    for name, value in vartemplates.items(): # check that there's no recursive loop
+        if '$' + name in value:
+            chat(ctx).send_text(
+                f"Recursive variable template: `{value}` contains `{name}`. ",
+                is_error=True)
+            return
+
     for microservice_info, status in statuses.items():
         if '$' not in microservice_info: microservice_info += '$'
         microservice, env_var_shortcut = microservice_info.split('$')
         env_var_name: str = env_vars[env_var_shortcut]
         env_variable_value = f'{env_var_name}={status}' if status is not None else f'{env_var_name}-'
+        while '$' in env_variable_value:
+            env_variable_value = Template(env_variable_value).substitute(**vartemplates)
         environment_set_command = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
         result_text += subprocess.check_output(environment_set_command).decode() + '\n\n'
     logout_command = ['oc', 'logout']
