@@ -34,7 +34,7 @@ def _masked_oc_password(variable_list):
         else:
             variable_name, variable_value = full_variable.split('=', 1)
             if 'password' in variable_name.lower() or 'auth_header_value' in variable_name.lower():
-                result += variable_name + '=' + variable_value[:2] + '*********' + variable_value[-2:] + '\n'
+                result += variable_name + '=' + variable_value[:2] + 9 * '*' + variable_value[-2:] + '\n'
             else:
                 result += full_variable + '\n'
     return result
