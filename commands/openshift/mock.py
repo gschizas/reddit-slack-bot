@@ -19,9 +19,18 @@ def _mock_config():
         mock_config = json.load(f)
     with config_file.with_suffix('.credentials.json').open() as f:
         credentials = json.load(f)
-    for env in mock_config['environments']:
-        if env in credentials:
-            mock_config['environments'][env]['openshift_token'] = credentials[env]
+    default_environment = mock_config.get('default_environment', {})
+    for env_name, env in mock_config['environments'].items():
+        if 'status' not in env:
+            env['status'] = default_environment['status']
+        for status, microservice_vars in env['status'].items():
+            env['status'][status] = default_environment.get('status', {}).get(status, {}) | microservice_vars
+        env['vartemplate'] = env.get('vartemplate', {}) | default_environment.get('vartemplate', {})
+        for key, value in default_environment.items():
+            if key in ('status', 'vartemplate'): # we have already handled these
+                continue
+            if key in env: # value already exists
+                continue
     return mock_config
 
 
