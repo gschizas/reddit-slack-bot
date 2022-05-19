@@ -397,14 +397,17 @@ def configure_enhanced_crowd_control(ctx):
     add THREAD_ID or URL: add a new thread to the monitored threads
     del/delete/remove THREAD_ID or URL: delete the thread from the monitored threads
     """
+    config = {}
     config_file = pathlib.Path(f'config/enhanced_crowd_control.yml')
     if config_file.exists():
         with config_file.open(mode='r', encoding='utf8') as y:
             config = dict(yaml.load(y))
-    if not config:
-        config = {subreddit(ctx).display_name: {
-            'slack': {'channel': '#something', 'url': 'https://hooks.slack.com/services/TEAM_ID/CHANNEL_ID/KEY'}},
+    if subreddit(ctx).display_name not in config:
+        config[subreddit(ctx).display_name] = {
+            'slack': {'channel': '#something', 'url': 'https://hooks.slack.com/services/TEAM_ID/CHANNEL_ID/KEY'},
             'threads': [{'action': 'remove', 'id': 'xxxxxx', 'last': None}]}
+        with config_file.open(mode='w', encoding='utf8') as y:
+            yaml.dump(config, y)
     monitored_threads: list = config[subreddit(ctx).display_name]['threads']
     ctx.obj['monitored_threads'] = monitored_threads
     ctx.obj['config'] = config
