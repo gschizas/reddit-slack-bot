@@ -461,7 +461,7 @@ def configure_enhanced_crowd_control_add(ctx, thread_id):
             'last': None,
             'date': submission_date,
             'permalink': permalink})
-        chat(ctx).send_text(f"Added {thread_id} ({s.permalink})")
+        chat(ctx).send_text(f"Added {thread_id} ({reddit_session(ctx).config.reddit_url}{s.permalink})")
 
     with ctx.obj['config_file'].open(mode='w', encoding='utf8') as y:
         yaml.dump(ctx.obj['config'], y)
