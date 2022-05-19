@@ -19,6 +19,9 @@ def _mock_config():
         mock_config = json.load(f)
     with config_file.with_suffix('.credentials.json').open() as f:
         credentials = json.load(f)
+    for env in mock_config['environments']:
+        if env in credentials:
+            mock_config['environments'][env]['openshift_token'] = credentials[env]
     default_environment = mock_config.get('default_environment', {})
     for env_name, env in mock_config['environments'].items():
         if 'status' not in env:
