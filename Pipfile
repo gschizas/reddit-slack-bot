@@ -1,6 +1,6 @@
 [[source]]
 name = "pypi"
-url = "https://nexus.terrasoft.gr/repository/pypi-all/simple"
+url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
