@@ -90,8 +90,12 @@ def mock(ctx, environment, mock_status):
 
     oc_token = mock_config['environments'][environment]['openshift_token']
     site = mock_config['environments'][environment]['site']
-    login_command = ['oc', 'login', site, f'--token={oc_token}']
-    result_text = subprocess.check_output(login_command).decode() + '\n' * 3
+    login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
+    login_result = login_cmd.stderr.decode().strip()
+    if login_cmd.returncode != 0:
+        chat(ctx).send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
+        return
+    result_text = login_result + '\n' * 3
     prefix = mock_config['environments'][environment]['prefix']
     chat(ctx).send_text(f"Setting mock status to {mock_status} for project {environment}...")
     project_name = _get_project_name(mock_config, environment)
