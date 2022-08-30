@@ -461,7 +461,7 @@ def configure_enhanced_crowd_control_add(ctx, thread_id):
         submission_url = reddit_session(ctx).config.reddit_url + s.permalink
         if s.subreddit.display_name.lower() != subreddit(ctx).display_name.lower():
             chat(ctx).send_text(
-                f"Cannot add a thread that belongs to {submission_subreddit}. ({submission_url})",
+                f"Cannot add a thread that belongs to r/{submission_subreddit}. ({submission_url})",
                 is_error=True)
             return
         permalink = s.permalink
