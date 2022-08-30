@@ -459,7 +459,7 @@ def configure_enhanced_crowd_control_add(ctx, thread_id):
         submission_date = datetime.datetime.utcfromtimestamp(s.created_utc)
         submission_subreddit = s.subreddit.display_name
         submission_url = reddit_session(ctx).config.reddit_url + s.permalink
-        if s.subreddit.lower() != subreddit(ctx).display_name.lower():
+        if s.subreddit.display_name.lower() != subreddit(ctx).display_name.lower():
             chat(ctx).send_text(
                 f"Cannot add a thread that belongs to {submission_subreddit}. ({submission_url})",
                 is_error=True)
