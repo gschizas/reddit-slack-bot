@@ -4,7 +4,7 @@ import re
 def extract_username(username):
     if re.match('^[a-zA-Z0-9_-]+$', username):
         pass
-    elif m := re.match(r'^<https://www.reddit.com/user/(?P<username>[a-zA-Z0-9_-]+)(?:\|\1)?>$', username):
+    elif m := re.match(r'^<https://www.reddit.com/u(?:ser)?/(?P<username>[a-zA-Z0-9_-]+)(?:\|\1)?>$', username):
         username = m.group('username')
     elif re.match(r'^u/[a-zA-Z0-9_-]+$', username):
         username = username.split('/')[-1]
