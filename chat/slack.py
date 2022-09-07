@@ -57,7 +57,7 @@ class SlackWrapper:
                 title=title,
                 filetype=filetype or 'auto')
         except slack.errors.SlackApiError as ex:
-            self.send_text(text=ex, is_error=True)
+            self.send_text(text=f"Error while uploading {filename}:\n```{ex!r}```", is_error=True)
 
     def send_fields(self, text, fields):
         self.web_client.chat_postMessage(
