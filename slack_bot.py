@@ -32,6 +32,9 @@ if 'DOCKER_DEPLOY_CONFIGURATION' in os.environ:
 if 'OPENSHIFT_ACTUATOR_REFRESH' in os.environ:
     import commands.openshift.refresh_actuator
 
+if 'OPENSHIFT_SCALEDOWN' in os.environ:
+    import commands.openshift.scaledown
+
 if 'CHEESE_DATABASE_URL' in os.environ:
     import commands.cheese
 
