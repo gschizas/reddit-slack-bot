@@ -1,37 +1,17 @@
-import os
-import pathlib
 import subprocess
 import time
 
 import click
 import requests
-from ruamel.yaml import YAML
 
 from commands import gyrobot, chat, logger
+from commands.openshift.common import read_config, user_allowed, OpenShiftNamespace
 
-yaml = YAML()
-all_users = []
-all_users_last_update = 0
 
 
 def _actuator_config():
     env_var = 'OPENSHIFT_ACTUATOR_REFRESH'
-    return _read_config(env_var)
-
-
-def _read_config(env_var):
-    if os.environ[env_var].startswith('/'):
-        config_file = pathlib.Path(os.environ[env_var])
-    else:
-        config_file = pathlib.Path('config') / os.environ[env_var]
-    with config_file.open(encoding='utf8') as f:
-        actuator_config = yaml.load(f)
-    with config_file.with_suffix('.credentials.yml').open(encoding='utf8') as f:
-        credentials = yaml.load(f)
-    for env in actuator_config:
-        if env in credentials:
-            actuator_config[env]['openshift_token'] = credentials[env]
-    return actuator_config
+    return read_config(env_var)
 
 
 @gyrobot.group('actuator')
@@ -39,49 +19,15 @@ def actuator():
     pass
 
 
-class OpenShiftNamespace(click.ParamType):
-    name = 'namespace'
-
-    def convert(self, value, param, ctx):
-        valid_environments = [e.lower() for e in _actuator_config()]
-        if value.lower() not in valid_environments:
-            self.fail(f"{value} is not a valid namespace. Try one of those: {', '.join(valid_environments)}", param,
-                      ctx)
-        return value.lower()
-
-
-def _user_allowed(slack_user_id, allowed_users):
-    global all_users, all_users_last_update
-    if '*' in allowed_users:
-        return True
-    if slack_user_id in allowed_users:
-        return True
-    allowed_groups = [g[1:] for g in allowed_users if g.startswith('@')]
-
-    all_users_file = pathlib.Path('data/crowd_users.yml')
-    if all_users is None or all_users_file.stat().st_mtime != all_users_last_update:
-        with all_users_file.open(encoding='utf8') as f:
-            all_users = yaml.load(f)
-        all_users_last_update = all_users_file.stat().st_mtime
-    crowd_users = list(filter(lambda x: x.get('$slack-user-id') == slack_user_id, all_users))
-    if len(crowd_users) != 1:
-        return False
-    crowd_user = crowd_users[0]
-    user_groups = crowd_user['groups']
-    if set(allowed_groups).intersection(user_groups):
-        return True
-    return False
-
-
 @actuator.command('refresh')
-@click.argument('namespace', type=OpenShiftNamespace())
+@click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
 @click.argument('deployments', type=str, nargs=-1)
 @click.pass_context
 def refresh_actuator(ctx, namespace, deployments):
     namespace_obj = _actuator_config()[namespace]
     server_url = namespace_obj['url']
     allowed_users = namespace_obj['users']
-    if not _user_allowed(chat(ctx).user_id, allowed_users):
+    if not user_allowed(chat(ctx).user_id, allowed_users):
         chat(ctx).send_text(f"You don't have permission to refresh actuator.", is_error=True)
         return
     allowed_channels = namespace_obj['channels']
