@@ -8,7 +8,6 @@ from commands import gyrobot, chat, logger
 from commands.openshift.common import read_config, user_allowed, OpenShiftNamespace
 
 
-
 def _actuator_config():
     env_var = 'OPENSHIFT_ACTUATOR_REFRESH'
     return read_config(env_var)

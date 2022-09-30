@@ -23,6 +23,7 @@ def read_config(env_var):
             scaledown_config[env]['openshift_token'] = credentials[env]
     return scaledown_config
 
+
 class OpenShiftNamespace(click.ParamType):
     name = 'namespace'
     _config = {}
@@ -35,8 +36,8 @@ class OpenShiftNamespace(click.ParamType):
         valid_environments = [e.lower() for e in self._config]
         if value.lower() not in valid_environments:
             self.fail(
-                f"{value} is not a valid namespace. Try one of those: {', '.join(valid_environments)}", 
-                param, 
+                f"{value} is not a valid namespace. Try one of those: {', '.join(valid_environments)}",
+                param,
                 ctx)
         return value.lower()
 
