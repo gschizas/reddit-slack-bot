@@ -34,9 +34,10 @@ class OpenShiftNamespace(click.ParamType):
 
     def convert(self, value, param, ctx) -> str:
         valid_environments = [e.lower() for e in self._config]
+        valid_environments_text = ', '.join(valid_environments)
         if value.lower() not in valid_environments:
             self.fail(
-                f"{value} is not a valid namespace. Try one of those: {', '.join(valid_environments)}",
+                f"{value} is not a valid namespace. Try one of those: {valid_environments_text}",
                 param,
                 ctx)
         return value.lower()
