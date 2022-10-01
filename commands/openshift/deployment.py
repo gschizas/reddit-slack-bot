@@ -10,14 +10,6 @@ from commands.openshift.common import read_config, user_allowed, OpenShiftNamesp
 _deployment_config = read_config('OPENSHIFT_DEPLOYMENT')
 
 
-def extras(*args, **kwargs):
-    def action_name_inner(func):
-        func.action_name = kwargs['action_text']
-        return func(*args, **kwargs)
-
-    return action_name_inner
-
-
 def check_security(f):
     def check_security_inner(ctx, *args, **kwargs):
         action_name: str = ctx.obj['security_text'][ctx.command.name]
@@ -43,15 +35,10 @@ def check_security(f):
 def deployment(ctx: click.Context):
     ctx.ensure_object(dict)
     ctx.obj['config'] = _deployment_config
-    ctx.obj['security_text'] = {
-        'list': 'list deployments',
-        'pause': 'pause deployment',
-        'resume': 'resume deployment'
-    }
+    ctx.obj['security_text'] = {'list': 'list deployments', 'pause': 'pause deployment', 'resume': 'resume deployment'}
 
 
 @deployment.command('list')
-# @click.decorators.pass_meta_key('list deployments')
 @click.argument('namespace', type=OpenShiftNamespace(_deployment_config))
 @click.pass_context
 @check_security
@@ -59,11 +46,8 @@ def list_deployments(ctx, namespace):
     deployments = get_deployments(ctx.obj['config'][namespace], namespace)
     chat(ctx).send_file(json.dumps(deployments).encode(), filename='deployments.json')
 
-# , context_settings={'obj': {'test': '123'}
-
 
 @deployment.command('pause')
-# @click.decorators.pass_meta_key('pause deployment')
 @click.argument('namespace', type=OpenShiftNamespace(_deployment_config))
 @click.pass_context
 @check_security
@@ -76,7 +60,6 @@ def pause_deployment(ctx, namespace):
 
 
 @deployment.command('resume')
-# @click.decorators.pass_meta_key('resume deployment')
 @click.argument('namespace', type=OpenShiftNamespace(_deployment_config))
 @click.pass_context
 @check_security
