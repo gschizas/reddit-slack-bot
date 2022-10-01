@@ -20,7 +20,6 @@ def extras(*args, **kwargs):
 
 def check_security(f):
     def check_security_inner(ctx, *args, **kwargs):
-        logger(ctx).debug("hello")
         action_name: str = ctx.obj['security_text'][ctx.command.name]
         action_name_proper = action_name.capitalize()
         namespace = kwargs.get('namespace')
