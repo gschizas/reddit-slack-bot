@@ -35,6 +35,9 @@ if 'OPENSHIFT_ACTUATOR_REFRESH' in os.environ:
 if 'OPENSHIFT_SCALEDOWN' in os.environ:
     import commands.openshift.scaledown
 
+if 'OPENSHIFT_DEPLOYMENT' in os.environ:
+    import commands.openshift.deployment
+
 if 'CHEESE_DATABASE_URL' in os.environ:
     import commands.cheese
 
