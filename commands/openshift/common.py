@@ -1,8 +1,11 @@
 import os
 import pathlib
+from functools import update_wrapper
 
 import click
 from ruamel.yaml import YAML
+
+from commands import chat
 
 yaml = YAML()
 all_users = []
@@ -64,3 +67,23 @@ def user_allowed(slack_user_id, allowed_users):
     if set(allowed_groups).intersection(user_groups):
         return True
     return False
+
+
+def check_security(f):
+    def check_security_inner(ctx, *args, **kwargs):
+        action_name: str = ctx.obj['security_text'][ctx.command.name]
+        action_name_proper = action_name.capitalize()
+        namespace = kwargs.get('namespace')
+        config = ctx.obj['config'][namespace]
+        allowed_users = config['users']
+        if not user_allowed(chat(ctx).user_id, allowed_users):
+            chat(ctx).send_text(f"You don't have permission to {action_name}.", is_error=True)
+            return
+        allowed_channels = config['channels']
+        channel_name = chat(ctx).channel_name
+        if channel_name not in allowed_channels:
+            chat(ctx).send_text(f"{action_name_proper} commands are not allowed in {channel_name}", is_error=True)
+            return
+        return ctx.invoke(f, ctx, *args, **kwargs)
+
+    return update_wrapper(check_security_inner, f)
