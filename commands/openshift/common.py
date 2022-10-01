@@ -15,13 +15,13 @@ def read_config(env_var):
     else:
         config_file = pathlib.Path('config') / os.environ[env_var]
     with config_file.open(encoding='utf8') as f:
-        scaledown_config = yaml.load(f)
+        config = yaml.load(f)
     with config_file.with_suffix('.credentials.yml').open(encoding='utf8') as f:
         credentials = yaml.load(f)
-    for env in scaledown_config:
+    for env in config:
         if env in credentials:
-            scaledown_config[env]['openshift_token'] = credentials[env]
-    return scaledown_config
+            config[env]['openshift_token'] = credentials[env]
+    return config
 
 
 class OpenShiftNamespace(click.ParamType):
