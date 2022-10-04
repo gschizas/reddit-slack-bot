@@ -72,7 +72,13 @@ def refresh_actuator(ctx, namespace, deployments):
             try:
                 refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies={'http': None, 'https': None})
                 # refresh_result = requests.get("http://localhost:9999/actuator/configprops", proxies={'http': None, 'https': None})
-                chat(ctx).send_file(file_data=refresh_result.content, filename=f'actuator-refresh-{pod_to_refresh}.json')
+                refresh_actuator_result = refresh_result.json()
+                if refresh_actuator_result and all([type(rar) is str for rar in refresh_actuator_result]):
+                    chat(ctx).send_text('```\n' + '\n'.join([rar for rar in refresh_actuator_result]) + '\n```\n')
+                else:
+                    chat(ctx).send_file(
+                        file_data=refresh_result.content,
+                        filename=f'actuator-refresh-{pod_to_refresh}.json')
             except requests.exceptions.ConnectionError as ex:
                 chat(ctx).send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
             port_fwd.terminate()
