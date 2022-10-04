@@ -64,7 +64,9 @@ reddit_session: praw.Reddit = None
 bot_reddit_session: praw.reddit.Reddit = None
 subreddit: praw.reddit.Subreddit = None
 subreddit_name: str = None
-trigger_words = []
+trigger_words: list = []
+shortcut_words: dict = {}
+bot_name: str = None
 
 
 def init():
@@ -140,25 +142,42 @@ def handle_message(**payload):
     user_id = msg.get('user', '')
 
     permalink = web_client.chat_getPermalink(channel=channel_id, message_ts=msg['ts'])
-
     chat_obj.load(web_client, team_id, channel_id, user_id, msg, permalink)
-
     chat_obj.preload(user_id, team_id, channel_id)
 
-    text = msg['text']
+    text_lines = parse_shortcuts(msg['text'])
+    for text_line in text_lines:
+        handle_line(text_line)
 
+
+def parse_shortcuts(text):
+    global shortcut_words
+    text_lines = [text]
     typed_text = normalize_text(text).strip().lower().split()
     if not typed_text:
-        return
+        return []
     first_word = typed_text[0]
     if first_word in shortcut_words:
         replaced_words = shortcut_words[first_word]
-        typed_text = replaced_words + typed_text[1:]
-        first_word = typed_text[0]
-        text = ' '.join(replaced_words) + ' ' + ' '.join(text.split()[1:])
+        if all([type(w) is str for w in replaced_words]):  # shortcut definition is a list of all strings
+            typed_text = replaced_words + typed_text[1:]
+            first_word = typed_text[0]
+            text = ' '.join(replaced_words) + ' ' + ' '.join(text.split()[1:])
+            text_lines = [text]
+        elif all([type(w) is list for w in replaced_words]) and \
+                all([all([type(ww) is str for ww in w]) for w in replaced_words]):
+            # shortcut definition is a list of lists and each of them is a list of strings
+            first_word = replaced_words[0][0]
+            text_lines = [' '.join(replaced_words_line) for replaced_words_line in replaced_words]
+        else:
+            logger.critical(f'Bad format for shortcut {first_word}')
     if not any([first_word == trigger_word for trigger_word in trigger_words]):
-        return
+        return []
+    return text_lines
 
+
+def handle_line(text):
+    global chat_obj, trigger_words
     logger.debug(f"Triggerred by {text}")
     line = ' '.join(text.split()[1:])
     try:
