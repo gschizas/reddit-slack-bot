@@ -74,7 +74,8 @@ def refresh_actuator(ctx, namespace, deployments):
                 # refresh_result = requests.get("http://localhost:9999/actuator/configprops", proxies={'http': None, 'https': None})
                 refresh_actuator_result = refresh_result.json()
                 if refresh_actuator_result and all([type(rar) is str for rar in refresh_actuator_result]):
-                    chat(ctx).send_text('```\n' + '\n'.join([rar for rar in refresh_actuator_result]) + '\n```\n')
+                    refresh_actuator_result_list = sorted([rar for rar in refresh_actuator_result])
+                    chat(ctx).send_text('```\n' + '\n'.join(refresh_actuator_result_list) + '\n```\n')
                 else:
                     chat(ctx).send_file(
                         file_data=refresh_result.content,
