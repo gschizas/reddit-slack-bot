@@ -74,25 +74,15 @@ def scaledown(ctx, namespace):
             result += f"\nError {scaledown_cmd.returncode} while scaling down deployment {deployment_to_scaledown} to scale down\n"
         result += scaledown_cmd.stdout.decode().strip() + "\n"
         result += scaledown_cmd.stderr.decode().strip() + "\n"
-            # chat(ctx).send_text(, is_error=True)
-            # chat(ctx).send_text("```" +  + "```", is_error=True)
-            # chat(ctx).send_text("```" + scaledown_cmd.stderr.decode().strip() + "```", is_error=True)
-            # return
-    
+
     for resource_to_scaledown in namespace_obj['resources']:
         result += "\n"
         scaledown_cmd_line = ['oc', 'scale', 'sts', resource_to_scaledown, '--replicas=0']
-        # result += shlex.join(scaledown_cmd_line)
         scaledown_cmd = subprocess.run(scaledown_cmd_line, capture_output=True)
         if scaledown_cmd.returncode != 0:
             result += f"\nError {scaledown_cmd.returncode} while scaling down stateful set {resource_to_scaledown} to scale down\n"
         result += scaledown_cmd.stdout.decode().strip() + "\n"
         result += scaledown_cmd.stderr.decode().strip() + "\n"
-        # if scaledown_cmd.returncode != 0:
-        #     chat(ctx).send_text(f"Error while scaling down resource {resource_to_scaledown} to scale down", is_error=True)
-        #     chat(ctx).send_text("```" + scaledown_cmd.stdout.decode().strip() + "```", is_error=True)
-        #     chat(ctx).send_text("```" + scaledown_cmd.stderr.decode().strip() + "```", is_error=True)
-        #     return
 
     result_cmd = subprocess.run(['oc', 'get', 'pod'], capture_output=True)
     if result_cmd.returncode != 0:
