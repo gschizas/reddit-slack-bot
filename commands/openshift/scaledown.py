@@ -66,6 +66,7 @@ def scaledown(ctx, namespace):
         return
 
     for deployment_to_scaledown in deployments_to_scaledown:
+        if deployment_to_scaledown in namespace_obj.get('~deployments', []): continue # ignore deployment
         result += "\n"
         scaledown_cmd_line = ['oc', 'scale', 'deployment', deployment_to_scaledown, '--replicas=0']
         result += shlex.join(scaledown_cmd_line)
