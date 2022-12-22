@@ -6,7 +6,7 @@ import io
 from tabulate import tabulate
 
 from commands import gyrobot, chat
-from commands.openshift.api import get_deployments, change_pause_state
+from commands.openshift.api import get_deployments, change_deployment_pause_state
 from commands.openshift.common import read_config, OpenShiftNamespace, check_security
 
 REMOVE_DEPLOYMENT_KEYS = ['Containers', 'Images', 'Selector']
@@ -47,7 +47,7 @@ def pause_deployment(ctx, namespace):
     deployments = get_deployments(ctx.obj['config'][namespace], namespace)
     result = []
     for one_deployment in deployments:
-        result.append(change_pause_state(ctx.obj['config'][namespace], namespace, one_deployment['Name'], True))
+        result.append(change_deployment_pause_state(ctx.obj['config'][namespace], namespace, one_deployment['Name'], True))
     chat(ctx).send_file(json.dumps(result).encode(), filename='deployments.json')
 
 
@@ -59,5 +59,5 @@ def resume_deployment(ctx, namespace):
     deployments = get_deployments(ctx.obj['config'][namespace], namespace)
     result = []
     for one_deployment in deployments:
-        result.append(change_pause_state(ctx.obj['config'][namespace], namespace, one_deployment['Name'], None))
+        result.append(change_deployment_pause_state(ctx.obj['config'][namespace], namespace, one_deployment['Name'], None))
     chat(ctx).send_file(json.dumps(result).encode(), filename='deployments.json')

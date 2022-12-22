@@ -38,6 +38,9 @@ if 'OPENSHIFT_SCALEDOWN' in os.environ:
 if 'OPENSHIFT_DEPLOYMENT' in os.environ:
     import commands.openshift.deployment
 
+if 'OPENSHIFT_CRONJOB' in os.environ:
+    import commands.openshift.cronjob
+
 if 'CHEESE_DATABASE_URL' in os.environ:
     import commands.cheese
 
