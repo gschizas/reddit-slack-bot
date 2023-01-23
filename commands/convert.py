@@ -13,11 +13,19 @@ def _read_conversions():
     with (pathlib.Path(__file__).parent / 'convert.json').open() as f:
         return json.load(f)
 
+def _find_unit(unit, search_text):
+    if unit['Unit'].casefold() == search_text.casefold():
+        return True
+    aliases = [a.casefold() for a in unit.get('Aliases', [])]
+    if search_text.casefold() in aliases:
+        return True
+    return False
+
 def _get_conversion_value(unit: str) -> float:
     global _conversions
     if _conversions is None:
         _conversions = _read_conversions()
-    result = list(filter(lambda x: x['Unit'].casefold() == unit.casefold(), _conversions))
+    result = list(filter(lambda u: _find_unit(u, unit), _conversions))
     if len(result) == 0:
         return None
     elif len(result) == 1:
@@ -67,7 +75,7 @@ def convert(ctx, words):
         standard_value = value * constant_unit_from_conversion['Value']
         converted_value = standard_value / constant_unit_to_conversion['Value']
         text = f"`{unit_from} : {constant_unit_from_conversion} : {constant_unit_to_conversion}`"
-        if unit_to.casefold() == "inch":
+        if constant_unit_to_conversion['Unit'].casefold() == "inch":
             converted_feet = int(converted_value // 12)
             converted_inches = round(converted_value % 12)
             text = f"`{value} {unit_from} is {converted_feet}'{converted_inches}\"`"
