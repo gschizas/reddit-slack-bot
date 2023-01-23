@@ -42,51 +42,6 @@ def cointoss(ctx):
     chat(ctx).send_text(toss_text)
 
 
-@gyrobot.command('convert')
-@click.argument('value_text', type=click.FLOAT, metavar="«value»")
-@click.argument('currency_from', type=click.STRING, metavar="«currency from»")
-@click.argument('_literal_to', type=click.UNPROCESSED, metavar='"TO"')
-@click.argument('currency_to', type=click.STRING, metavar="«currency to»")
-@click.pass_context
-def convert(ctx, value_text, currency_from, _literal_to, currency_to):
-    """Convert money from one currency to another.
-
-    Example: convert 100.0 USD TO EUR"""
-
-    try:
-        value = float(value_text)
-    except ValueError:
-        chat(ctx).send_text(f"{value_text} is not a good number", is_error=True)
-        return
-
-    if not (re.match(r'^\w+$', currency_from)):
-        chat(ctx).send_text(f"{currency_from} is not a real currency", is_error=True)
-        return
-
-    if not (re.match(r'^\w+$', currency_to)):
-        chat(ctx).send_text(f"{currency_to} is not a real currency", is_error=True)
-        return
-
-    currency_from = currency_from.upper()
-    currency_to = currency_to.upper()
-
-    if currency_from == currency_to:
-        chat(ctx).send_text("Tautological bot is tautological", is_error=True)
-        return
-
-    prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
-                               params={'fsym': currency_from, 'tsyms': currency_to})
-    logger(ctx).info(prices_page.url)
-    prices = prices_page.json()
-    if prices.get('Response') == 'Error':
-        text = prices['Message']
-    else:
-        price = prices[currency_to]
-        new_value = value * price
-        text = f"{value:.2f} {currency_from} is {new_value:.2f} {currency_to}"
-    chat(ctx).send_text(text)
-
-
 def _lookup_country(country):
     country = country.lower()
     country = {'uk': 'gb'}.get(country, country)

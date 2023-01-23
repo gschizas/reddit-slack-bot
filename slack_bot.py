@@ -15,6 +15,7 @@ import slack
 
 import commands
 import commands.generic
+import commands.convert
 from bot_framework.common import normalize_text
 from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
