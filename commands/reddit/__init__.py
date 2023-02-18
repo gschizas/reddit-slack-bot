@@ -321,6 +321,7 @@ def archive_user(ctx, username):
 
 
 @gyrobot.command('history')
+@click.argument('username')
 @click.pass_context
 def do_history(ctx, username):
     """\
