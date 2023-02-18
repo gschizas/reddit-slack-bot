@@ -48,9 +48,9 @@ def convert(ctx, words):
     
     if len(words) == 3:
         # Try to find out what the first argument is
-        if unit_length := re.match("(\d+)'(?:(\d+)\")?", words[0]):
-            unit_feet = int(unit_length.group(1))
-            unit_inches = int(unit_length.group(2)) if unit_length.group(2) else 0
+        if unit_length := re.match("^(?:(?P<feet>\d*\.?\d*?)')?(?:(?P<inches>\d*\.?\d*)\")?$", words[0]):
+            unit_feet = int(unit_length.group("feet"))  if unit_length.group(1) else 0
+            unit_inches = int(unit_length.group("inches")) if unit_length.group(2) else 0
             unit_total_inches = unit_inches + unit_feet * 12
             words = [unit_total_inches, "inch", "to", words[2]]
 
