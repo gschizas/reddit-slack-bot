@@ -39,7 +39,7 @@ def refresh_actuator(ctx, namespace, deployments):
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
     for deployment in deployments:
         all_pods_raw = ses.get(
-            server_url + f"api/v1/namespaces/{namespace.lower()}/pods",
+            f"{server_url}api/v1/namespaces/{namespace.lower()}/pods",
             params={'labelSelector': f'deployment={deployment}'})
         if not all_pods_raw.ok:
             chat(ctx).send_file(file_data=all_pods_raw.content, filename='error.txt')
