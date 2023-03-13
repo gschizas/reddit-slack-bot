@@ -87,3 +87,45 @@ def check_security(f):
         return ctx.invoke(f, ctx, *args, **kwargs)
 
     return update_wrapper(check_security_inner, f)
+
+
+def rangify(original_input_list):
+    def extract_index(item):
+        if '[' not in item:
+            return item, 0
+        kind, index_text = item.split("[")
+        index = int(index_text[:-1])  # Remove the "]" and convert to int
+        return kind, index
+
+    # Initialize variables
+    output_list = []
+    current_kind = ""
+    current_start = None
+    current_end = None
+
+    input_list = sorted(original_input_list, key=lambda line: extract_index(line))
+
+    # Loop through the input list
+    for item in input_list:
+        if "[" in item:
+            # This is a kind with an index
+            kind, index = extract_index(item)
+            if kind == current_kind and index == current_end + 1:
+                # This is part of an existing range
+                current_end = index
+                output_list[-1] = f"{kind}[{current_start}-{current_end}]"
+            else:
+                # This is a new kind or a new range for the current kind
+                current_kind = kind
+                current_start = index
+                current_end = index
+                output_list.append(item)
+        else:
+            # This is a kind without an index
+            current_kind = ""
+            current_start = None
+            current_end = None
+            output_list.append(item)
+
+    # Print the output list
+    return output_list
