@@ -1,5 +1,6 @@
 import os
 import pathlib
+import re
 from functools import update_wrapper
 
 import click
