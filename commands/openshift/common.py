@@ -90,11 +90,11 @@ def check_security(f):
 
 
 def rangify(original_input_list):
+    REGEX = r'^(?P<prefix>[\w\.]+)(?:(?:\[(?P<index>\d+)\])(?P<suffix>[\w\.]*))?$'
     def extract_index(item):
-        if '[' not in item:
-            return item, 0
-        kind, index_text = item.split("[")
-        index = int(index_text[:-1])  # Remove the "]" and convert to int
+        kind_prefix, index_text, kind_suffix = re.match(REGEX, item).groups()
+        index = int(index_text or 0)
+        kind = kind_prefix + (kind_suffix or '')
         return kind, index
 
     # Initialize variables
