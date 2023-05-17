@@ -100,9 +100,9 @@ def kudos_give(ctx: click.Context):
             text_to_send = f"Kudos from {sender_name} to {recipient_name}"
             give_gift = random.random()
             if reason.strip():
-                if re.search(r':\w+:', reason):
-                    reason = '. No cheating! Only I can send gifts!'
-                    give_gift = -1
+                #if re.search(r':\w+:', reason):
+                #    reason = '. No cheating! Only I can send gifts!'
+                #    give_gift = -1
                 text_to_send += ' ' + reason
             if give_gift > 0.25:
                 if not text_to_send.endswith('.'): text_to_send += '.'
