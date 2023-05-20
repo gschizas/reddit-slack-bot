@@ -48,6 +48,8 @@ def pause_deployment(ctx, namespace):
     result = []
     for one_deployment in deployments:
         result.append(change_deployment_pause_state(ctx.obj['config'][namespace], namespace, one_deployment['Name'], True))
+    result_markdown = _make_deployments_table(result)
+    chat(ctx).send_file(result_markdown.encode(), filename='deployments.md')
     chat(ctx).send_file(json.dumps(result).encode(), filename='deployments.json')
 
 
@@ -60,4 +62,17 @@ def resume_deployment(ctx, namespace):
     result = []
     for one_deployment in deployments:
         result.append(change_deployment_pause_state(ctx.obj['config'][namespace], namespace, one_deployment['Name'], None))
+    result_markdown = _make_deployments_table(result)
+    chat(ctx).send_file(result_markdown.encode(), filename='deployments.md')
     chat(ctx).send_file(json.dumps(result).encode(), filename='deployments.json')
+
+
+def _make_deployments_table(result) -> str:
+    result_table = [{
+        'Namespace': dep['metadata']['namespace'],
+        'Name': dep['metadata']['name'],
+        'Replicas': dep['status']['replicas'],
+        'Updated Replicas': dep['status']['updatedReplicas'],
+        'Ready Replicas': dep['status']['readyReplicas'],
+        'Available Replicas': dep['status']['availableReplicas']} for dep in result]
+    return tabulate(result_table, headers='keys', tablefmt='fancy_outline')
