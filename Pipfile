@@ -24,6 +24,7 @@ psycopg2-binary = "*"
 psutil = "*"
 humanfriendly = "*"
 click = "*"
+psycopg = {extras = ["binary"], version = "*"}
 
 [dev-packages]
 
