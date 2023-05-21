@@ -58,6 +58,9 @@ if 'QUESTIONNAIRE_DATABASE_URL' in os.environ and 'QUESTIONNAIRE_FILE' in os.env
 if 'KUDOS_DATABASE_URL' in os.environ:
     import commands.kudos
 
+if 'GYROBOT_DATABASE_URL' in os.environ:
+    import commands.reddit.database
+
 slack_client: slack.RTMClient = None
 logger: logging.Logger = None
 real_stdout: TextIO = None
