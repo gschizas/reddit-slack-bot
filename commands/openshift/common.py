@@ -93,7 +93,10 @@ def check_security(f):
 def rangify(original_input_list):
     REGEX = r'^(?P<prefix>[\w\.]+)(?:(?:\[(?P<index>\d+)\])(?P<suffix>[\w\.]*))?$'
     def extract_index(item):
-        kind_prefix, index_text, kind_suffix = re.match(REGEX, item).groups()
+        matches = re.match(REGEX, item)
+        if not matches:
+            return item, 0
+        kind_prefix, index_text, kind_suffix = matches.groups()
         index = int(index_text or 0)
         kind = kind_prefix + (kind_suffix or '')
         return kind, index
