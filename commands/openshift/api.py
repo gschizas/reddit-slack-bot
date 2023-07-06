@@ -15,6 +15,8 @@ def _get_table(ses, url):
         rq = ses.get(url,
                      params={'limit': 500, 'continue': api_continue},
                      headers={'Accept': 'application/json;as=Table;v=v1beta1;g=meta.k8s.io, application/json'})
+        if not rq.ok:
+            rq.raise_for_status()
         col_names = [col['name'] for col in rq.json()['columnDefinitions']]
         col_types = [col['type'] for col in rq.json()['columnDefinitions']]
         rows = [dict(convert_type(zip(col_names, col_types, row['cells']))) for row in rq.json()['rows']]
