@@ -10,6 +10,7 @@ import click
 from commands import gyrobot, chat
 from commands.openshift.common import OpenShiftNamespace, check_security
 
+
 def _mock_config():
     if os.environ['MOCK_CONFIGURATION'].startswith('/'):
         config_file = pathlib.Path(os.environ['MOCK_CONFIGURATION'])
@@ -30,9 +31,9 @@ def _mock_config():
             env['status'][status] = default_environment.get('status', {}).get(status, {}) | microservice_vars
         env['vartemplate'] = env.get('vartemplate', {}) | default_environment.get('vartemplate', {})
         for key, value in default_environment.items():
-            if key in ('status', 'vartemplate'): # we have already handled these
+            if key in ('status', 'vartemplate'):  # we have already handled these
                 continue
-            if key in env: # value already exists
+            if key in env:  # value already exists
                 continue
     return mock_config
 
@@ -93,7 +94,7 @@ def mock(ctx, environment, mock_status):
     result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
     statuses = mock_config['environments'][environment]['status'][mock_status]
     vartemplates = mock_config['environments'][environment].get('vartemplate', {})
-    for name, value in vartemplates.items(): # check that there's no recursive loop
+    for name, value in vartemplates.items():  # check that there's no recursive loop
         if '$' + name in value:
             chat(ctx).send_text(
                 f"Recursive variable template: `{value}` contains `{name}`. ",
