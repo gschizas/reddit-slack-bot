@@ -426,3 +426,14 @@ def weather(ctx, place):
         file_data = weather_page.content
         title = place_full
     chat(ctx).send_file(file_data, title=title, filetype='png')
+
+@gyrobot.command('youtube_info')
+@click.argument('url')
+@click.pass_context
+def youtube_info(ctx, url):
+    if url.startswith('<') and url.endswith('>'):
+        url = url[1:-1]
+    logger(ctx).info(url)
+    youtube_data = requests.get('https://youtube.com/oembed', params={'url': url, 'format': 'json'})
+    logger(ctx).debug(youtube_data.text)
+    chat(ctx).send_file(youtube_data.content, title=youtube_data.json().get('title', '(no title)'), filetype='json')

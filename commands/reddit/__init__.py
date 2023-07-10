@@ -193,10 +193,10 @@ def usernotes(ctx, user, verbose=None):
     _send_usernote(ctx, redditor_username, notes, warnings, usernote_colors, mod_names, verbose)
 
 
-@gyrobot.command('youtube_info')
+@gyrobot.command('youtube_post_info')
 @click.argument('url')
 @click.pass_context
-def youtube_info(ctx, url):
+def youtube_post_info(ctx, url):
     """Get YouTube media URL"""
     thread_id = extract_real_thread_id(url)
     post = reddit_session(ctx).submission(thread_id)
