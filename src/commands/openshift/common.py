@@ -29,12 +29,14 @@ def read_config(env_var):
 
 
 class OpenShiftNamespace(click.ParamType):
+    _force_upper: bool
     name = 'namespace'
     _config = {}
 
-    def __init__(self, config) -> None:
+    def __init__(self, config, force_upper: bool = None) -> None:
         super().__init__()
         self._config = config
+        self._force_upper = force_upper or False
 
     def convert(self, value, param, ctx) -> str:
         valid_environments = [e.lower() for e in self._config]
@@ -44,7 +46,7 @@ class OpenShiftNamespace(click.ParamType):
                 f"{value} is not a valid namespace. Try one of those: {valid_environments_text}",
                 param,
                 ctx)
-        return value.lower()
+        return value.upper() if self._force_upper else value.lower()
 
 
 def user_allowed(slack_user_id, allowed_users):
@@ -92,6 +94,7 @@ def check_security(f):
 
 def rangify(original_input_list):
     REGEX = r'^(?P<prefix>[\w\.]+)(?:(?:\[(?P<index>\d+)\])(?P<suffix>[\w\.]*))?$'
+
     def extract_index(item):
         matches = re.match(REGEX, item)
         if not matches:

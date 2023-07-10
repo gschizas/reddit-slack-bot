@@ -8,7 +8,7 @@ from string import Template
 import click
 
 from commands import gyrobot, chat
-
+from commands.openshift.common import OpenShiftNamespace, check_security
 
 def _mock_config():
     if os.environ['MOCK_CONFIGURATION'].startswith('/'):
@@ -60,18 +60,8 @@ def _get_project_name(mock_config, environment):
     return project_name
 
 
-class OpenShiftEnvironment(click.ParamType):
-    name = 'environment'
-
-    def convert(self, value, param, ctx):
-        valid_environments = [e.upper() for e in _mock_config()['environments']]
-        if value.upper() not in valid_environments:
-            self.fail(f"{value} is not in the environments {', '.join(valid_environments)}", param, ctx)
-        return value.upper()
-
-
 @gyrobot.command('mock')
-@click.argument('environment', type=OpenShiftEnvironment())
+@click.argument('environment', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
 @click.argument('mock_status')
 @click.pass_context
 def mock(ctx, environment, mock_status):
@@ -126,7 +116,7 @@ def mock(ctx, environment, mock_status):
 
 
 @gyrobot.command('check_mock')
-@click.argument('environment', type=OpenShiftEnvironment())
+@click.argument('environment', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
 @click.pass_context
 def check_mock(ctx, environment):
     """View current status of environment"""
