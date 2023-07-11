@@ -3,7 +3,7 @@
 git config --file=/etc/systemd/system/slack-bot-$1.service Unit.Description 'Perform various functions as slack bot'
 git config --file=/etc/systemd/system/slack-bot-$1.service Unit.After 'multi-user.target'
 git config --file=/etc/systemd/system/slack-bot-$1.service Service.Type 'simple'
-git config --file=/etc/systemd/system/slack-bot-$1.service Service.ExecStart "/usr/local/bin/pipenv run ./slack_bot.py ; $1"
+git config --file=/etc/systemd/system/slack-bot-$1.service Service.ExecStart "/usr/local/bin/pipenv run src/slack_bot.py ; $1"
 git config --file=/etc/systemd/system/slack-bot-$1.service Service.User $SUDO_USER
 git config --file=/etc/systemd/system/slack-bot-$1.service Service.WorkingDirectory $(realpath .)
 git config --file=/etc/systemd/system/slack-bot-$1.service Service.Restart 'on-failure'
