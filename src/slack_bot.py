@@ -264,12 +264,6 @@ def default(line):
         chat_obj.send_text(
             f"```I don't know what to do with {line}.\nTry one of the following commands:\n```",
             is_error=True)
-        do_help('')
-
-
-def emptyline():
-    chat_obj.send_text("```You need to provide a command. Try these:```\n", is_error=True)
-    do_help('')
 
 
 def main():

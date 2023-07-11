@@ -45,7 +45,6 @@ def list_cronjobs(ctx, namespace, excel: bool):
         chat(ctx).send_file(cronjobs_markdown.encode(), filename='cronjobs.md')
 
 
-
 @cronjob.command('pause')
 @click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
 @click.pass_context

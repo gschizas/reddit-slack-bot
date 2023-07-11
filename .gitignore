@@ -188,3 +188,4 @@ confusables.txt
 .vscode/
 .sourcetrail/
 oc.exe
+src/requirements.txt # temporary requirements file

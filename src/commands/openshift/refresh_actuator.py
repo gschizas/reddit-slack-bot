@@ -70,7 +70,9 @@ def refresh_actuator(ctx, namespace, deployments):
                     break
                 time.sleep(0.2)
             try:
+                pod_env_before = requests.post("http://localhost:9999/actuator/env", proxies={'http': None, 'https': None})
                 refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies={'http': None, 'https': None})
+                pod_env_after = requests.post("http://localhost:9999/actuator/env", proxies={'http': None, 'https': None})
                 # refresh_result = requests.get("http://localhost:9999/actuator/configprops", proxies={'http': None, 'https': None})
                 refresh_actuator_result = refresh_result.json()
                 if refresh_actuator_result and all([type(rar) is str for rar in refresh_actuator_result]):
