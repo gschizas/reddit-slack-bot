@@ -7,7 +7,7 @@ from string import Template
 
 import click
 
-from commands import gyrobot, chat
+from commands import gyrobot, chat, logger
 from commands.openshift.common import OpenShiftNamespace, check_security
 
 
@@ -22,7 +22,7 @@ def _mock_config():
         credentials = json.load(f)
     for env in mock_config['environments']:
         if env in credentials:
-            mock_config['environments'][env]['openshift_token'] = credentials[env]
+            mock_config['environments'][env]['credentials'] = credentials[env]
     default_environment = mock_config.get('default_environment', {})
     for env_name, env in mock_config['environments'].items():
         if 'status' not in env:
@@ -67,6 +67,7 @@ def _get_project_name(mock_config, environment):
 @click.pass_context
 def mock(ctx, environment, mock_status):
     """Switch openshift mock status on environment"""
+
     mock_config = _mock_config()
     if chat(ctx).user_id not in mock_config['allowed_users']:
         chat(ctx).send_text(f"You don't have permission to switch mock status.", is_error=True)
@@ -79,41 +80,91 @@ def mock(ctx, environment, mock_status):
                              f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
         return
 
-    oc_token = mock_config['environments'][environment]['openshift_token']
+    result_text = ""
     site = mock_config['environments'][environment]['site']
-    login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
-    login_result = login_cmd.stderr.decode().strip()
-    if login_cmd.returncode != 0:
-        chat(ctx).send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
-        return
-    result_text = login_result + '\n' * 3
     prefix = mock_config['environments'][environment]['prefix']
-    chat(ctx).send_text(f"Setting mock status to {mock_status} for project {environment}...")
     project_name = _get_project_name(mock_config, environment)
-    change_project_command = ['oc', 'project', project_name]
-    result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
+
+    if site == 'azure':
+        az_cli = os.environ.get('AZ_CLI_EXECUTABLE', 'az')
+        command_arguments = [az_cli, 'login', '--service-principal',
+                                '-u', mock_config['environments'][environment]['credentials']['servicePrincipalId'],
+                                '-p', mock_config['environments'][environment]['credentials']['servicePrincipalKey'],
+                                '-t', mock_config['environments'][environment]['credentials']['tenantId']]
+        logger(ctx).info(command_arguments)
+        login_cmd = subprocess.run(command_arguments, capture_output=True)
+        chat(ctx).send_text(f"Logging in to Azure...")
+        login_result = json.loads(login_cmd.stdout)
+        # chat(ctx).send_file(login_cmd.stdout, filename='login.json')
+        chat(ctx).send_text(f"{login_result[0]['cloudName']} : {login_result[0]['name']} : {login_result[0]['user']['type']}")
+        cluster_name = mock_config['environments'][environment]['azure_cluster_name']  # 'aks-omni-dev-001'
+        resource_group = mock_config['environments'][environment]['azure_resource_group']  # 'rg-omni-online-dev-northeurope-001'
+        set_project_args = [az_cli, 'aks', 'get-credentials',
+                                '--overwrite-existing',
+                                '--name', cluster_name,
+                                '--resource-group', resource_group]
+        logger(ctx).info(set_project_args)
+        set_project_cmd = subprocess.run(set_project_args, capture_output=True)
+        result_text += set_project_cmd.stdout.decode() + '\n' + set_project_cmd.stderr.decode() + '\n\n'
+        convert_login_args = ['kubelogin', 'convert-kubeconfig', '-l', 'azurecli']
+        convert_login_cmd = subprocess.run(convert_login_args, capture_output=True)
+        result_text += convert_login_cmd.stdout.decode() + '\n' + convert_login_cmd.stderr.decode() + '\n\n'
+    else:
+        oc_token = mock_config['environments'][environment]['credentials']
+        login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
+        login_result = login_cmd.stderr.decode().strip()
+        if login_cmd.returncode != 0:
+            chat(ctx).send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
+            return
+        result_text += login_result + '\n' * 3
+        change_project_command = ['oc', 'project', project_name]
+        result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
+
     statuses = mock_config['environments'][environment]['status'][mock_status]
     vartemplates = mock_config['environments'][environment].get('vartemplate', {})
-    for name, value in vartemplates.items():  # check that there's no recursive loop
+    if _check_recursive(ctx, vartemplates):
+        return
+
+    chat(ctx).send_text(f"Setting mock status to {mock_status} for project {project_name} on {environment}...")
+
+    for microservice_info, status in statuses.items():
+        microservice, env_variable_value = _get_environment_values(env_vars, vartemplates, microservice_info, status)
+        environment_set_args = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
+        if site == 'azure':
+            environment_set_args.extend(['-n', project_name])
+        enviornment_set_cmd = subprocess.run(environment_set_args, capture_output=True)
+        if enviornment_set_cmd.returncode:
+            result_text += enviornment_set_cmd.stderr.decode() + '\n\n'    
+        result_text += enviornment_set_cmd.stdout.decode() + '\n\n'
+
+    if site != 'azure':
+        logout_command = ['oc', 'logout']
+        result_text += subprocess.check_output(logout_command).decode() + '\n\n'
+        result_text = re.sub('\n{2,}', '\n', result_text)
+    # chat(ctx).send_text('```' + result_text + '```')
+
+    chat(ctx).send_file(result_text.encode(), filename='mock.txt')
+
+
+def _check_recursive(ctx, vartemplates):
+    """Check that variables don't contain themselves"""
+    for name, value in vartemplates.items():
         if '$' + name in value:
             chat(ctx).send_text(
                 f"Recursive variable template: `{value}` contains `{name}`. ",
                 is_error=True)
-            return
+            return True
+    return False
 
-    for microservice_info, status in statuses.items():
-        if '$' not in microservice_info: microservice_info += '$'
-        microservice, env_var_shortcut = microservice_info.split('$')
-        env_var_name: str = env_vars[env_var_shortcut]
-        env_variable_value = f'{env_var_name}={status}' if status is not None else f'{env_var_name}-'
-        while '$' in env_variable_value:
-            env_variable_value = Template(env_variable_value).substitute(**vartemplates)
-        environment_set_command = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
-        result_text += subprocess.check_output(environment_set_command).decode() + '\n\n'
-    logout_command = ['oc', 'logout']
-    result_text += subprocess.check_output(logout_command).decode() + '\n\n'
-    result_text = re.sub('\n{2,}', '\n', result_text)
-    chat(ctx).send_text('```' + result_text + '```')
+
+def _get_environment_values(env_vars, vartemplates, microservice_info, status):
+    if '$' not in microservice_info: microservice_info += '$'
+    microservice, env_var_shortcut = microservice_info.split('$')
+    env_var_name: str = env_vars[env_var_shortcut]
+    env_variable_value = f'{env_var_name}={status}' if status is not None else f'{env_var_name}-'
+    while '$' in env_variable_value:
+        env_variable_value = Template(env_variable_value).substitute(**vartemplates)
+    return microservice, env_variable_value
 
 
 @gyrobot.command('check_mock')
@@ -124,7 +175,7 @@ def check_mock(ctx, environment):
     mock_config = _mock_config()
     if chat(ctx).user_id not in mock_config['allowed_users']:
         chat(ctx).send_text(f"You don't have permission to view mock status.", is_error=True)
-    oc_token = mock_config['environments'][environment]['openshift_token']
+    oc_token = mock_config['environments'][environment]['credentials']
     site = mock_config['environments'][environment]['site']
     result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
     prefix = mock_config['environments'][environment]['prefix']
