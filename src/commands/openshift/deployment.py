@@ -71,8 +71,8 @@ def _make_deployments_table(result) -> str:
     result_table = [{
         'Namespace': dep['metadata']['namespace'],
         'Name': dep['metadata']['name'],
-        'Replicas': dep['status']['replicas'],
-        'Updated Replicas': dep['status']['updatedReplicas'],
-        'Ready Replicas': dep['status']['readyReplicas'],
-        'Available Replicas': dep['status']['availableReplicas']} for dep in result]
+        'Replicas': dep['status'].get('replicas'),
+        'Updated Replicas': dep['status'].get('updatedReplicas'),
+        'Ready Replicas': dep['status'].get('readyReplicas'),
+        'Available Replicas': dep['status'].get('availableReplicas')} for dep in result]
     return tabulate(result_table, headers='keys', tablefmt='fancy_outline')
