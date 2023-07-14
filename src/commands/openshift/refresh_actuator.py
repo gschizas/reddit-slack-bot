@@ -5,35 +5,29 @@ import click
 import requests
 
 from commands import gyrobot, chat, logger
-from commands.openshift.common import read_config, user_allowed, OpenShiftNamespace, rangify
+from commands.openshift.common import read_config, user_allowed, OpenShiftNamespace, rangify, check_security
 
 
 def _actuator_config():
     env_var = 'OPENSHIFT_ACTUATOR_REFRESH'
     return read_config(env_var)
 
-
 @gyrobot.group('actuator')
-def actuator():
-    pass
+@click.pass_context
+def actuator(ctx: click.Context):
+    ctx.ensure_object(dict)
+    ctx.obj['config'] = _actuator_config()
+    ctx.obj['security_text'] = {'refresh': 'refresh actuator'}
 
 
 @actuator.command('refresh')
 @click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
 @click.argument('deployments', type=str, nargs=-1)
 @click.pass_context
+@check_security
 def refresh_actuator(ctx, namespace, deployments):
-    namespace_obj = _actuator_config()[namespace]
+    namespace_obj = ctx.obj['config'][namespace]
     server_url = namespace_obj['url']
-    allowed_users = namespace_obj['users']
-    if not user_allowed(chat(ctx).user_id, allowed_users):
-        chat(ctx).send_text(f"You don't have permission to refresh actuator.", is_error=True)
-        return
-    allowed_channels = namespace_obj['channels']
-    channel_name = chat(ctx).channel_name
-    if channel_name not in allowed_channels:
-        chat(ctx).send_text(f"Refresh actuator commands are not allowed in {channel_name}", is_error=True)
-        return
     ses = requests.session()
     openshift_token = namespace_obj['openshift_token']
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
