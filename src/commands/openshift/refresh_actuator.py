@@ -29,8 +29,26 @@ def refresh_actuator(ctx, namespace, deployments):
     namespace_obj = ctx.obj['config'][namespace]
     server_url = namespace_obj['url']
     ses = requests.session()
-    openshift_token = namespace_obj['openshift_token']
-    ses.headers['Authorization'] = 'Bearer ' + openshift_token
+    if server_url == 'azure':
+        tenant_id = namespace_obj['openshift_token']['tenantId']
+        service_principal_id = namespace_obj['openshift_token']['servicePrincipalId']
+        service_principal_key = namespace_obj['openshift_token']['servicePrincipalKey']
+
+        login_page = ses.post(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', data={
+            'client_id': service_principal_id,
+            'grant_type': 'client_credentials',
+            'client_info': 1,
+            'client_secret': service_principal_key,
+            'scope': 'https://management.core.windows.net//.default'
+        })
+        ses.headers['Authorization'] = 'Bearer ' + login_page.json()['access_token']
+        subscriptions_page = ses.get("https://management.azure.com/subscriptions?api-version=2019-11-01")
+        chat(ctx).send_file(subscriptions_page.content, filename='subscriptions.json')
+        return
+    else:
+        openshift_token = namespace_obj['openshift_token']
+        ses.headers['Authorization'] = 'Bearer ' + openshift_token
+
     for deployment in deployments:
         all_pods = _get_pods(ctx, namespace, server_url, ses, deployment)
         if not all_pods: return
