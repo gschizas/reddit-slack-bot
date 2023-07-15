@@ -87,22 +87,25 @@ def mock(ctx, environment, mock_status):
 
     if site == 'azure':
         az_cli = os.environ.get('AZ_CLI_EXECUTABLE', 'az')
-        command_arguments = [az_cli, 'login', '--service-principal',
-                                '-u', mock_config['environments'][environment]['credentials']['servicePrincipalId'],
-                                '-p', mock_config['environments'][environment]['credentials']['servicePrincipalKey'],
-                                '-t', mock_config['environments'][environment]['credentials']['tenantId']]
+        command_arguments = [
+            az_cli, 'login',
+            '--service-principal',
+            '--username', mock_config['environments'][environment]['credentials']['servicePrincipalId'],
+            '--password', mock_config['environments'][environment]['credentials']['servicePrincipalKey'],
+            '--tenant', mock_config['environments'][environment]['credentials']['tenantId']]
         logger(ctx).info(command_arguments)
         login_cmd = subprocess.run(command_arguments, capture_output=True)
         chat(ctx).send_text(f"Logging in to Azure...")
         login_result = json.loads(login_cmd.stdout)
         # chat(ctx).send_file(login_cmd.stdout, filename='login.json')
         chat(ctx).send_text(f"{login_result[0]['cloudName']} : {login_result[0]['name']} : {login_result[0]['user']['type']}")
-        cluster_name = mock_config['environments'][environment]['azure_cluster_name']  # 'aks-omni-dev-001'
-        resource_group = mock_config['environments'][environment]['azure_resource_group']  # 'rg-omni-online-dev-northeurope-001'
-        set_project_args = [az_cli, 'aks', 'get-credentials',
-                                '--overwrite-existing',
-                                '--name', cluster_name,
-                                '--resource-group', resource_group]
+        cluster_name = mock_config['environments'][environment]['azure_cluster_name']
+        resource_group = mock_config['environments'][environment]['azure_resource_group']
+        set_project_args = [
+            az_cli, 'aks', 'get-credentials',
+            '--overwrite-existing',
+            '--name', cluster_name,
+            '--resource-group', resource_group]
         logger(ctx).info(set_project_args)
         set_project_cmd = subprocess.run(set_project_args, capture_output=True)
         result_text += set_project_cmd.stdout.decode() + '\n' + set_project_cmd.stderr.decode() + '\n\n'
