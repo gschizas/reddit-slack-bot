@@ -6,6 +6,7 @@ import os
 import pathlib
 import re
 import urllib
+import unicodedata
 import zlib
 
 import click
@@ -501,3 +502,20 @@ def configure_enhanced_crowd_control_list(ctx, thread_id):
 
     with ctx.obj['config_file'].open(mode='w', encoding='utf8') as y:
         yaml.dump(ctx.obj['config'], y)
+
+
+@gyrobot.command('unicode_post')
+@click.argument('thread_id')
+@click.pass_context
+def unicode(ctx, thread_id):
+    """Convert reddit post title to unicode code points"""
+    thread_id = extract_real_thread_id(thread_id)
+    logger(ctx).debug(thread_id)
+    logger(ctx).debug(reddit_session(ctx))
+    post = reddit_session(ctx).submission(thread_id)
+    post._fetch()
+    logger(ctx).debug(post.title)
+    final_text = ''
+    for char in post.title:
+        final_text += f"U+{ord(char):06x} {char} {unicodedata.name(char)}\n"
+    chat(ctx).send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode', filetype='txt')
