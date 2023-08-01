@@ -7,6 +7,7 @@ import os
 import random
 import re
 import subprocess
+import unicodedata
 
 import click
 import humanfriendly
@@ -445,7 +446,6 @@ def youtube_info(ctx, url):
 def unicode(ctx, text):
     """Convert text to unicode code points"""
     text = ' '.join(text)
-    import unicodedata
     final_text = ''
     for char in text:
         final_text += f"U+{ord(char):06x} {char} {unicodedata.name(char)}\n"
