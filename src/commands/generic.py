@@ -437,3 +437,16 @@ def youtube_info(ctx, url):
     youtube_data = requests.get('https://youtube.com/oembed', params={'url': url, 'format': 'json'})
     logger(ctx).debug(youtube_data.text)
     chat(ctx).send_file(youtube_data.content, title=youtube_data.json().get('title', '(no title)'), filetype='json')
+
+
+@gyrobot.command('unicode')
+@click.argument('text', nargs=-1)
+@click.pass_context
+def unicode(ctx, text):
+    """Convert text to unicode code points"""
+    text = ' '.join(text)
+    import unicodedata
+    final_text = ''
+    for char in text:
+        final_text += f"U+{ord(char):06x} {char} {unicodedata.name(char)}\n"
+    chat(ctx).send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode', filetype='txt')
