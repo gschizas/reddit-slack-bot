@@ -12,6 +12,7 @@ def _actuator_config():
     env_var = 'OPENSHIFT_ACTUATOR_REFRESH'
     return read_config(env_var)
 
+
 @gyrobot.group('actuator')
 @click.pass_context
 def actuator(ctx: click.Context):
@@ -53,9 +54,12 @@ def refresh_actuator(ctx, namespace, deployments):
         all_pods = _get_pods(ctx, namespace, server_url, ses, deployment)
         if not all_pods: return
 
-        login_cmd = subprocess.run(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'], capture_output=True)
+        login_cmd = subprocess.run(
+            ['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'],
+            capture_output=True)
         if login_cmd.returncode != 0:
-            chat(ctx).send_text("Error while logging in:\n```" + login_cmd.stderr.decode().strip() + "```", is_error=True)
+            stderr_output = login_cmd.stderr.decode().strip()
+            chat(ctx).send_text(f"Error while logging in:\n```{stderr_output}```", is_error=True)
             return
         pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
         if len(pods_to_refresh) == 0:
@@ -64,17 +68,22 @@ def refresh_actuator(ctx, namespace, deployments):
         for pod_to_refresh in pods_to_refresh:
             port_fwd = _start_port_forward(ctx, pod_to_refresh)
             try:
-                pod_env_before = requests.post("http://localhost:9999/actuator/env", proxies={'http': None, 'https': None})
-                refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies={'http': None, 'https': None})
+                empty_proxies = {'http': None, 'https': None}
+                pod_env_before = requests.post("http://localhost:9999/actuator/env", proxies=empty_proxies)
+                refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies)
                 refresh_actuator_result = refresh_result.json()
-                pod_env_after = requests.post("http://localhost:9999/actuator/env", proxies={'http': None, 'https': None})
+                pod_env_after = requests.post("http://localhost:9999/actuator/env", proxies=empty_proxies)
                 _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after, refresh_actuator_result)
             except requests.exceptions.ConnectionError as ex:
                 chat(ctx).send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
             port_fwd.terminate()
 
+
 def _start_port_forward(ctx, pod_to_refresh):
-    port_fwd = subprocess.Popen(['oc', 'port-forward', pod_to_refresh, '9999:8778'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    port_fwd = subprocess.Popen(
+        ['oc', 'port-forward', pod_to_refresh, '9999:8778'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
     while True:
         if port_fwd.poll() is not None:
             if port_fwd.returncode != 0:
@@ -88,6 +97,7 @@ def _start_port_forward(ctx, pod_to_refresh):
             logger(ctx).debug("Port forward Listening ok")
             break
         time.sleep(0.2)
+
 
 def _get_pods(ctx, namespace, server_url, ses, deployment):
     all_pods_raw = ses.get(
