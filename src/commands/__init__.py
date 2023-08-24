@@ -3,7 +3,7 @@ import logging
 import click
 import praw
 
-from chat.slack import SlackWrapper
+from chat.chat_wrapper import ChatWrapper
 
 
 class DefaultCommandGroup(click.Group):
@@ -128,7 +128,7 @@ def gyrobot(ctx):
     pass
 
 
-def chat(ctx) -> SlackWrapper:
+def chat(ctx) -> ChatWrapper:
     return ctx.obj['chat']
 
 

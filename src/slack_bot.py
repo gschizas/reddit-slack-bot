@@ -11,7 +11,6 @@ from typing import TextIO
 
 import praw
 import requests
-import slack
 
 import commands
 import commands.generic
@@ -20,7 +19,7 @@ from bot_framework.common import normalize_text
 from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
 from bot_framework.yaml_wrapper import yaml
-from chat.slack import SlackWrapper
+from chat import get_chat_wrapper, ChatWrapper
 
 locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
 
@@ -61,12 +60,11 @@ if 'KUDOS_DATABASE_URL' in os.environ:
 if 'GYROBOT_DATABASE_URL' in os.environ:
     import commands.reddit.database
 
-slack_client: slack.RTMClient = None
 logger: logging.Logger = None
 real_stdout: TextIO = None
 real_stderr: TextIO = None
 stdout: TextIO = None
-chat_obj: SlackWrapper = None
+chat_obj: ChatWrapper = None
 reddit_session: praw.Reddit = None
 bot_reddit_session: praw.reddit.Reddit = None
 subreddit: praw.reddit.Subreddit = None
@@ -77,7 +75,7 @@ bot_name: str = None
 
 
 def init():
-    global chat_obj, logger, slack_client, subreddit_name, shortcut_words, bot_name, trigger_words
+    global chat_obj, logger, subreddit_name, shortcut_words, bot_name, trigger_words
     global real_stdout, real_stderr, stdout
     global reddit_session, bot_reddit_session, subreddit
     stdout = io.StringIO()
@@ -94,13 +92,10 @@ def init():
     else:
         shortcut_words = {}
 
-    chat_obj = SlackWrapper(trigger_words[0])
+    chat_obj = get_chat_wrapper(trigger_words[0], handle_message)
+    chat_obj.connect()
 
-    slack_api_token = os.environ['SLACK_API_TOKEN']
     subreddit_name = os.environ.get('SUBREDDIT_NAME')
-    slack_client = slack.RTMClient(
-        token=slack_api_token,
-        proxy=os.environ.get('HTTPS_PROXY'))
     if subreddit_name:
         base_user_agent = 'python:gr.terrasoft.reddit.slackmodbot'
         user_agent = f'{base_user_agent}-{subreddit_name}:v0.4 (by /u/gschizas)'
@@ -130,7 +125,6 @@ def excepthook(type_, value, tb):
         sys.__excepthook__(type_, value, tb)
 
 
-@slack.RTMClient.run_on(event='message')
 def handle_message(**payload):
     global trigger_words, chat_obj
     msg = payload['data']
@@ -273,7 +267,7 @@ def main():
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
     sys.excepthook = excepthook
     init()
-    slack_client.start()
+    chat_obj.start()
 
 
 if __name__ == '__main__':

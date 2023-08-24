@@ -1,17 +1,21 @@
+import os
+
 import slack
 
-class SlackWrapper:
-    def __init__(self, bot_name):
-        self.bot_name = bot_name
-        self.users = {}
-        self.teams = {}
-        self.channels = {}
-        self.web_client = None
-        self.team_id = None
-        self.channel_id = None
-        self.user_id = None
-        self.message = None
-        self.permalink = None
+from chat.chat_wrapper import ChatWrapper
+
+
+class SlackWrapper(ChatWrapper):
+
+    def __init__(self, bot_name, message_handler):
+        super().__init__(bot_name, message_handler)
+        self.slack_client = None
+
+    def connect(self):
+        slack_api_token = os.environ['SLACK_API_TOKEN']
+        self.slack_client = slack.RTMClient(
+            token=slack_api_token,
+            proxy=os.environ.get('HTTPS_PROXY'))
 
     def load(self, web_client, team_id, channel_id, user_id, msg, permalink):
         self.web_client = web_client
@@ -102,6 +106,15 @@ class SlackWrapper:
                 participants = [f"{self.users[user_id]['real_name']} <{self.users[user_id]['name']}@{user_id}>"
                                 for user_id in response_members['members']]
                 self.channels[team_id][channel_id] = '🧑' + ' '.join(participants)
+
+    def start(self):
+        self.slack_client.start()
+        # slack.RTMClient.on(event='message', callback=self.handle_message)
+
+    @staticmethod
+    @slack.RTMClient.run_on(event='message')
+    def handle_message(**payload):
+        SlackWrapper.message_handler(**payload)
 
     @property
     def channel_name(self):
