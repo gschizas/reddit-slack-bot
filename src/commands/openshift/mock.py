@@ -135,10 +135,10 @@ def mock(ctx, environment, mock_status):
         environment_set_args = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
         if site == 'azure':
             environment_set_args.extend(['-n', project_name])
-        enviornment_set_cmd = subprocess.run(environment_set_args, capture_output=True)
-        if enviornment_set_cmd.returncode:
-            result_text += enviornment_set_cmd.stderr.decode() + '\n\n'    
-        result_text += enviornment_set_cmd.stdout.decode() + '\n\n'
+        environment_set_cmd = subprocess.run(environment_set_args, capture_output=True)
+        if environment_set_cmd.returncode:
+            result_text += environment_set_cmd.stderr.decode() + '\n\n'
+        result_text += environment_set_cmd.stdout.decode() + '\n\n'
 
     if site != 'azure':
         logout_command = ['oc', 'logout']
