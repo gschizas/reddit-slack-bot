@@ -7,7 +7,7 @@ from string import Template
 
 import click
 
-from commands import gyrobot, chat, logger
+from commands import gyrobot, chat, logger, DefaultCommandGroup
 from commands.openshift.common import OpenShiftNamespace, check_security
 
 
@@ -61,14 +61,32 @@ def _get_project_name(mock_config, environment):
     return project_name
 
 
-@gyrobot.command('mock')
+@gyrobot.group('mock', cls=DefaultCommandGroup)
+@click.pass_context
+def mock(ctx: click.Context):
+    ctx.ensure_object(dict)
+    ctx.obj['config'] = _mock_config()
+    ctx.obj['security_text'] = {'set': 'set mock status', 'check': 'check mock status'}
+
+
+@mock.command(default_command=True,
+              context_settings={
+                  'ignore_unknown_options': True,
+                  'allow_extra_args': True})
 @click.argument('environment', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
 @click.argument('mock_status')
 @click.pass_context
-def mock(ctx, environment, mock_status):
-    """Switch openshift mock status on environment"""
+def mock_default(ctx: click.core.Context, environment: str, mock_status: OpenShiftNamespace):
+    ctx.forward(set_mock)
 
-    mock_config = _mock_config()
+
+@mock.command('set')
+@click.argument('environment', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
+@click.argument('mock_status')
+@click.pass_context
+def set_mock(ctx, environment: str, mock_status: OpenShiftNamespace):
+    """Switch openshift mock status on environment"""
+    mock_config = ctx.obj['config']
     if chat(ctx).user_id not in mock_config['allowed_users']:
         chat(ctx).send_text(f"You don't have permission to switch mock status.", is_error=True)
         return
@@ -98,7 +116,8 @@ def mock(ctx, environment, mock_status):
         chat(ctx).send_text(f"Logging in to Azure...")
         login_result = json.loads(login_cmd.stdout)
         # chat(ctx).send_file(login_cmd.stdout, filename='login.json')
-        chat(ctx).send_text(f"{login_result[0]['cloudName']} : {login_result[0]['name']} : {login_result[0]['user']['type']}")
+        chat(ctx).send_text(
+            f"{login_result[0]['cloudName']} : {login_result[0]['name']} : {login_result[0]['user']['type']}")
         cluster_name = mock_config['environments'][environment]['azure_cluster_name']
         resource_group = mock_config['environments'][environment]['azure_resource_group']
         set_project_args = [
@@ -170,12 +189,12 @@ def _get_environment_values(env_vars, vartemplates, microservice_info, status):
     return microservice, env_variable_value
 
 
-@gyrobot.command('check_mock')
+@mock.command('check')
 @click.argument('environment', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
 @click.pass_context
-def check_mock(ctx, environment):
+def mock_check(ctx, environment):
     """View current status of environment"""
-    mock_config = _mock_config()
+    mock_config = ctx.obj['config']
     if chat(ctx).user_id not in mock_config['allowed_users']:
         chat(ctx).send_text(f"You don't have permission to view mock status.", is_error=True)
     oc_token = mock_config['environments'][environment]['credentials']
