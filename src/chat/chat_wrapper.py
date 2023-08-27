@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 
 class ChatWrapper(ABC):
     message_handler = None
+
     def __init__(self, bot_name, message_handler):
         self.bot_name = bot_name
         ChatWrapper.message_handler = message_handler
@@ -12,6 +13,7 @@ class ChatWrapper(ABC):
         self.web_client = None
         self.team_id = None
         self.channel_id = None
+        self.channel_name = None
         self.user_id = None
         self.message = None
         self.permalink = None
