@@ -20,11 +20,12 @@ xlsxwriter = "*"
 flask = "*"
 celery = "*"
 yfinance = "*"
-psycopg2-binary = "*"
+psycopg2_binary = "*"
 psutil = "*"
 humanfriendly = "*"
 click = "*"
 psycopg = {extras = ["binary"], version = "*"}
+pyjwt = {extras = ["crypto"], version = "*"}
 
 [dev-packages]
 
