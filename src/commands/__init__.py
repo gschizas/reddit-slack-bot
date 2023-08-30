@@ -124,7 +124,7 @@ class ClickAliasedGroup(click.Group):
                  'allow_extra_args': True})
 # @pass_environment
 @click.pass_context
-def gyrobot(ctx):
+def gyrobot(ctx: click.Context):
     pass
 
 
