@@ -6,9 +6,12 @@ import subprocess
 from string import Template
 
 import click
+from ruamel.yaml import YAML
 
 from commands import gyrobot, chat, DefaultCommandGroup
 from commands.openshift.common import OpenShiftNamespace, azure_login
+
+yaml = YAML()
 
 
 def _mock_config():
@@ -18,8 +21,8 @@ def _mock_config():
         config_file = pathlib.Path('config') / os.environ['MOCK_CONFIGURATION']
     with config_file.open() as f:
         mock_config = json.load(f)
-    with config_file.with_suffix('.credentials.json').open() as f:
-        credentials = json.load(f)
+    with config_file.with_suffix('.credentials.yml').open() as f:
+        credentials = yaml.load(f)
     for env in mock_config['environments']:
         if env in credentials:
             mock_config['environments'][env]['credentials'] = credentials[env]
@@ -90,7 +93,6 @@ def set_mock(ctx, environment: str, mock_status: OpenShiftNamespace):
     if chat(ctx).user_id not in mock_config['allowed_users']:
         chat(ctx).send_text(f"You don't have permission to switch mock status.", is_error=True)
         return
-    mock_status = mock_status.upper()
     env_vars = mock_config['env_vars']
     valid_mock_statuses = [k.upper() for k in mock_config['environments'][environment]['status'].keys()]
     if mock_status not in valid_mock_statuses:
