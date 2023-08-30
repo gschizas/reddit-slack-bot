@@ -74,12 +74,14 @@ def user_allowed(slack_user_id, allowed_users):
     return False
 
 
-def check_security(f):
-    def check_security_inner(ctx, *args, **kwargs):
+def check_security(f, *args, **kwargs):
+    default_config: dict = kwargs.pop('config', [])
+
+    def check_security_inner(ctx):
         action_name: str = ctx.obj['security_text'][ctx.command.name]
         action_name_proper = action_name.capitalize()
         namespace = kwargs.get('namespace')
-        config = ctx.obj['config'][namespace]
+        config = default_config if default_config else ctx.obj['config'][namespace]
         allowed_users = config['users']
         if not user_allowed(chat(ctx).user_id, allowed_users):
             chat(ctx).send_text(f"You don't have permission to {action_name}.", is_error=True)
