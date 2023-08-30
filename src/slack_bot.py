@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import io
 import locale
 import logging
 import os
 import string
 import sys
 import traceback
-from typing import TextIO
 
+import click.testing
 import praw
 import requests
 
 import commands
-import commands.generic
 import commands.convert
+import commands.generic
 from bot_framework.common import normalize_text
 from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
@@ -61,9 +60,6 @@ if 'GYROBOT_DATABASE_URL' in os.environ:
     import commands.reddit.database
 
 logger: logging.Logger = None
-real_stdout: TextIO = None
-real_stderr: TextIO = None
-stdout: TextIO = None
 chat_obj: ChatWrapper = None
 reddit_session: praw.Reddit = None
 bot_reddit_session: praw.reddit.Reddit = None
@@ -72,16 +68,14 @@ subreddit_name: str = None
 trigger_words: list = []
 shortcut_words: dict = {}
 bot_name: str = None
+runner: click.testing.CliRunner = None
 
 
 def init():
     global chat_obj, logger, subreddit_name, shortcut_words, bot_name, trigger_words
-    global real_stdout, real_stderr, stdout
     global reddit_session, bot_reddit_session, subreddit
-    stdout = io.StringIO()
-    real_stdout = sys.stdout
-    real_stderr = sys.stderr
-    sys.stdout = sys.stderr = stdout
+    global runner
+    runner = click.testing.CliRunner()
 
     trigger_words = os.environ['BOT_NAME'].split()
     bot_name = trigger_words[0]
@@ -187,20 +181,21 @@ def handle_line(text):
         if args[0].lower() == 'help':
             args.pop(0)
             args.append('--help')
-        commands.gyrobot.main(args=args,
-                              prog_name=trigger_words[0],
-                              standalone_mode=False,
-                              obj={
-                                  'chat': chat_obj,
-                                  'logger': logger,
-                                  'stdout': real_stdout,
-                                  'stderr': real_stderr,
-                                  'subreddit': subreddit,
-                                  'reddit_session': reddit_session,
-                                  'bot_reddit_session': bot_reddit_session
-                              })
+        commands.gyrobot.name = trigger_words[0]
+        result = runner.invoke(
+            commands.gyrobot,
+            args=args,
+            obj={
+                'chat': chat_obj,
+                'logger': logger,
+                'subreddit': subreddit,
+                'reddit_session': reddit_session,
+                'bot_reddit_session': bot_reddit_session
+            },
+            catch_exceptions=True)
 
-        postcmd()
+        if result.output != '':
+            chat_obj.send_text('```\n' + result.output.strip() + '```\n')
     except Exception as e:
         if 'DEBUG' in os.environ:
             exception_full_text = ''.join(traceback.format_exception(*sys.exc_info()))
@@ -221,20 +216,6 @@ def precmd(line):
     i, n = 0, len(line)
     while i < n and line[i] in IDENTCHARS: i += 1
     return line[:i].lower() + line[i:]
-
-
-def postcmd():
-    global stdout
-    stdout.flush()
-    stdout.seek(0, io.SEEK_SET)
-    text = stdout.read()
-    stdout.close()
-    stdout = io.StringIO()
-    sys.stdout = sys.stderr = stdout
-
-    # self.pos = self.stdout.seek(0, io.SEEK_CUR)
-    if text != '':
-        chat_obj.send_text('```\n' + text.strip() + '```\n')
 
 
 def default(line):
