@@ -13,7 +13,6 @@ class ChatWrapper(ABC):
         self.web_client = None
         self.team_id = None
         self.channel_id = None
-        self.channel_name = None
         self.user_id = None
         self.message = None
         self.permalink = None
@@ -57,4 +56,9 @@ class ChatWrapper(ABC):
 
     @abstractmethod
     def connect(self):
+        pass
+
+    @property
+    @abstractmethod
+    def channel_name(self):
         pass
