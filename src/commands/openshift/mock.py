@@ -87,7 +87,7 @@ def mock_default(ctx: click.core.Context, environment: str, mock_status: OpenShi
 @click.argument('environment', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
 @click.argument('mock_status')
 @click.pass_context
-def set_mock(ctx, environment: str, mock_status: OpenShiftNamespace):
+def set_mock(ctx, environment: str, mock_status: str):
     """Switch openshift mock status on environment"""
     mock_config = ctx.obj['config']
     if chat(ctx).user_id not in mock_config['allowed_users']:
@@ -95,6 +95,7 @@ def set_mock(ctx, environment: str, mock_status: OpenShiftNamespace):
         return
     env_vars = mock_config['env_vars']
     valid_mock_statuses = [k.upper() for k in mock_config['environments'][environment]['status'].keys()]
+    mock_status = mock_status.upper()
     if mock_status not in valid_mock_statuses:
         chat(ctx).send_text((f"Invalid status `{mock_status}`. "
                              f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
