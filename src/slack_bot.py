@@ -76,6 +76,7 @@ def init():
     global reddit_session, bot_reddit_session, subreddit
     global runner
     runner = click.testing.CliRunner()
+    runner.mix_stderr = True
 
     trigger_words = os.environ['BOT_NAME'].split()
     bot_name = trigger_words[0]
