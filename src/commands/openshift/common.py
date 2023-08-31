@@ -26,7 +26,7 @@ def read_config(env_var):
         credentials = yaml.load(f)
     for env in config:
         if env in credentials:
-            config[env]['openshift_token'] = credentials[env]
+            config[env]['openshift_token'] = credentials[env].replace('\n', '')
     return config
 
 
