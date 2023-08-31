@@ -60,7 +60,7 @@ def user_allowed(slack_user_id, allowed_users):
     allowed_groups = [g[1:] for g in allowed_users if g.startswith('@')]
 
     all_users_file = pathlib.Path('data/crowd_users.yml')
-    if all_users is None or all_users_file.stat().st_mtime != all_users_last_update:
+    if not all_users or all_users_file.stat().st_mtime != all_users_last_update:
         with all_users_file.open(encoding='utf8') as f:
             all_users = yaml.load(f)
         all_users_last_update = all_users_file.stat().st_mtime
