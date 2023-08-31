@@ -97,6 +97,7 @@ def _start_port_forward(ctx, pod_to_refresh):
             logger(ctx).debug("Port forward Listening ok")
             break
         time.sleep(0.2)
+    return port_fwd
 
 
 def _get_pods(ctx, namespace, server_url, ses, deployment):
