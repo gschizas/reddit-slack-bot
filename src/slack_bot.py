@@ -183,17 +183,14 @@ def handle_line(text):
             args.pop(0)
             args.append('--help')
         commands.gyrobot.name = trigger_words[0]
-        result = runner.invoke(
-            commands.gyrobot,
-            args=args,
-            obj={
+        context_obj = {
                 'chat': chat_obj,
                 'logger': logger,
                 'subreddit': subreddit,
                 'reddit_session': reddit_session,
                 'bot_reddit_session': bot_reddit_session
-            },
-            catch_exceptions=True)
+        }
+        result = runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
 
         if result.exception:
             chat_obj.send_text('```\n' + repr(result.exception) + '```\n', is_error=True)
