@@ -195,6 +195,9 @@ def handle_line(text):
             },
             catch_exceptions=True)
 
+        if result.exception:
+            chat_obj.send_text('```\n' + repr(result.exception) + '```\n', is_error=True)
+
         if result.output != '':
             chat_obj.send_text('```\n' + result.output.strip() + '```\n')
     except Exception as e:
