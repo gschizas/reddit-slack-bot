@@ -4,8 +4,6 @@ import locale
 import logging
 import os
 import string
-import sys
-import traceback
 
 import click.testing
 import praw
@@ -104,22 +102,6 @@ def init():
                                               scopes=['*'])
 
 
-def excepthook(type_, value, tb):
-    global logger, chat_obj
-    # noinspection PyBroadException
-    try:
-        logger.fatal(type_, value, tb, exc_info=True)
-        if chat_obj:
-            # noinspection PyBroadException
-            try:
-                error_text = f"```\n:::Error:::\n{value!r}```\n"
-            except Exception:
-                error_text = "???"
-            chat_obj.send_text(error_text, is_error=True)
-    except Exception:
-        sys.__excepthook__(type_, value, tb)
-
-
 def handle_message(**payload):
     global trigger_words, chat_obj
     msg = payload['data']
@@ -176,38 +158,26 @@ def handle_line(text):
     global chat_obj, trigger_words
     logger.debug(f"Triggerred by {text}")
     line = ' '.join(text.split()[1:])
-    try:
-        line = precmd(line)
-        args = line.split()
-        if args[0].lower() == 'help':
-            args.pop(0)
-            args.append('--help')
-        commands.gyrobot.name = trigger_words[0]
-        context_obj = {
-                'chat': chat_obj,
-                'logger': logger,
-                'subreddit': subreddit,
-                'reddit_session': reddit_session,
-                'bot_reddit_session': bot_reddit_session
-        }
-        result = runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
+    line = precmd(line)
+    args = line.split()
+    if args[0].lower() == 'help':
+        args.pop(0)
+        args.append('--help')
+    commands.gyrobot.name = trigger_words[0]
+    context_obj = {
+        'chat': chat_obj,
+        'logger': logger,
+        'subreddit': subreddit,
+        'reddit_session': reddit_session,
+        'bot_reddit_session': bot_reddit_session
+    }
+    result = runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
 
-        if result.exception:
-            chat_obj.send_text('```\n' + repr(result.exception) + '```\n', is_error=True)
+    if result.exception:
+        chat_obj.send_text('```\n' + repr(result.exception) + '```\n', is_error=True)
 
-        if result.output != '':
-            chat_obj.send_text('```\n' + result.output.strip() + '```\n')
-    except Exception as e:
-        if 'DEBUG' in os.environ:
-            exception_full_text = ''.join(traceback.format_exception(*sys.exc_info()))
-            error_text = f"```\n:::Error:::\n{exception_full_text}```\n"
-        else:
-            error_text = f"```\n:::Error:::\n{e}```\n"
-        # noinspection PyBroadException
-        try:
-            chat_obj.send_text(error_text, is_error=True)
-        except Exception as e:
-            logger.critical('Could not send exception error: ' + error_text)
+    if result.output != '':
+        chat_obj.send_text('```\n' + result.output.strip() + '```\n')
 
 
 IDENTCHARS = string.ascii_letters + string.digits + '_'
@@ -247,7 +217,6 @@ def main():
     global subreddit_name, subreddit, reddit_session, bot_reddit_session
     global trigger_words, shortcut_words
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
-    sys.excepthook = excepthook
     init()
     chat_obj.start()
 
