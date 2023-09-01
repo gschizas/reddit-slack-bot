@@ -69,9 +69,9 @@ def refresh_actuator(ctx, namespace, deployments):
             port_fwd = _start_port_forward(ctx, pod_to_refresh)
             try:
                 empty_proxies = {'http': None, 'https': None}
-                pod_env_before = requests.post("http://localhost:9999/actuator/env", proxies=empty_proxies)
+                pod_env_before = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
                 refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies)
-                pod_env_after = requests.post("http://localhost:9999/actuator/env", proxies=empty_proxies)
+                pod_env_after = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
                 _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
             except requests.exceptions.ConnectionError as ex:
                 chat(ctx).send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
