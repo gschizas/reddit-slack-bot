@@ -1,9 +1,9 @@
+import functools
 import json
 import os
 import pathlib
 import re
 import subprocess
-from functools import update_wrapper
 
 import click
 from ruamel.yaml import YAML
@@ -74,26 +74,34 @@ def user_allowed(slack_user_id, allowed_users):
     return False
 
 
-def check_security(f, *args, **kwargs):
-    default_config: dict = kwargs.pop('config', [])
+def check_security(func=None, *, config=None):
+    if func is None:
+        return functools.partial(check_security, config=config)
 
-    def check_security_inner(ctx):
+    default_config = config
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        ctx = args[0]
         action_name: str = ctx.obj['security_text'][ctx.command.name]
         action_name_proper = action_name.capitalize()
         namespace = kwargs.get('namespace')
-        config = default_config if default_config else ctx.obj['config'][namespace]
-        allowed_users = config['users']
+        # default_config: dict = kwargs.pop('config', [])
+        final_config = default_config if default_config else ctx.obj['config']
+        cfg = final_config[namespace]
+        # config = ctx.obj['config'][namespace]
+        allowed_users = cfg['users']
         if not user_allowed(chat(ctx).user_id, allowed_users):
             chat(ctx).send_text(f"You don't have permission to {action_name}.", is_error=True)
             return
-        allowed_channels = config['channels']
+        allowed_channels = cfg['channels']
         channel_name = chat(ctx).channel_name
         if channel_name not in allowed_channels:
             chat(ctx).send_text(f"{action_name_proper} commands are not allowed in {channel_name}", is_error=True)
             return
-        return ctx.invoke(f, ctx, *args, **kwargs)
+        return ctx.invoke(func, *args, **kwargs)
 
-    return update_wrapper(check_security_inner, f)
+    return wrapper
 
 
 def rangify(original_input_list):
