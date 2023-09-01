@@ -101,8 +101,8 @@ def _start_port_forward(ctx, pod_to_refresh):
 
 def _get_pods(ctx, namespace, server_url, ses, deployment):
     all_pods_raw = ses.get(
-            f"{server_url}api/v1/namespaces/{namespace.lower()}/pods",
-            params={'labelSelector': f'deployment={deployment}'})
+        f"{server_url}api/v1/namespaces/{namespace.lower()}/pods",
+        params={'labelSelector': f'deployment={deployment}'})
     if not all_pods_raw.ok:
         chat(ctx).send_file(file_data=all_pods_raw.content, filename='error.txt')
         return None
@@ -115,11 +115,11 @@ def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_a
     refresh_actuator_result = refresh_result.json()
     value_types = [type(rar) is str for rar in refresh_actuator_result.values()]
     if refresh_result.ok and refresh_actuator_result and all(value_types):
-                    # refresh_actuator_result_list = sorted([rar for rar in refresh_actuator_result])
+        # refresh_actuator_result_list = sorted([rar for rar in refresh_actuator_result])
         refresh_actuator_result_list = rangify(refresh_actuator_result)
         chat(ctx).send_text('```\n' + '\n'.join(refresh_actuator_result_list) + '\n```\n')
     else:
         chat(ctx).send_file(
-                        file_data=refresh_result.content,
-                        filename=f'actuator-refresh-{pod_to_refresh}.json')
+            file_data=refresh_result.content,
+            filename=f'actuator-refresh-{pod_to_refresh}.json')
     chat(ctx).send_file(pod_env_after.content, filename='pod_env_after.json')
