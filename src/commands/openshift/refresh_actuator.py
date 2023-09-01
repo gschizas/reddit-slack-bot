@@ -5,7 +5,7 @@ import click
 import requests
 
 from commands import gyrobot, chat, logger
-from commands.openshift.common import read_config, user_allowed, OpenShiftNamespace, rangify, check_security
+from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security
 
 
 def _actuator_config():
@@ -71,9 +71,8 @@ def refresh_actuator(ctx, namespace, deployments):
                 empty_proxies = {'http': None, 'https': None}
                 pod_env_before = requests.post("http://localhost:9999/actuator/env", proxies=empty_proxies)
                 refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies)
-                refresh_actuator_result = refresh_result.json()
                 pod_env_after = requests.post("http://localhost:9999/actuator/env", proxies=empty_proxies)
-                _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after, refresh_actuator_result)
+                _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
             except requests.exceptions.ConnectionError as ex:
                 chat(ctx).send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
             port_fwd.terminate()
@@ -111,8 +110,9 @@ def _get_pods(ctx, namespace, server_url, ses, deployment):
     return all_pods
 
 
-def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after, refresh_actuator_result):
+def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after):
     chat(ctx).send_file(pod_env_before.content, filename='pod_env_before.json')
+    refresh_actuator_result = refresh_result.json()
     value_types = [type(rar) is str for rar in refresh_actuator_result.values()]
     if refresh_result.ok and refresh_actuator_result and all(value_types):
                     # refresh_actuator_result_list = sorted([rar for rar in refresh_actuator_result])
