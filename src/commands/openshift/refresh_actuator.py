@@ -111,7 +111,6 @@ def _get_pods(ctx, namespace, server_url, ses, deployment):
 
 
 def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after):
-    chat(ctx).send_file(pod_env_before.content, filename='pod_env_before.json')
     refresh_actuator_result = refresh_result.json()
     if type(refresh_actuator_result) is list:
         value_types = [type(rar) is str for rar in refresh_actuator_result]
@@ -123,6 +122,11 @@ def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_a
         chat(ctx).send_text('```\n' + '\n'.join(refresh_actuator_result_list) + '\n```\n')
     else:
         chat(ctx).send_file(
+            file_data=pod_env_before.content,
+            filename=f'pod_env_before-{pod_to_refresh}.json')
+        chat(ctx).send_file(
             file_data=refresh_result.content,
             filename=f'actuator-refresh-{pod_to_refresh}.json')
-    chat(ctx).send_file(pod_env_after.content, filename='pod_env_after.json')
+        chat(ctx).send_file(
+            file_data=pod_env_after.content,
+            filename=f'pod_env_after-{pod_to_refresh}.json')
