@@ -107,47 +107,47 @@ def check_security(func=None, *, config=None):
 def rangify(original_input_list):
     REGEX = r'^(?P<prefix>[\w\.]+)(?:(?:\[(?P<index>\d+)\])(?P<suffix>[\w\.]*))?$'
 
-    def extract_index(item):
-        matches = re.match(REGEX, item)
+    def _extract_index(an_item):
+        """Extract actual name and index from a list item"""
+        matches = re.match(REGEX, an_item)
         if not matches:
-            return item, 0
+            return an_item, 0
         kind_prefix, index_text, kind_suffix = matches.groups()
-        index = int(index_text or 0)
-        kind = kind_prefix + (kind_suffix or '')
-        return kind, index
+        an_index = int(index_text or 0)
+        a_kind = kind_prefix + (kind_suffix or '')
+        return a_kind, an_index
 
-    # Initialize variables
-    output_list = []
-    current_kind = ""
-    current_start = None
-    current_end = None
-
-    input_list = sorted(original_input_list, key=lambda line: extract_index(line))
-
-    # Loop through the input list
-    for item in input_list:
-        if "[" in item:
-            # This is a kind with an index
-            kind, index = extract_index(item)
-            if kind == current_kind and index == current_end + 1:
-                # This is part of an existing range
-                current_end = index
-                output_list[-1] = f"{kind}[{current_start}-{current_end}]"
+    def _merge_consecutive_items(input_list):
+        """Merge list items with the same kind and consecutive indexes"""
+        output_list = []
+        current_kind = ""
+        current_start = None
+        current_end = None
+        for item in input_list:
+            if "[" in item:
+                # This is a kind with an index
+                kind, index = _extract_index(item)
+                if kind == current_kind and index == current_end + 1:
+                    # This is part of an existing range
+                    current_end = index
+                    output_list[-1] = f"{kind}[{current_start}-{current_end}]"
+                else:
+                    # This is a new kind or a new range for the current kind
+                    current_kind = kind
+                    current_start = index
+                    current_end = index
+                    output_list.append(item)
             else:
-                # This is a new kind or a new range for the current kind
-                current_kind = kind
-                current_start = index
-                current_end = index
+                # This is a kind without an index
+                current_kind = ""
+                current_start = None
+                current_end = None
                 output_list.append(item)
-        else:
-            # This is a kind without an index
-            current_kind = ""
-            current_start = None
-            current_end = None
-            output_list.append(item)
+        return output_list
 
-    # Print the output list
-    return output_list
+    item_list = sorted(original_input_list, key=lambda line: _extract_index(line))
+
+    return _merge_consecutive_items(item_list)
 
 
 def azure_login(ctx, service_principal_id, service_principal_key, tenant_id, resource_group, cluster_name):
