@@ -169,7 +169,7 @@ def mock_check(ctx, namespace):
     first_status = list(env_config['status'].keys())[0]
     microservices = list(env_config['status'][first_status].keys())
     for microservice in microservices:
-        env_var_list = subprocess.check_output(['oc', 'env', prefix + microservice, '--list']).decode()
+        env_var_list = subprocess.check_output(['oc', 'set', 'env', prefix + microservice, '--list']).decode()
         env_var_list = _masked_oc_password(env_var_list)
         result_text += env_var_list + '\n\n'
     result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
