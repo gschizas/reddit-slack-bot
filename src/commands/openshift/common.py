@@ -97,7 +97,7 @@ def check_security(func=None, *, config=None):
         namespace = kwargs.get('namespace')
         # default_config: dict = kwargs.pop('config', [])
         final_config = default_config if default_config else ctx.obj['config']
-        cfg = final_config[namespace]
+        cfg = final_config['environments'][namespace]
         # config = ctx.obj['config'][namespace]
         allowed_users = cfg['users']
         if not user_allowed(chat(ctx).user_id, allowed_users):
