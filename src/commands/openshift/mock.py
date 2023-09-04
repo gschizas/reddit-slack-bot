@@ -94,7 +94,8 @@ def set_mock(ctx, environment: str, mock_status: str):
         chat(ctx).send_text(f"You don't have permission to switch mock status.", is_error=True)
         return
     env_vars = mock_config['env_vars']
-    valid_mock_statuses = [k.upper() for k in mock_config['environments'][environment]['status'].keys()]
+    env_config = mock_config['environments'][environment]
+    valid_mock_statuses = [k.upper() for k in env_config['status'].keys()]
     mock_status = mock_status.upper()
     if mock_status not in valid_mock_statuses:
         chat(ctx).send_text((f"Invalid status `{mock_status}`. "
@@ -102,20 +103,20 @@ def set_mock(ctx, environment: str, mock_status: str):
         return
 
     result_text = ""
-    site = mock_config['environments'][environment]['site']
-    prefix = mock_config['environments'][environment]['prefix']
+    site = env_config['site']
+    prefix = env_config['prefix']
     project_name = _get_project_name(mock_config, environment)
 
     if site == 'azure':
         result_text += azure_login(
             ctx,
-            mock_config['environments'][environment]['credentials']['servicePrincipalId'],
-            mock_config['environments'][environment]['credentials']['servicePrincipalKey'],
-            mock_config['environments'][environment]['credentials']['tenantId'],
-            mock_config['environments'][environment]['azure_resource_group'],
-            mock_config['environments'][environment]['azure_cluster_name'])
+            env_config['credentials']['servicePrincipalId'],
+            env_config['credentials']['servicePrincipalKey'],
+            env_config['credentials']['tenantId'],
+            env_config['azure_resource_group'],
+            env_config['azure_cluster_name'])
     else:
-        oc_token = mock_config['environments'][environment]['credentials']
+        oc_token = env_config['credentials']
         login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
         login_result = login_cmd.stderr.decode().strip()
         if login_cmd.returncode != 0:
@@ -125,8 +126,8 @@ def set_mock(ctx, environment: str, mock_status: str):
         change_project_command = ['oc', 'project', project_name]
         result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
 
-    statuses = mock_config['environments'][environment]['status'][mock_status]
-    vartemplates = mock_config['environments'][environment].get('vartemplate', {})
+    statuses = env_config['status'][mock_status]
+    vartemplates = env_config.get('vartemplate', {})
     if _check_recursive(ctx, vartemplates):
         return
 
