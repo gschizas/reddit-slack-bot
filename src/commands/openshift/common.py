@@ -27,6 +27,8 @@ def read_config(env_var):
     if (permissions_config := config_file.with_suffix('.permissions.yml')).exists():
         with permissions_config.open(encoding='utf8') as f:
             permissions = yaml.load(f)
+    else:
+        permissions = []
     for env_name, env_config in config['environments'].items():
         if env_name in credentials:
             credentials_object = credentials[env_name]
