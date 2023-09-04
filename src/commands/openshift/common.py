@@ -24,9 +24,18 @@ def read_config(env_var):
         config = yaml.load(f)
     with config_file.with_suffix('.credentials.yml').open(encoding='utf8') as f:
         credentials = yaml.load(f)
-    for env in config:
-        if env in credentials:
-            config[env]['openshift_token'] = credentials[env].replace('\n', '')
+    if (permissions_config := config_file.with_suffix('.permissions.yml')).exists():
+        with permissions_config.open(encoding='utf8') as f:
+            permissions = yaml.load(f)
+    for env_name, env_config in config['environments'].items():
+        if env_name in credentials:
+            credentials_object = credentials[env_name]
+            if type(credentials_object) is str:
+                credentials_object = credentials_object.replace('\n', '')
+            env_config['openshift_token'] = credentials_object
+        if env_name in permissions:
+            env_config['users'] = permissions[env_name]['users']
+            env_config['channels'] = permissions[env_name]['channels']
     return config
 
 
