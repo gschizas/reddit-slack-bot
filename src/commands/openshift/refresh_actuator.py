@@ -31,9 +31,9 @@ def refresh_actuator(ctx, namespace, deployments):
     server_url = namespace_obj['url']
     ses = requests.session()
     if server_url == 'azure':
-        tenant_id = namespace_obj['openshift_token']['tenantId']
-        service_principal_id = namespace_obj['openshift_token']['servicePrincipalId']
-        service_principal_key = namespace_obj['openshift_token']['servicePrincipalKey']
+        tenant_id = namespace_obj['credentials']['tenantId']
+        service_principal_id = namespace_obj['credentials']['servicePrincipalId']
+        service_principal_key = namespace_obj['credentials']['servicePrincipalKey']
 
         login_page = ses.post(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', data={
             'client_id': service_principal_id,
@@ -47,7 +47,7 @@ def refresh_actuator(ctx, namespace, deployments):
         chat(ctx).send_file(subscriptions_page.content, filename='subscriptions.json')
         return
     else:
-        openshift_token = namespace_obj['openshift_token']
+        openshift_token = namespace_obj['credentials']
         ses.headers['Authorization'] = 'Bearer ' + openshift_token
 
     for deployment in deployments:

@@ -32,7 +32,7 @@ def read_config(env_var):
             credentials_object = credentials[env_name]
             if isinstance(credentials_object, str):
                 credentials_object = credentials_object.replace('\n', '')
-            env_config['openshift_token'] = credentials_object
+            env_config['credentials'] = credentials_object
         if env_name in permissions:
             env_config['users'] = permissions[env_name]['users']
             env_config['channels'] = permissions[env_name]['channels']

@@ -1,6 +1,8 @@
 import requests
 
 _BOOL_TEXT = ['true', '1', 't', 'y', 'yes']
+
+
 def _get_table(ses, url):
     def convert_type(rows):
         for row in rows:
@@ -9,6 +11,7 @@ def _get_table(ses, url):
                 yield row[0], str(row[2]).lower() in _BOOL_TEXT
             else:
                 yield row[0], row[2]
+
     api_continue = ''
     result = []
     while True:
@@ -27,8 +30,9 @@ def _get_table(ses, url):
             break
     return result
 
+
 def get_deployments(config, namespace):
-    openshift_token = config['openshift_token']
+    openshift_token = config['credentials']
     server_url = config['url']
 
     ses = requests.session()
@@ -37,7 +41,7 @@ def get_deployments(config, namespace):
 
 
 def change_deployment_pause_state(config: dict, namespace: str, deployment_name: str, pause_state: bool):
-    openshift_token = config['openshift_token']
+    openshift_token = config['credentials']
     server_url = config['url']
     ses = requests.session()
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
@@ -50,7 +54,7 @@ def change_deployment_pause_state(config: dict, namespace: str, deployment_name:
 
 
 def get_cronjobs(config: dict, namespace: str):
-    openshift_token = config['openshift_token']
+    openshift_token = config['credentials']
     server_url = config['url']
 
     ses = requests.session()
@@ -59,7 +63,7 @@ def get_cronjobs(config: dict, namespace: str):
 
 
 def change_cronjob_suspend_state(config: dict, namespace: str, cronjob_name: str, suspend_state: bool):
-    openshift_token = config['openshift_token']
+    openshift_token = config['credentials']
     server_url = config['url']
     ses = requests.session()
     ses.headers['Authorization'] = 'Bearer ' + openshift_token

@@ -33,7 +33,7 @@ def scaledown(ctx, namespace):
     if channel_name not in allowed_channels:
         chat(ctx).send_text(f"Kubernetes scale down commands are not allowed in {channel_name}", is_error=True)
         return
-    openshift_token = namespace_obj['openshift_token']
+    openshift_token = namespace_obj['credentials']
 
     result = ""
 
