@@ -113,7 +113,7 @@ def _get_pods(ctx, namespace, server_url, ses, deployment):
 def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after):
     refresh_actuator_result = refresh_result.json()
     if type(refresh_actuator_result) is list:
-        value_types = [type(rar) is str for rar in refresh_actuator_result]
+        value_types = [isinstance(rar, str) for rar in refresh_actuator_result]
         all_values_are_strings = all(value_types)
     else:
         all_values_are_strings = False

@@ -30,7 +30,7 @@ def read_config(env_var):
     for env_name, env_config in config['environments'].items():
         if env_name in credentials:
             credentials_object = credentials[env_name]
-            if type(credentials_object) is str:
+            if isinstance(credentials_object, str):
                 credentials_object = credentials_object.replace('\n', '')
             env_config['openshift_token'] = credentials_object
         if env_name in permissions:

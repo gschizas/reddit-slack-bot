@@ -137,13 +137,13 @@ def parse_shortcuts(text):
     first_word = typed_text[0]
     if first_word in shortcut_words:
         replaced_words = shortcut_words[first_word]
-        if all([type(w) is str for w in replaced_words]):  # shortcut definition is a list of all strings
+        if all([isinstance(w, str) for w in replaced_words]):  # shortcut definition is a list of all strings
             typed_text = replaced_words + typed_text[1:]
             first_word = typed_text[0]
             text = ' '.join(replaced_words) + ' ' + ' '.join(text.split()[1:])
             text_lines = [text]
         elif all([type(w) is list for w in replaced_words]) and \
-                all([all([type(ww) is str for ww in w]) for w in replaced_words]):
+                all([all([isinstance(ww, str) for ww in w]) for w in replaced_words]):
             # shortcut definition is a list of lists and each of them is a list of strings
             first_word = replaced_words[0][0]
             text_lines = [' '.join(replaced_words_line) for replaced_words_line in replaced_words]

@@ -89,7 +89,7 @@ def covid(ctx, country: str):
 
     with open('data/owid-covid-data.json') as f:
         full_data = json.load(f)
-        if type(full_data) is str:
+        if isinstance(full_data, str):
             full_data = json.loads(full_data)
     country_data = full_data[country]
     data = {}
