@@ -33,11 +33,6 @@ def _mock_config():
         for status, microservice_vars in env['status'].items():
             env['status'][status] = default_environment.get('status', {}).get(status, {}) | microservice_vars
         env['vartemplate'] = env.get('vartemplate', {}) | default_environment.get('vartemplate', {})
-        for key, value in default_environment.items():
-            if key in ('status', 'vartemplate'):  # we have already handled these
-                continue
-            if key in env:  # value already exists
-                continue
     return mock_config
 
 
