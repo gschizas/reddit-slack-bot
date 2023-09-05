@@ -113,15 +113,7 @@ def _get_pods(ctx, namespace, server_url, ses, deployment):
 
 
 def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after):
-    refresh_actuator_result = refresh_result.json()
-    if type(refresh_actuator_result) is list:
-        value_types = [isinstance(rar, str) for rar in refresh_actuator_result]
-        all_values_are_strings = all(value_types)
-    else:
-        all_values_are_strings = False
-    if refresh_result.ok and refresh_actuator_result and all_values_are_strings:
-        refresh_actuator_result_list = rangify(refresh_actuator_result, consolidate=False)
-        # chat(ctx).send_text('```\n' + '\n'.join(refresh_actuator_result_list) + '\n```\n')
+    def _environment_changes_table(pod_env_after, pod_env_before, refresh_actuator_result_list):
         env_before = json.loads(pod_env_before.content)
         env_after = json.loads(pod_env_after.content)
         values_before = {}
@@ -139,6 +131,18 @@ def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_a
             'after_value': values_after.get(c, {'value': None})['value'],
             'after_origin': values_after.get(c, {'origin': None}).get('origin')}
             for c in refresh_actuator_result_list]
+        return full_changes
+
+    refresh_actuator_result = refresh_result.json()
+    if type(refresh_actuator_result) is list:
+        value_types = [isinstance(rar, str) for rar in refresh_actuator_result]
+        all_values_are_strings = all(value_types)
+    else:
+        all_values_are_strings = False
+    if refresh_result.ok and refresh_actuator_result and all_values_are_strings:
+        refresh_actuator_result_list = rangify(refresh_actuator_result, consolidate=False)
+        # chat(ctx).send_text('```\n' + '\n'.join(refresh_actuator_result_list) + '\n```\n')
+        full_changes = _environment_changes_table(pod_env_after, pod_env_before, refresh_actuator_result_list)
         result_table = tabulate(full_changes, headers='keys', tablefmt='pipe')
         chat(ctx).send_text(f"Changes for pod {pod_to_refresh}:\n```{result_table}\n```")
     else:
