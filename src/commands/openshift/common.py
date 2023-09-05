@@ -115,7 +115,7 @@ def check_security(func=None, *, config=None):
     return wrapper
 
 
-def rangify(original_input_list):
+def rangify(original_input_list, consolidate=True):
     REGEX = r'^(?P<prefix>[\w\.]+)(?:(?:\[(?P<index>\d+)\])(?P<suffix>[\w\.]*))?$'
 
     def _extract_index(an_item):
@@ -157,8 +157,10 @@ def rangify(original_input_list):
         return output_list
 
     item_list = sorted(original_input_list, key=lambda line: _extract_index(line))
-
-    return _merge_consecutive_items(item_list)
+    if consolidate:
+        return _merge_consecutive_items(item_list)
+    else:
+        return item_list
 
 
 def azure_login(ctx, service_principal_id, service_principal_key, tenant_id, resource_group, cluster_name):
