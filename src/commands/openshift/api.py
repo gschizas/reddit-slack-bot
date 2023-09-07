@@ -1,4 +1,7 @@
+import click
 import requests
+
+from commands.openshift.common import env_config
 
 _BOOL_TEXT = ['true', '1', 't', 'y', 'yes']
 
@@ -31,44 +34,38 @@ def _get_table(ses, url):
     return result
 
 
-def get_deployments(config, namespace):
-    openshift_token = config['credentials']
-    server_url = config['url']
-
-    ses = requests.session()
-    ses.headers['Authorization'] = 'Bearer ' + openshift_token
-    return _get_table(ses, f'{server_url}apis/apps/v1/namespaces/{namespace}/deployments')
-
-
-def change_deployment_pause_state(config: dict, namespace: str, deployment_name: str, pause_state: bool):
+def _openshift_session(ctx, namespace, enforce_content_type=True):
+    config: dict = env_config(ctx, namespace)
     openshift_token = config['credentials']
     server_url = config['url']
     ses = requests.session()
     ses.headers['Authorization'] = 'Bearer ' + openshift_token
     ses.headers['Accept'] = 'application/json, */*'
-    ses.headers['Content-Type'] = 'application/strategic-merge-patch+json'
+    if enforce_content_type:
+        ses.headers['Content-Type'] = 'application/strategic-merge-patch+json'
+    return server_url, ses
+
+
+def get_deployments(ctx: click.Context, namespace: str):
+    server_url, ses = _openshift_session(ctx, namespace, False)
+    return _get_table(ses, f'{server_url}apis/apps/v1/namespaces/{namespace}/deployments')
+
+
+def change_deployment_pause_state(ctx: click.Context, namespace: str, deployment_name: str, pause_state: bool):
+    server_url, ses = _openshift_session(ctx, namespace)
     rq = ses.patch(
         f'{server_url}apis/apps/v1/namespaces/{namespace}/deployments/{deployment_name}',
         json={"spec": {"paused": pause_state}})
     return rq.json()
 
 
-def get_cronjobs(config: dict, namespace: str):
-    openshift_token = config['credentials']
-    server_url = config['url']
-
-    ses = requests.session()
-    ses.headers['Authorization'] = 'Bearer ' + openshift_token
+def get_cronjobs(ctx: click.Context, namespace: str):
+    server_url, ses = _openshift_session(ctx, namespace, False)
     return _get_table(ses, f'{server_url}apis/batch/v1/namespaces/{namespace}/cronjobs')
 
 
-def change_cronjob_suspend_state(config: dict, namespace: str, cronjob_name: str, suspend_state: bool):
-    openshift_token = config['credentials']
-    server_url = config['url']
-    ses = requests.session()
-    ses.headers['Authorization'] = 'Bearer ' + openshift_token
-    ses.headers['Accept'] = 'application/json, */*'
-    ses.headers['Content-Type'] = 'application/strategic-merge-patch+json'
+def change_cronjob_suspend_state(ctx: click.Context, namespace: str, cronjob_name: str, suspend_state: bool):
+    server_url, ses = _openshift_session(ctx, namespace)
     rq = ses.patch(
         f'{server_url}apis/batch/v1/namespaces/{namespace}/cronjobs/{cronjob_name}',
         json={"spec": {"suspend": suspend_state}})
