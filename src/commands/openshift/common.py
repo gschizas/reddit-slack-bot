@@ -194,4 +194,4 @@ def azure_login(ctx, service_principal_id, service_principal_key, tenant_id, res
 
 
 def env_config(ctx, namespace):
-    return ctx.obj['config']['envinoments'][namespace]
+    return ctx.obj['config']['environments'][namespace]
