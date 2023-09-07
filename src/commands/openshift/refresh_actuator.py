@@ -7,7 +7,7 @@ import requests
 from tabulate import tabulate
 
 from commands import gyrobot, chat, logger
-from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security
+from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security, env_config
 
 
 def _actuator_config():
@@ -29,7 +29,7 @@ def actuator(ctx: click.Context):
 @click.pass_context
 @check_security
 def refresh_actuator(ctx, namespace, deployments):
-    namespace_obj = ctx.obj['config']['environments'][namespace]
+    namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
     ses = requests.session()
     if server_url == 'azure':

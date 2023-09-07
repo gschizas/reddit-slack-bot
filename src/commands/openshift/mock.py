@@ -6,7 +6,7 @@ import click
 from ruamel.yaml import YAML
 
 from commands import gyrobot, chat, DefaultCommandGroup
-from commands.openshift.common import OpenShiftNamespace, azure_login, check_security, read_config
+from commands.openshift.common import OpenShiftNamespace, azure_login, check_security, read_config, env_config
 
 yaml = YAML()
 
@@ -74,8 +74,8 @@ def set_mock(ctx, namespace: str, mock_status: str):
     """Switch openshift mock status on environment"""
     mock_config = ctx.obj['config']
     env_vars = mock_config['env_vars']
-    env_config = mock_config['environments'][namespace]
-    valid_mock_statuses = [k.upper() for k in env_config['status'].keys()]
+    config_env = env_config(ctx, namespace)
+    valid_mock_statuses = [k.upper() for k in config_env['status'].keys()]
     mock_status = mock_status.upper()
     if mock_status not in valid_mock_statuses:
         chat(ctx).send_text((f"Invalid status `{mock_status}`. "
@@ -83,20 +83,20 @@ def set_mock(ctx, namespace: str, mock_status: str):
         return
 
     result_text = ""
-    site = env_config['site']
-    prefix = env_config['prefix']
-    project_name = _get_project_name(env_config, namespace)
+    site = config_env['site']
+    prefix = config_env['prefix']
+    project_name = _get_project_name(config_env, namespace)
 
     if site == 'azure':
         result_text += azure_login(
             ctx,
-            env_config['credentials']['servicePrincipalId'],
-            env_config['credentials']['servicePrincipalKey'],
-            env_config['credentials']['tenantId'],
-            env_config['azure_resource_group'],
-            env_config['azure_cluster_name'])
+            config_env['credentials']['servicePrincipalId'],
+            config_env['credentials']['servicePrincipalKey'],
+            config_env['credentials']['tenantId'],
+            config_env['azure_resource_group'],
+            config_env['azure_cluster_name'])
     else:
-        oc_token = env_config['credentials']
+        oc_token = config_env['credentials']
         login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
         login_result = login_cmd.stderr.decode().strip()
         if login_cmd.returncode != 0:
@@ -106,8 +106,8 @@ def set_mock(ctx, namespace: str, mock_status: str):
         change_project_command = ['oc', 'project', project_name]
         result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
 
-    statuses = env_config['status'][mock_status]
-    vartemplates = env_config.get('vartemplate', {})
+    statuses = config_env['status'][mock_status]
+    vartemplates = config_env.get('vartemplate', {})
     if _check_recursive(ctx, vartemplates):
         return
 
@@ -159,15 +159,15 @@ def _get_environment_values(env_vars, vartemplates, microservice_info, status):
 @check_security
 def mock_check(ctx, namespace):
     """View current status of environment"""
-    env_config = ctx.obj['config']['environments'][namespace]
-    oc_token = env_config['credentials']
-    site = env_config['site']
+    config_env = env_config(ctx, namespace)
+    oc_token = config_env['credentials']
+    site = config_env['site']
     result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
-    prefix = env_config['prefix']
-    project_name = _get_project_name(env_config, namespace)
+    prefix = config_env['prefix']
+    project_name = _get_project_name(config_env, namespace)
     result_text += subprocess.check_output(['oc', 'project', project_name]).decode() + '\n' * 3
-    first_status = list(env_config['status'].keys())[0]
-    microservices = list(env_config['status'][first_status].keys())
+    first_status = list(config_env['status'].keys())[0]
+    microservices = list(config_env['status'][first_status].keys())
     for microservice in microservices:
         env_var_list = subprocess.check_output(['oc', 'set', 'env', prefix + microservice, '--list']).decode()
         env_var_list = _masked_oc_password(env_var_list)

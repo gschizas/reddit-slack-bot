@@ -191,3 +191,7 @@ def azure_login(ctx, service_principal_id, service_principal_key, tenant_id, res
     convert_login_cmd = subprocess.run(convert_login_args, capture_output=True)
     result_text += convert_login_cmd.stdout.decode() + '\n' + convert_login_cmd.stderr.decode() + '\n\n'
     return result_text
+
+
+def env_config(ctx, namespace):
+    return ctx.obj['config']['envinoments'][namespace]

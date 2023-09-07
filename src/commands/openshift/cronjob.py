@@ -9,7 +9,7 @@ from ruamel.yaml import YAML
 
 from commands import gyrobot, chat
 from commands.openshift.api import get_cronjobs, change_cronjob_suspend_state
-from commands.openshift.common import read_config, OpenShiftNamespace, check_security
+from commands.openshift.common import read_config, OpenShiftNamespace, check_security, env_config
 
 yaml = YAML()
 REMOVE_CRONJOB_KEYS = ['Containers', 'Images', 'Selector']
@@ -33,7 +33,7 @@ def cronjob(ctx: click.Context):
 @click.pass_context
 @check_security
 def list_cronjobs(ctx, namespace, excel: bool):
-    cronjobs = get_cronjobs(ctx.obj['config']['environments'][namespace], namespace)
+    cronjobs = get_cronjobs(env_config(ctx, namespace), namespace)
     if excel:
         cronjobs_df = pd.DataFrame(cronjobs)
         with io.BytesIO() as cronjobs_output:
@@ -50,7 +50,7 @@ def list_cronjobs(ctx, namespace, excel: bool):
 @click.pass_context
 @check_security
 def pause_cronjob(ctx, namespace):
-    cronjobs = get_cronjobs(ctx.obj['config']['environments'][namespace], namespace)
+    cronjobs = get_cronjobs(env_config(ctx, namespace), namespace)
     with open('data/cronjob-stack.yml', mode='r', encoding='utf8') as f:
         suspended_cronjobs_stack = yaml.load(f) or []
     suspended_cronjobs = []
@@ -59,7 +59,7 @@ def pause_cronjob(ctx, namespace):
         if one_cronjob['Suspend']:
             continue
         suspended_cronjobs.append(one_cronjob['Name'])
-        result.append(change_cronjob_suspend_state(ctx.obj['config']['environments'][namespace], namespace, one_cronjob['Name'], True))
+        result.append(change_cronjob_suspend_state(env_config(ctx, namespace), namespace, one_cronjob['Name'], True))
     suspended_cronjobs_stack.append(suspended_cronjobs)
     with open('data/cronjob-stack.yml', mode='w', encoding='utf8') as f:
         yaml.dump(suspended_cronjobs_stack, f)
@@ -79,7 +79,7 @@ def resume_cronjob(ctx, namespace):
     cronjobs_to_resume = suspended_cronjobs_stack.pop() or []
     result = []
     for one_cronjob_name in cronjobs_to_resume:
-        result.append(change_cronjob_suspend_state(ctx.obj['config']['envinoments'][namespace], namespace, one_cronjob_name, False))
+        result.append(change_cronjob_suspend_state(env_config(ctx, namespace), namespace, one_cronjob_name, False))
     with open('data/cronjob-stack.yml', mode='w', encoding='utf8') as f:
         yaml.dump(suspended_cronjobs_stack, f)
     chat(ctx).send_file(json.dumps(result).encode(), filename='cronjobs.json')
