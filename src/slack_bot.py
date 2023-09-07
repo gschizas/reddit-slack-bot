@@ -4,6 +4,8 @@ import locale
 import logging
 import os
 import string
+import sys
+import traceback
 
 import click.testing
 import praw
@@ -174,7 +176,12 @@ def handle_line(text):
     result = runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
 
     if result.exception:
-        chat_obj.send_text('```\n' + repr(result.exception) + '```\n', is_error=True)
+        if 'DEBUG' in os.environ:
+            exception_full_text = ''.join(traceback.format_exception(*result.exc_info))
+            error_text = f"```\n:::Error*:::\n{exception_full_text}```\n"
+        else:
+            error_text = f"```\n:::Error:::\n{result.exception}```\n"
+        chat_obj.send_text(error_text, is_error=True)
 
     if result.output != '':
         chat_obj.send_text('```\n' + result.output.strip() + '```\n')
