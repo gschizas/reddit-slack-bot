@@ -29,7 +29,7 @@ def actuator(ctx: click.Context):
 @click.pass_context
 @check_security
 def refresh_actuator(ctx, namespace, deployments):
-    namespace_obj = ctx.obj['config'][namespace]
+    namespace_obj = ctx.obj['config']['environments'][namespace]
     server_url = namespace_obj['url']
     ses = requests.session()
     if server_url == 'azure':

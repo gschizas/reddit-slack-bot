@@ -58,15 +58,15 @@ def mock(ctx: click.Context):
               context_settings={
                   'ignore_unknown_options': True,
                   'allow_extra_args': True})
-@click.argument('environment', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
+@click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
 @click.argument('mock_status')
 @click.pass_context
-def mock_default(ctx: click.core.Context, environment: str, mock_status: OpenShiftNamespace):
+def mock_default(ctx: click.core.Context, namespace: str, mock_status: OpenShiftNamespace):
     ctx.forward(set_mock)
 
 
 @mock.command('set')
-@click.argument('namespace', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
+@click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
 @click.argument('mock_status')
 @click.pass_context
 @check_security
@@ -154,7 +154,7 @@ def _get_environment_values(env_vars, vartemplates, microservice_info, status):
 
 
 @mock.command('check')
-@click.argument('namespace', type=OpenShiftNamespace(_mock_config()['environments'], force_upper=True))
+@click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
 @click.pass_context
 @check_security
 def mock_check(ctx, namespace):

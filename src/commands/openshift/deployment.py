@@ -27,7 +27,7 @@ def deployment(ctx: click.Context):
 @click.pass_context
 @check_security
 def list_deployments(ctx, namespace, excel: bool):
-    deployments = get_deployments(ctx.obj['config'][namespace], namespace)
+    deployments = get_deployments(ctx.obj['config']['environments'][namespace], namespace)
     if excel:
         deployments_df = pd.DataFrame(deployments)
         with io.BytesIO() as deployments_output:
@@ -44,10 +44,10 @@ def list_deployments(ctx, namespace, excel: bool):
 @click.pass_context
 @check_security
 def pause_deployment(ctx, namespace):
-    deployments = get_deployments(ctx.obj['config'][namespace], namespace)
+    deployments = get_deployments(ctx.obj['config']['environments'][namespace], namespace)
     result = []
     for one_deployment in deployments:
-        result.append(change_deployment_pause_state(ctx.obj['config'][namespace], namespace, one_deployment['Name'], True))
+        result.append(change_deployment_pause_state(ctx.obj['config']['environments'][namespace], namespace, one_deployment['Name'], True))
     result_markdown = _make_deployments_table(result)
     chat(ctx).send_file(result_markdown.encode(), filename='deployments.md')
     chat(ctx).send_file(json.dumps(result).encode(), filename='deployments.json')
@@ -58,10 +58,10 @@ def pause_deployment(ctx, namespace):
 @click.pass_context
 @check_security
 def resume_deployment(ctx, namespace):
-    deployments = get_deployments(ctx.obj['config'][namespace], namespace)
+    deployments = get_deployments(ctx.obj['config']['environments'][namespace], namespace)
     result = []
     for one_deployment in deployments:
-        result.append(change_deployment_pause_state(ctx.obj['config'][namespace], namespace, one_deployment['Name'], None))
+        result.append(change_deployment_pause_state(ctx.obj['config']['environments'][namespace], namespace, one_deployment['Name'], None))
     result_markdown = _make_deployments_table(result)
     chat(ctx).send_file(result_markdown.encode(), filename='deployments.md')
     chat(ctx).send_file(json.dumps(result).encode(), filename='deployments.json')

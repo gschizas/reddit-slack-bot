@@ -52,7 +52,7 @@ class OpenShiftNamespace(click.ParamType):
         self._force_upper = force_upper or False
 
     def convert(self, value, param, ctx) -> str:
-        valid_environments = [e.lower() for e in self._config]
+        valid_environments = [e.lower() for e in self._config['environments']]
         valid_environments_text = ', '.join(valid_environments)
         if value.lower() not in valid_environments:
             self.fail(
