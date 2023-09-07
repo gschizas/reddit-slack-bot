@@ -4,8 +4,8 @@ _BOOL_TEXT = ['true', '1', 't', 'y', 'yes']
 
 
 def _get_table(ses, url):
-    def convert_type(rows):
-        for row in rows:
+    def convert_type(rows_to_convert):
+        for row in rows_to_convert:
             row_type = row[1]
             if row_type == 'boolean':
                 yield row[0], str(row[2]).lower() in _BOOL_TEXT
