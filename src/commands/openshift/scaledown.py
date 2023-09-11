@@ -3,7 +3,7 @@ import shlex
 
 import click
 import requests
-from commands.openshift.common import read_config, user_allowed, OpenShiftNamespace
+from commands.openshift.common import read_config, user_allowed, OpenShiftNamespace, env_config
 from ruamel.yaml import YAML
 
 from commands import gyrobot, chat, logger
@@ -22,7 +22,7 @@ def _scaledown_config():
 @click.argument('namespace', type=OpenShiftNamespace(_scaledown_config()))
 @click.pass_context
 def scaledown(ctx, namespace):
-    namespace_obj = _scaledown_config()[namespace]
+    namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
     allowed_users = namespace_obj['users']
     if not user_allowed(chat(ctx).user_id, allowed_users):
@@ -90,7 +90,6 @@ def scaledown(ctx, namespace):
         chat(ctx).send_text(f"Error while getting pod status", is_error=True)
     result += result_cmd.stdout.decode().strip() + "\n"
     result += result_cmd.stderr.decode().strip() + "\n"
-
 
     logout_cmd = subprocess.run(['oc', 'logout', f'--server={server_url}'], capture_output=True)
     result += logout_cmd.stdout.decode().strip() + "\n"
