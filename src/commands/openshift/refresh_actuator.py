@@ -123,10 +123,10 @@ def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_a
                 chat(ctx).send_file(pod_env_before_raw.content, filename='EnvBefore.json', filetype='json')
                 chat(ctx).send_file(pod_env_after_raw.content, filename='EnvAfter.json', filetype='json')
                 return []
-            for ps in env_before.get('propertySources', []):
+            for ps in env_before['propertySources']:
                 if c in ps['properties']:
                     values_before[c] = ps['properties'][c]
-            for ps in env_after.get('propertySources', []):
+            for ps in env_after['propertySources']:
                 if c in ps['properties']:
                     values_after[c] = ps['properties'][c]
         return [{
