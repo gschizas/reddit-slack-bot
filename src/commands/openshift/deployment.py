@@ -1,13 +1,13 @@
+import io
 import json
+from typing import Dict, List
 
 import click
 import pandas as pd
-import io
-from tabulate import tabulate
 
 from commands import gyrobot, chat
 from commands.openshift.api import get_deployments, change_deployment_pause_state
-from commands.openshift.common import read_config, OpenShiftNamespace, check_security, env_config
+from commands.openshift.common import read_config, OpenShiftNamespace, check_security
 
 REMOVE_DEPLOYMENT_KEYS = ['Containers', 'Images', 'Selector']
 _deployment_config = read_config('OPENSHIFT_DEPLOYMENT')
@@ -35,8 +35,7 @@ def list_deployments(ctx: click.Context, namespace: str, excel: bool):
             chat(ctx).send_file(deployments_output.getvalue(), filename='deployments.xlsx')
     else:
         deployments = [{k: v for k, v in dep.items() if k not in REMOVE_DEPLOYMENT_KEYS} for dep in deployments]
-        deployments_markdown = tabulate(deployments, headers='keys', tablefmt='fancy_outline')
-        chat(ctx).send_file(deployments_markdown.encode(), filename='deployments.md')
+        chat(ctx).send_table('deployments', deployments)
 
 
 @deployment.command('pause')
@@ -62,17 +61,15 @@ def resume_deployment(ctx, namespace):
     result = []
     for one_deployment in deployments:
         result.append(change_deployment_pause_state(ctx, namespace, one_deployment['Name'], None))
-    result_markdown = _make_deployments_table(result)
-    chat(ctx).send_file(result_markdown.encode(), filename='deployments.md')
+    chat(ctx).send_table(title='deployments', table=_make_deployments_table(result))
     chat(ctx).send_file(json.dumps(result).encode(), filename='deployments.json')
 
 
-def _make_deployments_table(result) -> str:
-    result_table = [{
+def _make_deployments_table(result) -> List[Dict]:
+    return [{
         'Namespace': dep['metadata']['namespace'],
         'Name': dep['metadata']['name'],
         'Replicas': dep['status'].get('replicas'),
         'Updated Replicas': dep['status'].get('updatedReplicas'),
         'Ready Replicas': dep['status'].get('readyReplicas'),
         'Available Replicas': dep['status'].get('availableReplicas')} for dep in result]
-    return tabulate(result_table, headers='keys', tablefmt='fancy_outline')

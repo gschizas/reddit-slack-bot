@@ -1,15 +1,14 @@
-import json
 import io
+import json
 import pathlib
 
 import click
 import pandas as pd
-from tabulate import tabulate
 from ruamel.yaml import YAML
 
 from commands import gyrobot, chat
 from commands.openshift.api import get_cronjobs, change_cronjob_suspend_state
-from commands.openshift.common import read_config, OpenShiftNamespace, check_security, env_config
+from commands.openshift.common import read_config, OpenShiftNamespace, check_security
 
 yaml = YAML()
 REMOVE_CRONJOB_KEYS = ['Containers', 'Images', 'Selector']
@@ -41,8 +40,7 @@ def list_cronjobs(ctx: click.Context, namespace: str, excel: bool):
             chat(ctx).send_file(cronjobs_output.getvalue(), filename='cronjobs.xlsx')
     else:
         cronjobs = [{k: v for k, v in cronjob.items() if k not in REMOVE_CRONJOB_KEYS} for cronjob in cronjobs]
-        cronjobs_markdown = tabulate(cronjobs, headers='keys', tablefmt='fancy_outline')
-        chat(ctx).send_file(cronjobs_markdown.encode(), filename='cronjobs.md')
+        chat(ctx).send_table(title='cronjobs', table=cronjobs)
 
 
 @cronjob.command('pause')

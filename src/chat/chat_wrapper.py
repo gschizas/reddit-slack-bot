@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+from typing import List, Dict
 
 class ChatWrapper(ABC):
     message_handler = None
@@ -19,6 +19,10 @@ class ChatWrapper(ABC):
 
     @abstractmethod
     def send_text(self, text, is_error: bool = False, icon_emoji: str = None) -> None:
+        pass
+
+    @abstractmethod
+    def send_table(self, title: str, table: List[Dict], is_error: bool = False, icon_emoji: str = None) -> None:
         pass
 
     @abstractmethod

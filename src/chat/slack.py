@@ -1,6 +1,8 @@
 import os
+from typing import List, Dict
 
 import slack
+from tabulate import tabulate
 
 from chat.chat_wrapper import ChatWrapper
 
@@ -38,6 +40,10 @@ class SlackWrapper(ChatWrapper):
             text=text,
             icon_emoji=icon_emoji,
             username=self.bot_name)
+
+    def send_table(self, title: str, table: List[Dict], is_error: bool = False, icon_emoji: str = None) -> None:
+        table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
+        self.send_file(file_data=table_markdown.encode(), filename=f'{title}.md')
 
     def send_ephemeral(self, text=None, blocks=None, is_error=False, icon_emoji=None):
         if icon_emoji is None:
