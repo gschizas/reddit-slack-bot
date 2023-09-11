@@ -180,8 +180,7 @@ def survey(ctx):
     if result_type == 'single':
         chat(ctx).send_text(f"*Result*: `{rows[0][0]}`")
     elif result_type == 'table':
-        table = _make_table(title, cols, rows)
-        chat(ctx).send_file(table, title=title, filetype='markdown')
+        chat(ctx).send_table(title=title, table=[dict(zip(cols, row)) for row in rows])
     elif result_type == 'full_table':
         filedata = b''
         with tempfile.TemporaryFile() as tmpfile:

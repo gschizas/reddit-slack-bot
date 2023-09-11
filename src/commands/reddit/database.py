@@ -29,6 +29,5 @@ def too_many_posts(ctx):
                     count(*) desc;""")
             rows = rows_raw.fetchall()
             headers = [col.name for col in rows_raw.description]
-    table_text = '```\n' + \
-        tabulate(rows, headers=headers, tablefmt='fancy_outline') + '\n```'
-    chat(ctx).send_text(table_text)
+    result_table = [dict(zip(headers, row)) for row in rows]
+    chat(ctx).send_table('too_many_posts', result_table)
