@@ -41,7 +41,7 @@ class SlackWrapper(ChatWrapper):
             icon_emoji=icon_emoji,
             username=self.bot_name)
 
-    def send_table(self, title: str, table: List[Dict], is_error: bool = False, icon_emoji: str = None) -> None:
+    def send_table(self, title: str, table: List[Dict]) -> None:
         table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
         self.send_file(file_data=table_markdown.encode(), filename=f'{title}.md')
 

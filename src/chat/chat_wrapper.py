@@ -22,7 +22,7 @@ class ChatWrapper(ABC):
         pass
 
     @abstractmethod
-    def send_table(self, title: str, table: List[Dict], is_error: bool = False, icon_emoji: str = None) -> None:
+    def send_table(self, title: str, table: List[Dict]) -> None:
         pass
 
     @abstractmethod
