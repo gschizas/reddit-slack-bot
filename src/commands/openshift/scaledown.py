@@ -22,6 +22,7 @@ def _scaledown_config():
 @click.argument('namespace', type=OpenShiftNamespace(_scaledown_config()))
 @click.pass_context
 def scaledown(ctx, namespace):
+    ctx.obj['config'] = _scaledown_config()
     namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
     allowed_users = namespace_obj['users']
