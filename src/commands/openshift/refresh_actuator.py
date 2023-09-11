@@ -145,7 +145,7 @@ def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_a
     if refresh_result.ok and refresh_actuator_result and all_values_are_strings:
         refresh_actuator_result_list = rangify(refresh_actuator_result, consolidate=False)
         # chat(ctx).send_text('```\n' + '\n'.join(result_list) + '\n```\n')
-        if full_changes := _environment_changes_table(pod_env_before, pod_env_after, refresh_actuator_result_list)
+        if full_changes := _environment_changes_table(pod_env_before, pod_env_after, refresh_actuator_result_list):
             chat(ctx).send_table(f"Changes for pod {pod_to_refresh}", full_changes)
     else:
         chat(ctx).send_file(
