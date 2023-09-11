@@ -1,6 +1,8 @@
+import io
 import os
 from typing import List, Dict
 
+import pandas as pd
 import slack
 from tabulate import tabulate
 
@@ -42,8 +44,14 @@ class SlackWrapper(ChatWrapper):
             username=self.bot_name)
 
     def send_table(self, title: str, table: List[Dict]) -> None:
-        table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
-        self.send_file(file_data=table_markdown.encode(), filename=f'{title}.md')
+        if os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
+            with io.BytesIO() as cronjobs_output:
+                table_df = pd.DataFrame(table)
+                table_df.reset_index(drop=True).to_excel(cronjobs_output)
+                self.send_file(cronjobs_output.getvalue(), filename=f'{title}.xlsx')
+        else:
+            table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
+            self.send_file(file_data=table_markdown.encode(), filename=f'{title}.md')
 
     def send_ephemeral(self, text=None, blocks=None, is_error=False, icon_emoji=None):
         if icon_emoji is None:
