@@ -112,25 +112,29 @@ def _get_pods(ctx, namespace, server_url, ses, deployment):
 
 
 def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after):
-    def _environment_changes_table(pod_env_after, pod_env_before, refresh_actuator_result_list):
-        env_before = json.loads(pod_env_before.content)
-        env_after = json.loads(pod_env_after.content)
+    def _environment_changes_table(pod_env_before_raw, pod_env_after_raw, result_list):
+        env_before = json.loads(pod_env_before_raw.content)
+        env_after = json.loads(pod_env_after_raw.content)
         values_before = {}
         values_after = {}
-        for c in refresh_actuator_result_list:
-            for ps in env_before['propertySources']:
+        for c in result_list:
+            if 'propertySources' not in env_before or 'propertySources' not in env_after:
+                chat(ctx).send_text("Could not find property sources in environment", is_error=True)
+                chat(ctx).send_file(pod_env_before_raw.content, filename='EnvBefore.json', filetype='json')
+                chat(ctx).send_file(pod_env_after_raw.content, filename='EnvAfter.json', filetype='json')
+                return []
+            for ps in env_before.get('propertySources', []):
                 if c in ps['properties']:
                     values_before[c] = ps['properties'][c]
-            for ps in env_after['propertySources']:
+            for ps in env_after.get('propertySources', []):
                 if c in ps['properties']:
                     values_after[c] = ps['properties'][c]
-        full_changes = [{
+        return [{
             'variable': c,
             'before': values_before.get(c, {'value': None})['value'],
             'after_value': values_after.get(c, {'value': None})['value'],
             'after_origin': values_after.get(c, {'origin': None}).get('origin')}
-            for c in refresh_actuator_result_list]
-        return full_changes
+            for c in result_list]
 
     refresh_actuator_result = refresh_result.json()
     if type(refresh_actuator_result) is list:
@@ -140,16 +144,16 @@ def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_a
         all_values_are_strings = False
     if refresh_result.ok and refresh_actuator_result and all_values_are_strings:
         refresh_actuator_result_list = rangify(refresh_actuator_result, consolidate=False)
-        # chat(ctx).send_text('```\n' + '\n'.join(refresh_actuator_result_list) + '\n```\n')
-        full_changes = _environment_changes_table(pod_env_after, pod_env_before, refresh_actuator_result_list)
-        chat(ctx).send_table(f"Changes for pod {pod_to_refresh}", full_changes)
+        # chat(ctx).send_text('```\n' + '\n'.join(result_list) + '\n```\n')
+        if full_changes := _environment_changes_table(pod_env_before, pod_env_after, refresh_actuator_result_list)
+            chat(ctx).send_table(f"Changes for pod {pod_to_refresh}", full_changes)
     else:
         chat(ctx).send_file(
             file_data=pod_env_before.content,
-            filename=f'pod_env_before-{pod_to_refresh}.json')
+            filename=f'pod_env_before_raw-{pod_to_refresh}.json')
         chat(ctx).send_file(
             file_data=refresh_result.content,
             filename=f'actuator-refresh-{pod_to_refresh}.json')
         chat(ctx).send_file(
             file_data=pod_env_after.content,
-            filename=f'pod_env_after-{pod_to_refresh}.json')
+            filename=f'pod_env_after_raw-{pod_to_refresh}.json')
