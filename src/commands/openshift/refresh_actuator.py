@@ -43,10 +43,10 @@ def refresh_actuator(ctx, namespace, deployments):
             'client_secret': service_principal_key,
             'scope': 'https://management.core.windows.net//.default'
         })
-        ses.headers['Authorization'] = 'Bearer ' + login_page.json()['access_token']
+        openshift_token = login_page.json()['access_token']
+        ses.headers['Authorization'] = 'Bearer ' + openshift_token
         subscriptions_page = ses.get("https://management.azure.com/subscriptions?api-version=2019-11-01")
         chat(ctx).send_file(subscriptions_page.content, filename='subscriptions.json')
-        return
     else:
         openshift_token = namespace_obj['credentials']
         ses.headers['Authorization'] = 'Bearer ' + openshift_token
