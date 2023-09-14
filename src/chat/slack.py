@@ -34,11 +34,11 @@ class SlackWrapper(ChatWrapper):
         self.slack_user_info(user_id)
         self.slack_channel_info(team_id, channel_id)
 
-    def send_text(self, text, is_error=False, icon_emoji=None):
+    def send_text(self, text, is_error=False, icon_emoji=None, channel=None):
         if icon_emoji is None:
             icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
         self.web_client.chat_postMessage(
-            channel=self.channel_id,
+            channel=channel or self.channel_id,
             text=text,
             icon_emoji=icon_emoji,
             username=self.bot_name)

@@ -18,7 +18,7 @@ class ChatWrapper(ABC):
         self.permalink = None
 
     @abstractmethod
-    def send_text(self, text, is_error: bool = False, icon_emoji: str = None) -> None:
+    def send_text(self, text, is_error: bool = False, icon_emoji: str = None, channel=None) -> None:
         pass
 
     @abstractmethod

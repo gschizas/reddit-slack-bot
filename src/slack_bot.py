@@ -179,6 +179,11 @@ def handle_line(text):
         if 'DEBUG' in os.environ:
             exception_full_text = ''.join(traceback.format_exception(*result.exc_info))
             error_text = f"```\n:::Error*:::\n{exception_full_text}```\n"
+        elif 'PERSONAL_DEBUG' in os.environ:
+            error_text = f"```\n:::Error:::\n{result.exception}```\n"
+            exception_full_text = ''.join(traceback.format_exception(*result.exc_info))
+            full_error_text = f"```\n:::Error*:::\n{exception_full_text}```\n"
+            chat_obj.send_text(full_error_text, is_error=True, channel=os.environ['PERSONAL_DEBUG'])
         else:
             error_text = f"```\n:::Error:::\n{result.exception}```\n"
         chat_obj.send_text(error_text, is_error=True)
