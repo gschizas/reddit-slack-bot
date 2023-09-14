@@ -115,6 +115,7 @@ def set_mock(ctx, namespace: str, mock_status: str):
 
     for microservice_info, status in statuses.items():
         microservice, env_variable_value = _get_environment_values(env_vars, vartemplates, microservice_info, status)
+        result_text += f"Setting {prefix+microservice} to {env_variable_value}...\n"
         environment_set_args = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
         if site == 'azure':
             environment_set_args.extend(['-n', project_name])
