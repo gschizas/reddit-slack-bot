@@ -7,12 +7,12 @@ import os
 import random
 import re
 import subprocess
-import unicodedata
 
 import click
 import humanfriendly
 import psutil
 import requests
+import unicodedata
 
 from commands import gyrobot, DefaultCommandGroup, chat, logger
 from state_file import state_file
@@ -427,6 +427,7 @@ def weather(ctx, place):
         file_data = weather_page.content
         title = place_full
     chat(ctx).send_file(file_data, title=title, filetype='png')
+
 
 @gyrobot.command('youtube_info')
 @click.argument('url')
