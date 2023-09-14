@@ -48,7 +48,7 @@ def pause_deployment(ctx: click.Context, namespace: str):
     for one_deployment in deployments:
         result.append(change_deployment_pause_state(ctx, namespace, one_deployment['Name'], True))
     result_markdown = _make_deployments_table(result)
-    chat(ctx).send_file(result_markdown.encode(), filename='deployments.md')
+    chat(ctx).send_table(title='deployments.md', table=result_markdown)
     chat(ctx).send_file(json.dumps(result).encode(), filename='deployments.json')
 
 
