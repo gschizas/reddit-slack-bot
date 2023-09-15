@@ -26,8 +26,8 @@ def wrap_text(data):
             namespace = token.get('kubernetes.io/serviceaccount/namespace')
             if secret_name and account_name and namespace:
                 result.comment = f" # {account_name}@{namespace} ({secret_name})"
-        except jwt.exceptions.DecodeError:
-            pass
+        except jwt.exceptions.DecodeError as e:
+            result.comment = f" # {e!r}"
         return result
     elif type(data) in (dict, comments.CommentedMap):
         for x in data:
