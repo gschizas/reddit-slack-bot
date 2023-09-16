@@ -118,15 +118,16 @@ def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_a
         values_before = {}
         values_after = {}
         for c in result_list:
-            if 'propertySources' not in env_before or 'propertySources' not in env_after:
+            property_names = ('bootstrapProperties', 'propertySources')
+            if not any([p in env_before for p in property_names]) or not any([p in env_after for p in property_names]):
                 chat(ctx).send_text("Could not find property sources in environment", is_error=True)
                 chat(ctx).send_file(pod_env_before_raw.content, filename='EnvBefore.json', filetype='json')
                 chat(ctx).send_file(pod_env_after_raw.content, filename='EnvAfter.json', filetype='json')
                 return []
-            for ps in env_before['propertySources']:
+            for ps in env_before.get('propertySources', env_before.get('bootstrapProperties', [])):
                 if c in ps['properties']:
                     values_before[c] = ps['properties'][c]
-            for ps in env_after['propertySources']:
+            for ps in env_after.get('propertySources', env_after.get('bootstrapProperties', [])):
                 if c in ps['properties']:
                     values_after[c] = ps['properties'][c]
         return [{
