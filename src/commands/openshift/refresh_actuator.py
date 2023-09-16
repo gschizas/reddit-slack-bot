@@ -41,7 +41,7 @@ def refresh_actuator(ctx, namespace, deployments):
             'grant_type': 'client_credentials',
             'client_info': 1,
             'client_secret': service_principal_key,
-            'scope': 'https://management.core.windows.net//.default'
+            'scope': 'https://management.core.windows.net/.default'
         })
         openshift_token = login_page.json()['access_token']
         ses.headers['Authorization'] = 'Bearer ' + openshift_token
