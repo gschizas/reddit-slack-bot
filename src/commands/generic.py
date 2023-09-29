@@ -7,12 +7,12 @@ import os
 import random
 import re
 import subprocess
-import unicodedata
 
 import click
 import humanfriendly
 import psutil
 import requests
+import unicodedata
 
 from commands import gyrobot, DefaultCommandGroup, chat, logger
 from state_file import state_file
@@ -428,6 +428,7 @@ def weather(ctx, place):
         title = place_full
     chat(ctx).send_file(file_data, title=title, filetype='png')
 
+
 @gyrobot.command('youtube_info')
 @click.argument('url')
 @click.pass_context
@@ -450,3 +451,16 @@ def unicode(ctx, text):
     for char in text:
         final_text += f"U+{ord(char):06x} {char} {unicodedata.name(char)}\n"
     chat(ctx).send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode', filetype='txt')
+
+
+@gyrobot.command('version')
+@click.pass_context
+def version(ctx):
+    """Display version"""
+    git_version_command = [
+        'git',
+        'describe',
+        '--all',
+        '--long']
+    version_text = subprocess.check_output(git_version_command).decode()
+    chat(ctx).send_text(f"Version: {version_text}")
