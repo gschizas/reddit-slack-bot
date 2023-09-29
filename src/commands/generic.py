@@ -423,7 +423,7 @@ def weather(ctx, place):
         with open('img/lava.png', 'rb') as f:
             file_data = f.read()
     else:
-        weather_url = os.environ.get('KUDOS_DATABASE_URL', 'http://wttr.in/')
+        weather_url = os.environ.get('WEATHER_URL', 'http://wttr.in/')
         weather_page = requests.get(weather_url + place_full + '_p0.png?m')
         file_data = weather_page.content
         title = place_full
