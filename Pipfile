@@ -26,6 +26,8 @@ humanfriendly = "*"
 click = "*"
 psycopg = {extras = ["binary"], version = "*"}
 pyjwt = {extras = ["crypto"], version = "*"}
+pyte = "*"
+pillow = "*"
 
 [dev-packages]
 
