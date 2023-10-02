@@ -332,7 +332,7 @@ def stocks(ctx, stock_name):
             },
             "accessory": {
                 "type": "image",
-                "image_url": stock.info['logo_url'],
+                "image_url": stock.info.get('logo_url'),
                 "alt_text": stock.info['longName']
             },
             "fields": [
