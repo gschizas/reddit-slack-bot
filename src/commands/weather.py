@@ -2,9 +2,7 @@ import io
 import os
 
 import click
-import pyte.screens
 import requests
-from PIL import Image, ImageFont, ImageDraw
 
 from commands import gyrobot, chat
 from state_file import state_file
@@ -22,6 +20,8 @@ def render_ansi(text, options=None):
 
     Return: file content
     """
+    import pyte.screens
+    from PIL import Image, ImageFont, ImageDraw
 
     def _color_mapping(color):
         """Convert pyte color to PIL color
