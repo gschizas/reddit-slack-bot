@@ -72,8 +72,7 @@ def mock_default(ctx: click.core.Context, namespace: str, mock_status: OpenShift
 @check_security
 def set_mock(ctx, namespace: str, mock_status: str):
     """Switch openshift mock status on environment"""
-    mock_config = ctx.obj['config']
-    env_vars = mock_config['env_vars']
+    env_vars = ctx.obj['config']['env_vars']
     config_env = env_config(ctx, namespace)
     valid_mock_statuses = [k.upper() for k in config_env['status'].keys()]
     mock_status = mock_status.upper()
