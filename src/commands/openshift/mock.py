@@ -87,7 +87,9 @@ def set_mock(ctx, namespace: str, mock_status: str):
     prefix = config_env['prefix']
     project_name = _get_project_name(config_env, namespace)
 
-    if site == 'azure':
+    is_azure = site == 'azure'
+
+    if is_azure:
         result_text += azure_login(
             ctx,
             config_env['credentials']['servicePrincipalId'],
@@ -117,14 +119,14 @@ def set_mock(ctx, namespace: str, mock_status: str):
         microservice, env_variable_value = _get_environment_values(env_vars, vartemplates, microservice_info, status)
         result_text += f"Setting {prefix+microservice} to {env_variable_value}...\n"
         environment_set_args = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
-        if site == 'azure':
+        if is_azure:
             environment_set_args.extend(['-n', project_name])
         environment_set_cmd = subprocess.run(environment_set_args, capture_output=True)
         if environment_set_cmd.returncode:
             result_text += environment_set_cmd.stderr.decode() + '\n\n'
         result_text += environment_set_cmd.stdout.decode() + '\n\n'
 
-    if site != 'azure':
+    if not is_azure:
         logout_command = ['oc', 'logout']
         result_text += subprocess.check_output(logout_command).decode() + '\n\n'
         result_text = re.sub('\n{2,}', '\n', result_text)
