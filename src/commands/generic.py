@@ -400,7 +400,8 @@ def youtube_info(ctx, url):
     logger(ctx).info(url)
     youtube_data = requests.get('https://youtube.com/oembed', params={'url': url, 'format': 'json'})
     logger(ctx).debug(youtube_data.text)
-    chat(ctx).send_file(youtube_data.content, title=youtube_data.json().get('title', '(no title)'), filetype='json')
+    actual_data = json.dumps(json.loads(youtube_data.content), ensure_ascii=False, indent=4).encode()
+    chat(ctx).send_file(actual_data, title=youtube_data.json().get('title', '(no title)'), filetype='json')
 
 
 @gyrobot.command('unicode')
