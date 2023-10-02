@@ -81,14 +81,7 @@ def set_mock(ctx, namespace: str, mock_status: str):
                              f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
         return
 
-    result_text = ""
-    site = config_env['site']
-    prefix = config_env['prefix']
-    project_name = _get_project_name(config_env, namespace)
-
-    is_azure = site == 'azure'
-
-    result_text, should_exit = _do_login(ctx, config_env, is_azure, project_name, result_text, site)
+    is_azure, prefix, project_name, result_text, should_exit = _do_login(ctx, config_env, namespace)
     if should_exit:
         return
 
@@ -101,7 +94,7 @@ def set_mock(ctx, namespace: str, mock_status: str):
 
     for microservice_info, status in statuses.items():
         microservice, env_variable_value = _get_environment_values(env_vars, vartemplates, microservice_info, status)
-        result_text += f"Setting {prefix+microservice} to {env_variable_value}...\n"
+        result_text += f"Setting {prefix + microservice} to {env_variable_value}...\n"
         environment_set_args = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
         if is_azure:
             environment_set_args.extend(['-n', project_name])
@@ -116,15 +109,12 @@ def set_mock(ctx, namespace: str, mock_status: str):
     chat(ctx).send_file(result_text.encode(), filename='mock.txt')
 
 
-def _do_logout(is_azure):
-    if not is_azure:
-        logout_command = ['oc', 'logout']
-        result_text = subprocess.check_output(logout_command).decode() + '\n\n'
-        result_text = re.sub('\n{2,}', '\n', result_text)
-    return result_text
-
-
-def _do_login(ctx, config_env, is_azure, project_name, result_text, site):
+def _do_login(ctx, config_env, namespace):
+    result_text = ""
+    site = config_env['site']
+    prefix = config_env['prefix']
+    project_name = _get_project_name(config_env, namespace)
+    is_azure = site == 'azure'
     should_exit = False
     if is_azure:
         result_text += azure_login(
@@ -145,7 +135,15 @@ def _do_login(ctx, config_env, is_azure, project_name, result_text, site):
             result_text += login_result + '\n' * 3
             change_project_command = ['oc', 'project', project_name]
             result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
-    return result_text, should_exit
+    return is_azure, prefix, project_name, result_text, should_exit
+
+
+def _do_logout(is_azure):
+    if not is_azure:
+        logout_command = ['oc', 'logout']
+        result_text = subprocess.check_output(logout_command).decode() + '\n\n'
+        result_text = re.sub('\n{2,}', '\n', result_text)
+    return result_text
 
 
 def _check_recursive(ctx, vartemplates):
@@ -176,17 +174,18 @@ def _get_environment_values(env_vars, vartemplates, microservice_info, status):
 def mock_check(ctx, namespace):
     """View current status of environment"""
     config_env = env_config(ctx, namespace)
-    oc_token = config_env['credentials']
-    site = config_env['site']
-    result_text = subprocess.check_output(['oc', 'login', site, f'--token={oc_token}']).decode() + '\n' * 3
-    prefix = config_env['prefix']
-    project_name = _get_project_name(config_env, namespace)
-    result_text += subprocess.check_output(['oc', 'project', project_name]).decode() + '\n' * 3
+
+    is_azure, prefix, _, result_text, should_exit = _do_login(ctx, config_env, namespace)
+    if should_exit:
+        return
+
     first_status = list(config_env['status'].keys())[0]
     microservices = list(config_env['status'][first_status].keys())
     for microservice in microservices:
         env_var_list = subprocess.check_output(['oc', 'set', 'env', prefix + microservice, '--list']).decode()
         env_var_list = _masked_oc_password(env_var_list)
         result_text += env_var_list + '\n\n'
-    result_text += subprocess.check_output(['oc', 'logout']).decode() + '\n\n'
+
+    result_text += _do_logout(is_azure)
+
     chat(ctx).send_file(result_text.encode(), title='OpenShift Data', filename='openshift-data.txt')
