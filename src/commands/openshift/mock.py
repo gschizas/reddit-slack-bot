@@ -89,24 +89,9 @@ def set_mock(ctx, namespace: str, mock_status: str):
 
     is_azure = site == 'azure'
 
-    if is_azure:
-        result_text += azure_login(
-            ctx,
-            config_env['credentials']['servicePrincipalId'],
-            config_env['credentials']['servicePrincipalKey'],
-            config_env['credentials']['tenantId'],
-            config_env['azure_resource_group'],
-            config_env['azure_cluster_name'])
-    else:
-        oc_token = config_env['credentials']
-        login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
-        login_result = login_cmd.stderr.decode().strip()
-        if login_cmd.returncode != 0:
-            chat(ctx).send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
-            return
-        result_text += login_result + '\n' * 3
-        change_project_command = ['oc', 'project', project_name]
-        result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
+    result_text, should_exit = _do_login(ctx, config_env, is_azure, project_name, result_text, site)
+    if should_exit:
+        return
 
     statuses = config_env['status'][mock_status]
     vartemplates = config_env.get('vartemplate', {})
@@ -126,13 +111,42 @@ def set_mock(ctx, namespace: str, mock_status: str):
             result_text += environment_set_cmd.stderr.decode() + '\n\n'
         result_text += environment_set_cmd.stdout.decode() + '\n\n'
 
-    if not is_azure:
-        logout_command = ['oc', 'logout']
-        result_text += subprocess.check_output(logout_command).decode() + '\n\n'
-        result_text = re.sub('\n{2,}', '\n', result_text)
+    result_text += _do_logout(is_azure)
     # chat(ctx).send_text('```' + result_text + '```')
 
     chat(ctx).send_file(result_text.encode(), filename='mock.txt')
+
+
+def _do_logout(is_azure):
+    if not is_azure:
+        logout_command = ['oc', 'logout']
+        result_text = subprocess.check_output(logout_command).decode() + '\n\n'
+        result_text = re.sub('\n{2,}', '\n', result_text)
+    return result_text
+
+
+def _do_login(ctx, config_env, is_azure, project_name, result_text, site):
+    should_exit = False
+    if is_azure:
+        result_text += azure_login(
+            ctx,
+            config_env['credentials']['servicePrincipalId'],
+            config_env['credentials']['servicePrincipalKey'],
+            config_env['credentials']['tenantId'],
+            config_env['azure_resource_group'],
+            config_env['azure_cluster_name'])
+    else:
+        oc_token = config_env['credentials']
+        login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
+        login_result = login_cmd.stderr.decode().strip()
+        if login_cmd.returncode != 0:
+            chat(ctx).send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
+            should_exit = True
+        else:
+            result_text += login_result + '\n' * 3
+            change_project_command = ['oc', 'project', project_name]
+            result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
+    return result_text, should_exit
 
 
 def _check_recursive(ctx, vartemplates):
