@@ -50,11 +50,6 @@ def refresh_actuator(ctx, namespace, deployments):
     else:
         openshift_token = namespace_obj['credentials']
         ses.headers['Authorization'] = 'Bearer ' + openshift_token
-
-    for deployment in deployments:
-        all_pods = _get_pods(ctx, namespace, server_url, ses, deployment)
-        if not all_pods: return
-
         login_cmd = subprocess.run(
             ['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'],
             capture_output=True)
@@ -62,6 +57,11 @@ def refresh_actuator(ctx, namespace, deployments):
             stderr_output = login_cmd.stderr.decode().strip()
             chat(ctx).send_text(f"Error while logging in:\n```{stderr_output}```", is_error=True)
             return
+
+    for deployment in deployments:
+        all_pods = _get_pods(ctx, namespace, server_url, ses, deployment)
+        if not all_pods: return
+
         pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
         if len(pods_to_refresh) == 0:
             chat(ctx).send_text(f"Couldn't find any pods on {namespace} to refresh for {deployment}", is_error=True)
