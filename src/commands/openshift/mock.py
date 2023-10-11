@@ -95,9 +95,7 @@ def set_mock(ctx, namespace: str, mock_status: str):
     for microservice_info, status in statuses.items():
         microservice, env_variable_value = _get_environment_values(env_vars, vartemplates, microservice_info, status)
         result_text += f"Setting {prefix + microservice} to {env_variable_value}...\n"
-        environment_set_args = ['oc', 'set', 'env', prefix + microservice, env_variable_value]
-        if is_azure:
-            environment_set_args.extend(['-n', project_name])
+        environment_set_args = ['oc', 'set', 'env', '-n', project_name,  prefix + microservice, env_variable_value]
         environment_set_cmd = subprocess.run(environment_set_args, capture_output=True)
         if environment_set_cmd.returncode:
             result_text += environment_set_cmd.stderr.decode() + '\n\n'
@@ -131,10 +129,6 @@ def _do_login(ctx, config_env, namespace):
         if login_cmd.returncode != 0:
             chat(ctx).send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
             should_exit = True
-        else:
-            result_text += login_result + '\n' * 3
-            change_project_command = ['oc', 'project', project_name]
-            result_text += subprocess.check_output(change_project_command).decode() + '\n' * 3
     return is_azure, prefix, project_name, result_text, should_exit
 
 
@@ -175,14 +169,15 @@ def mock_check(ctx, namespace):
     """View current status of environment"""
     config_env = env_config(ctx, namespace)
 
-    is_azure, prefix, _, result_text, should_exit = _do_login(ctx, config_env, namespace)
+    is_azure, prefix, project_name, result_text, should_exit = _do_login(ctx, config_env, namespace)
     if should_exit:
         return
 
     first_status = list(config_env['status'].keys())[0]
     microservices = list(config_env['status'][first_status].keys())
     for microservice in microservices:
-        env_var_list = subprocess.check_output(['oc', 'set', 'env', prefix + microservice, '--list']).decode()
+        environment_set_args = ['oc', 'set', 'env', '-n', project_name, prefix + microservice, '--list']
+        env_var_list = subprocess.check_output(environment_set_args).decode()
         env_var_list = _masked_oc_password(env_var_list)
         result_text += env_var_list + '\n\n'
 
