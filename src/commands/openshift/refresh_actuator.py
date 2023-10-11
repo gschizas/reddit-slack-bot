@@ -1,12 +1,18 @@
+import base64
+import io
 import json
 import subprocess
 import time
 
 import click
 import requests
+from ruamel.yaml import YAML
 
 from commands import gyrobot, chat, logger
 from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security, env_config
+
+KUBERNETES_SERVICE_AAD_SERVER_GUID = '6dae42f8-4368-4678-94ff-3960e28e3630'
+yaml = YAML()
 
 
 def _actuator_config():
@@ -30,26 +36,56 @@ def actuator(ctx: click.Context):
 def refresh_actuator(ctx, namespace, deployments):
     namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
-    ses = requests.session()
+    ses_main = requests.session()
     if server_url == 'azure':
         tenant_id = namespace_obj['credentials']['tenantId']
         service_principal_id = namespace_obj['credentials']['servicePrincipalId']
         service_principal_key = namespace_obj['credentials']['servicePrincipalKey']
+        resource_group = namespace_obj['azure_resource_group']
+        cluster_name = namespace_obj['azure_cluster_name']
+        project_name = namespace_obj['project_name']
 
-        login_page = ses.post(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', data={
+        login_page = ses_main.post(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', data={
             'client_id': service_principal_id,
             'grant_type': 'client_credentials',
             'client_info': 1,
             'client_secret': service_principal_key,
             'scope': 'https://management.core.windows.net/.default'
         })
-        openshift_token = login_page.json()['access_token']
-        ses.headers['Authorization'] = 'Bearer ' + openshift_token
-        subscriptions_page = ses.get("https://management.azure.com/subscriptions?api-version=2019-11-01")
+        azure_token = login_page.json()['access_token']
+        ses_main.headers['Authorization'] = 'Bearer ' + azure_token
+        subscriptions_page = ses_main.get("https://management.azure.com/subscriptions?api-version=2019-11-01")
+        subscription_id = subscriptions_page.json()['value'][0]['subscriptionId']
+
         chat(ctx).send_file(subscriptions_page.content, filename='subscriptions.json')
+
+        aks_credentials_page = ses_main.post(
+            (f"https://management.azure.com/subscriptions/{subscription_id}/resourceGroups"
+             f"/{resource_group}/providers/Microsoft.ContainerService/managedClusters"
+             f"/{cluster_name}/listClusterUserCredential?api-version=2022-03-01"))
+        aks_credentials = aks_credentials_page.json()
+        aks_value_raw = list(filter(lambda x: x['name'] == 'clusterUser', aks_credentials['kubeconfigs']))[0]['value']
+        with io.BytesIO(base64.b64decode(aks_value_raw)) as f:
+            aks_value = yaml.load(f)
+        cluster_url = list(filter(lambda x: x['name'] == cluster_name, aks_value['clusters']))[0]['cluster']['server']
+        server_url = cluster_url + '/'
+
+        kubernetes_token_raw = ses_main.post(
+            f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token',
+            data={
+                'client_id': service_principal_id,
+                'grant_type': 'client_credentials',
+                'client_info': 1,
+                'client_secret': service_principal_key,
+                'scope': f'{KUBERNETES_SERVICE_AAD_SERVER_GUID}/.default'
+            })
+        kubernetes_token = kubernetes_token_raw.json()
+
+        ses_k8s = requests.session()
+        ses_k8s.headers['Authorization'] = 'Bearer ' + kubernetes_token['access_token']
     else:
         openshift_token = namespace_obj['credentials']
-        ses.headers['Authorization'] = 'Bearer ' + openshift_token
+        ses_main.headers['Authorization'] = 'Bearer ' + openshift_token
         login_cmd = subprocess.run(
             ['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'],
             capture_output=True)
@@ -57,9 +93,11 @@ def refresh_actuator(ctx, namespace, deployments):
             stderr_output = login_cmd.stderr.decode().strip()
             chat(ctx).send_text(f"Error while logging in:\n```{stderr_output}```", is_error=True)
             return
+        ses_k8s = ses_main
+        project_name = namespace
 
     for deployment in deployments:
-        all_pods = _get_pods(ctx, namespace, server_url, ses, deployment)
+        all_pods = _get_pods(ctx, project_name, server_url, ses_k8s, deployment)
         if not all_pods: return
 
         pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
