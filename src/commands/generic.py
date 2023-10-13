@@ -208,9 +208,13 @@ def fortune(ctx):
 @click.pass_context
 def joke(ctx):
     """Tell a joke"""
-    joke_page = requests.get('https://icanhazdadjoke.com/', headers={
-        'Accept': 'text/plain',
-        'User-Agent': 'Slack Bot for Reddit (https://github.com/gschizas/slack-bot)'})
+    proxies = {'http': os.environ['ALT_PROXY'], 'https': os.environ['ALT_PROXY']} if 'ALT_PROXY' in os.environ else {}
+    joke_page = requests.get(
+        'https://icanhazdadjoke.com/',
+        headers={
+            'Accept': 'text/plain',
+            'User-Agent': 'Slack Bot for Reddit (https://github.com/gschizas/slack-bot)'},
+        proxies=proxies)
     joke_text = joke_page.content
     chat(ctx).send_text(joke_text.decode())
 
