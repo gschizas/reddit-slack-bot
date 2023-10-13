@@ -178,16 +178,18 @@ def handle_line(text):
 
     if result.exception:
         if 'DEBUG' in os.environ:
-            exception_full_text = ''.join(traceback.format_exception(*result.exc_info))
-            error_text = f"```\n:::Error*:::\n{exception_full_text}```\n"
+            error_text = ''.join(traceback.format_exception(*result.exc_info))
         elif 'PERSONAL_DEBUG' in os.environ:
-            error_text = f"```\n:::Error:::\n{result.exception}```\n"
+            error_text = str(result.exception)
             exception_full_text = ''.join(traceback.format_exception(*result.exc_info))
-            full_error_text = f"```\n:::Error*:::\n{exception_full_text}```\n"
-            chat_obj.send_text(full_error_text, is_error=True, channel=os.environ['PERSONAL_DEBUG'])
+            chat_obj.send_file(filename='error.txt', file_data=exception_full_text.encode(), filetype='text/plain',
+                               channel=os.environ['PERSONAL_DEBUG'])
         else:
-            error_text = f"```\n:::Error:::\n{result.exception}```\n"
-        chat_obj.send_text(error_text, is_error=True)
+            error_text = str(result.exception)
+        if len(error_text) < 2 ** 11:
+            chat_obj.send_text(f"```\n:::Error:::{error_text}```\n", is_error=True)
+        else:
+            chat_obj.send_file(filename='error.txt', file_data=error_text.encode(), filetype='text/plain')
 
     if result.output != '':
         chat_obj.send_text('```\n' + result.output.strip() + '```\n')

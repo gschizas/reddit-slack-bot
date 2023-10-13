@@ -64,10 +64,10 @@ class SlackWrapper(ChatWrapper):
             icon_emoji=icon_emoji,
             username=self.bot_name)
 
-    def send_file(self, file_data, title=None, filename=None, filetype=None):
+    def send_file(self, file_data, title=None, filename=None, filetype=None, channel=None):
         try:
             self.web_client.files_upload(
-                channels=self.channel_id,
+                channels=channel or self.channel_id,
                 icon_emoji=':robot_face:',
                 username=self.bot_name,
                 file=file_data,
