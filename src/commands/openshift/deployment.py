@@ -1,9 +1,7 @@
-import io
 import json
 from typing import Dict, List
 
 import click
-import pandas as pd
 
 from commands import gyrobot, chat
 from commands.openshift.api import get_deployments, change_deployment_pause_state
@@ -28,14 +26,9 @@ def deployment(ctx: click.Context):
 @check_security
 def list_deployments(ctx: click.Context, namespace: str, excel: bool):
     deployments = get_deployments(ctx, namespace)
-    if excel:
-        deployments_df = pd.DataFrame(deployments)
-        with io.BytesIO() as deployments_output:
-            deployments_df.reset_index(drop=True).to_excel(deployments_output)
-            chat(ctx).send_file(deployments_output.getvalue(), filename='deployments.xlsx')
-    else:
+    if not excel:
         deployments = [{k: v for k, v in dep.items() if k not in REMOVE_DEPLOYMENT_KEYS} for dep in deployments]
-        chat(ctx).send_table('deployments', deployments)
+    chat(ctx).send_table(title='deployments', table=deployments, send_as_excel=excel)
 
 
 @deployment.command('pause')

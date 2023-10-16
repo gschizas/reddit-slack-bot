@@ -1,9 +1,7 @@
-import io
 import json
 import pathlib
 
 import click
-import pandas as pd
 from ruamel.yaml import YAML
 
 from commands import gyrobot, chat
@@ -33,14 +31,9 @@ def cronjob(ctx: click.Context):
 @check_security
 def list_cronjobs(ctx: click.Context, namespace: str, excel: bool):
     cronjobs = get_cronjobs(ctx, namespace)
-    if excel:
-        cronjobs_df = pd.DataFrame(cronjobs)
-        with io.BytesIO() as cronjobs_output:
-            cronjobs_df.reset_index(drop=True).to_excel(cronjobs_output)
-            chat(ctx).send_file(cronjobs_output.getvalue(), filename='cronjobs.xlsx')
-    else:
+    if not excel:
         cronjobs = [{k: v for k, v in cronjob.items() if k not in REMOVE_CRONJOB_KEYS} for cronjob in cronjobs]
-        chat(ctx).send_table(title='cronjobs', table=cronjobs)
+    chat(ctx).send_table(title='cronjobs', table=cronjobs, send_as_excel=excel)
 
 
 @cronjob.command('pause')
