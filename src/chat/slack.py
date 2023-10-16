@@ -43,8 +43,8 @@ class SlackWrapper(ChatWrapper):
             icon_emoji=icon_emoji,
             username=self.bot_name)
 
-    def send_table(self, title: str, table: List[Dict]) -> None:
-        if os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
+    def send_table(self, title: str, table: List[Dict], send_as_excel: bool = False) -> None:
+        if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
             with io.BytesIO() as cronjobs_output:
                 table_df = pd.DataFrame(table)
                 table_df.reset_index(drop=True).to_excel(cronjobs_output)

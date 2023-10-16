@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
 
+
 class ChatWrapper(ABC):
     message_handler = None
 
@@ -22,7 +23,7 @@ class ChatWrapper(ABC):
         pass
 
     @abstractmethod
-    def send_table(self, title: str, table: List[Dict]) -> None:
+    def send_table(self, title: str, table: List[Dict], send_as_excel: bool = False) -> None:
         pass
 
     @abstractmethod
