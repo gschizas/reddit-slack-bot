@@ -311,6 +311,7 @@ def roll_statline(ctx, spec=None):
 
 MID_DOT: str = '\xb7'
 
+EMPTY_IMAGE = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
 
 @gyrobot.command('stocks', aliases=['stock', 'stonk'])
 @click.argument("stock_name")
@@ -336,7 +337,7 @@ def stocks(ctx, stock_name):
             },
             "accessory": {
                 "type": "image",
-                "image_url": stock.info.get('logo_url'),
+                "image_url": stock.info.get('logo_url', EMPTY_IMAGE),
                 "alt_text": stock.info['longName']
             },
             "fields": [
