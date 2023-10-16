@@ -25,7 +25,7 @@ def _actuator_config():
 def actuator(ctx: click.Context):
     ctx.ensure_object(dict)
     ctx.obj['config'] = _actuator_config()
-    ctx.obj['security_text'] = {'refresh': 'refresh actuator'}
+    ctx.obj['security_text'] = {'refresh': 'refresh actuator', 'view': 'view actuator variables'}
 
 
 @actuator.command('refresh')
@@ -34,6 +34,29 @@ def actuator(ctx: click.Context):
 @click.pass_context
 @check_security
 def refresh_actuator(ctx: click.Context, namespace: str, deployments: list[str]):
+    project_name, server_url, ses_k8s = _connect_openshift(ctx, namespace)
+
+    for deployment in deployments:
+        all_pods = _get_pods(ctx, project_name, server_url, ses_k8s, deployment)
+        if not all_pods: continue
+
+        pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
+        if len(pods_to_refresh) == 0:
+            chat(ctx).send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
+        for pod_to_refresh in pods_to_refresh:
+            port_fwd = _start_port_forward(ctx, pod_to_refresh)
+            try:
+                empty_proxies = {'http': None, 'https': None}
+                pod_env_before = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
+                refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies)
+                pod_env_after = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
+                _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
+            except requests.exceptions.ConnectionError as ex:
+                chat(ctx).send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
+            port_fwd.terminate()
+
+
+def _connect_openshift(ctx, namespace):
     namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
     ses_main = requests.session()
@@ -91,27 +114,36 @@ def refresh_actuator(ctx: click.Context, namespace: str, deployments: list[str])
             capture_output=True)
         if login_cmd.returncode != 0:
             stderr_output = login_cmd.stderr.decode().strip()
-            chat(ctx).send_text(f"Error while logging in:\n```{stderr_output}```", is_error=True)
-            return
+            error_text = f"Error while logging in:\n```{stderr_output}```"
+            chat(ctx).send_text(error_text, is_error=True)
+            raise RuntimeError("Error while logging in", stderr_output)
         ses_k8s = ses_main
         project_name = namespace
+    return project_name, server_url, ses_k8s
+
+
+@actuator.command('view')
+@click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
+@click.argument('deployments', type=str, nargs=-1)
+@click.option('-x', '--excel', is_flag=True, default=False)
+@click.pass_context
+@check_security
+def view_actuator(ctx: click.Context, namespace: str, deployments: list[str], excel: bool):
+    project_name, server_url, ses_k8s = _connect_openshift(ctx, namespace)
 
     for deployment in deployments:
         all_pods = _get_pods(ctx, project_name, server_url, ses_k8s, deployment)
-        if not all_pods: return
+        if not all_pods: continue
 
         pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
         if len(pods_to_refresh) == 0:
             chat(ctx).send_text(f"Couldn't find any pods on {namespace} to refresh for {deployment}", is_error=True)
-            return
         for pod_to_refresh in pods_to_refresh:
             port_fwd = _start_port_forward(ctx, pod_to_refresh)
             try:
                 empty_proxies = {'http': None, 'https': None}
-                pod_env_before = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
-                refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies)
-                pod_env_after = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
-                _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
+                pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
+                _send_env_results(ctx, pod_to_refresh, pod_env, excel)
             except requests.exceptions.ConnectionError as ex:
                 chat(ctx).send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
             port_fwd.terminate()
@@ -149,8 +181,11 @@ def _get_pods(ctx: click.Context, namespace: str, server_url: str, ses: requests
     return all_pods
 
 
-def _send_results(ctx: click.Context, pod_to_refresh: str, pod_env_before: dict, refresh_result: dict,
-                  pod_env_after: dict):
+def _send_results(ctx: click.Context,
+                  pod_to_refresh: str,
+                  pod_env_before: requests.Response,
+                  refresh_result: requests.Response,
+                  pod_env_after: requests.Response):
     def _environment_changes_table(pod_env_before_raw, pod_env_after_raw, result_list):
         env_before = json.loads(pod_env_before_raw.content)
         env_after = json.loads(pod_env_after_raw.content)
@@ -197,3 +232,26 @@ def _send_results(ctx: click.Context, pod_to_refresh: str, pod_env_before: dict,
         chat(ctx).send_file(
             file_data=pod_env_after.content,
             filename=f'pod_env_after_raw-{pod_to_refresh}.json')
+
+
+def _send_env_results(ctx, pod_to_refresh, pod_env, excel: bool):
+    def _environment_table(pod_env_raw):
+        env_current = json.loads(pod_env_raw.content)
+        property_names = ('bootstrapProperties', 'propertySources')
+        if not any([p in env_current for p in property_names]):
+            chat(ctx).send_text("Could not find property sources in environment", is_error=True)
+            chat(ctx).send_file(pod_env_raw.content, filename='EnvCurrent.json', filetype='json')
+            return []
+        else:
+            all_values = []
+            for ps in env_current.get('propertySources', env_current.get('bootstrapProperties', [])):
+                for prop_name, prop_value in sorted(ps['properties'].items()):
+                    all_values.append({
+                        'sourceName': ps['name'],
+                        'name': prop_name,
+                        'value': prop_value['value'],
+                        'origin': prop_value.get('origin')})
+            return all_values
+
+    if full_env := _environment_table(pod_env):
+        chat(ctx).send_table(f"Changes for pod {pod_to_refresh}", full_env, send_as_excel=excel)
