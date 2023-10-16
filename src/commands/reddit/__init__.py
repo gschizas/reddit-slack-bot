@@ -39,7 +39,6 @@ def _send_usernote(ctx, redditor_username, notes, warnings, usernote_colors, mod
         note_text = note['n']
         color = usernote_colors.get(warning, {'color': '#000000'})['color']
         warning_text = usernote_colors.get(warning, {'text': '?' + warning})['text']
-        # breakpoint()
         link_parts = note['l'].split(',')
         link_href = '???'
         if link_parts[0] == 'l':

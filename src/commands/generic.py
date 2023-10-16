@@ -313,6 +313,7 @@ MID_DOT: str = '\xb7'
 
 EMPTY_IMAGE = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
 
+
 @gyrobot.command('stocks', aliases=['stock', 'stonk'])
 @click.argument("stock_name")
 @click.pass_context
