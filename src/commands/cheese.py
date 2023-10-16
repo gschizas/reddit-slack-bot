@@ -2,7 +2,7 @@ import json
 import os
 
 import click
-import psycopg2
+import psycopg
 
 from bot_framework.yaml_wrapper import yaml
 from commands import gyrobot, chat
@@ -33,17 +33,15 @@ def _cheese_db_query(sql_cmd, cmd_vars, get_rows: bool):
     rows = None
     success = False
     database_url = os.environ['CHEESE_DATABASE_URL']
-    conn = psycopg2.connect(database_url)
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute(sql_cmd, vars=cmd_vars)
-    if get_rows:
-        descr = [col.name for col in cur.description]
-        rows = cur.fetchall()
-    else:
-        success = cur.rowcount > 0
-    cur.close()
-    conn.close()
+    with psycopg.connect(database_url) as conn:
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cur.execute(sql_cmd, vars=cmd_vars)
+            if get_rows:
+                descr = [col.name for col in cur.description]
+                rows = cur.fetchall()
+            else:
+                success = cur.rowcount > 0
     if get_rows:
         return [dict(zip(descr, row)) for row in rows]
     else:

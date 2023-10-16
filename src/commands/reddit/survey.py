@@ -5,7 +5,7 @@ import pathlib
 import tempfile
 
 import click
-import psycopg2
+import psycopg
 import xlsxwriter
 from tabulate import tabulate
 
@@ -79,13 +79,11 @@ def _survey_question(self, questions, question_id):
 
 def _survey_database_query(sql):
     database_url = os.environ['QUESTIONNAIRE_DATABASE_URL']
-    conn = psycopg2.connect(database_url)
-    cur = conn.cursor()
-    cur.execute(sql)
-    rows = cur.fetchall()
-    cols = [col.name for col in cur.description]
-    cur.close()
-    conn.close()
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql)
+            rows = cur.fetchall()
+            cols = [col.name for col in cur.description]
     return cols, rows
 
 

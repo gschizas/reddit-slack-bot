@@ -4,7 +4,7 @@ import random
 import re
 
 import click
-import psycopg2
+import psycopg
 from tabulate import tabulate
 
 from commands import gyrobot, chat, DefaultCommandGroup
@@ -118,13 +118,11 @@ def kudos_give(ctx: click.Context):
 @click.pass_context
 def kudos_view(ctx, days_to_check):
     database_url = os.environ['KUDOS_DATABASE_URL']
-    conn = psycopg2.connect(database_url)
-    cur = conn.cursor()
-    cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check})
-    rows = cur.fetchall()
-    cols = [col.name for col in cur.description]
-    cur.close()
-    conn.close()
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check})
+            rows = cur.fetchall()
+            cols = [col.name for col in cur.description]
     if len(rows) == 0:
         chat(ctx).send_text("No kudos yet!")
     else:
@@ -134,17 +132,15 @@ def kudos_view(ctx, days_to_check):
 
 def _record_kudos(ctx, sender_name, recipient_name, recipient_user_id, reason):
     database_url = os.environ['KUDOS_DATABASE_URL']
-    conn = psycopg2.connect(database_url)
-    conn.autocommit = True
-    cur = conn.cursor()
-    cmd_vars = {
-        'sender_name': sender_name, 'sender_id': chat(ctx).user_id,
-        'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
-        'team_name': chat(ctx).teams[chat(ctx).team_id]['name'], 'team_id': chat(ctx).team_id,
-        'channel_name': chat(ctx).channels[chat(ctx).team_id][chat(ctx).channel_id], 'channel_id': chat(ctx).channel_id,
-        'permalink': chat(ctx).permalink['permalink'], 'reason': reason}
-    cur.execute(SQL_KUDOS_INSERT, vars=cmd_vars)
-    success = cur.rowcount > 0
-    cur.close()
-    conn.close()
+    with psycopg.connect(database_url) as conn:
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cmd_vars = {
+                'sender_name': sender_name, 'sender_id': chat(ctx).user_id,
+                'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
+                'team_name': chat(ctx).teams[chat(ctx).team_id]['name'], 'team_id': chat(ctx).team_id,
+                'channel_name': chat(ctx).channels[chat(ctx).team_id][chat(ctx).channel_id], 'channel_id': chat(ctx).channel_id,
+                'permalink': chat(ctx).permalink['permalink'], 'reason': reason}
+            cur.execute(SQL_KUDOS_INSERT, vars=cmd_vars)
+            success = cur.rowcount > 0
     return success
