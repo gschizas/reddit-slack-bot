@@ -33,7 +33,7 @@ def actuator(ctx: click.Context):
 @click.argument('deployments', type=str, nargs=-1)
 @click.pass_context
 @check_security
-def refresh_actuator(ctx, namespace, deployments):
+def refresh_actuator(ctx: click.Context, namespace: str, deployments: list[str]):
     namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
     ses_main = requests.session()
@@ -117,7 +117,7 @@ def refresh_actuator(ctx, namespace, deployments):
             port_fwd.terminate()
 
 
-def _start_port_forward(ctx, pod_to_refresh):
+def _start_port_forward(ctx: click.Context, pod_to_refresh: str):
     port_fwd = subprocess.Popen(
         ['oc', 'port-forward', pod_to_refresh, '9999:8778'],
         stdout=subprocess.PIPE,
@@ -138,7 +138,7 @@ def _start_port_forward(ctx, pod_to_refresh):
     return port_fwd
 
 
-def _get_pods(ctx, namespace, server_url, ses, deployment):
+def _get_pods(ctx: click.Context, namespace: str, server_url: str, ses: requests.Session, deployment: str):
     all_pods_raw = ses.get(
         f"{server_url}api/v1/namespaces/{namespace.lower()}/pods",
         params={'labelSelector': f'deployment={deployment}'})
@@ -149,7 +149,8 @@ def _get_pods(ctx, namespace, server_url, ses, deployment):
     return all_pods
 
 
-def _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after):
+def _send_results(ctx: click.Context, pod_to_refresh: str, pod_env_before: dict, refresh_result: dict,
+                  pod_env_after: dict):
     def _environment_changes_table(pod_env_before_raw, pod_env_after_raw, result_list):
         env_before = json.loads(pod_env_before_raw.content)
         env_after = json.loads(pod_env_after_raw.content)
