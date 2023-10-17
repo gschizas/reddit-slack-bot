@@ -36,7 +36,7 @@ def _cheese_db_query(sql_cmd, cmd_vars, get_rows: bool):
     with psycopg.connect(database_url) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
-            cur.execute(sql_cmd, vars=cmd_vars)
+            cur.execute(sql_cmd, params=cmd_vars)
             if get_rows:
                 descr = [col.name for col in cur.description]
                 rows = cur.fetchall()

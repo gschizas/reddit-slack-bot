@@ -141,6 +141,6 @@ def _record_kudos(ctx, sender_name, recipient_name, recipient_user_id, reason):
                 'team_name': chat(ctx).teams[chat(ctx).team_id]['name'], 'team_id': chat(ctx).team_id,
                 'channel_name': chat(ctx).channels[chat(ctx).team_id][chat(ctx).channel_id], 'channel_id': chat(ctx).channel_id,
                 'permalink': chat(ctx).permalink['permalink'], 'reason': reason}
-            cur.execute(SQL_KUDOS_INSERT, vars=cmd_vars)
+            cur.execute(SQL_KUDOS_INSERT, params=cmd_vars)
             success = cur.rowcount > 0
     return success
