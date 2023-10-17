@@ -5,7 +5,6 @@ import re
 
 import click
 import psycopg
-from tabulate import tabulate
 
 from commands import gyrobot, chat, DefaultCommandGroup
 
@@ -23,7 +22,16 @@ VALUES (
    %(channel_name)s, %(channel_id)s,
    %(permalink)s, %(reason)s);
 """
+
 SQL_KUDOS_VIEW = """\
+SELECT to_user as "User", COUNT(*) as Kudos
+FROM kudos
+WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+AND channel_id = %(channel_id)s
+GROUP BY to_user
+ORDER BY 2 DESC;"""
+
+SQL_KUDOS_VIEW_ALL = """\
 SELECT to_user as "User", COUNT(*) as Kudos
 FROM kudos
 WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
@@ -100,7 +108,7 @@ def kudos_give(ctx: click.Context):
             text_to_send = f"Kudos from {sender_name} to {recipient_name}"
             give_gift = random.random()
             if reason.strip():
-                #if re.search(r':\w+:', reason):
+                # if re.search(r':\w+:', reason):
                 #    reason = '. No cheating! Only I can send gifts!'
                 #    give_gift = -1
                 text_to_send += ' ' + reason
@@ -114,20 +122,25 @@ def kudos_give(ctx: click.Context):
 
 
 @kudos.command('view')
-@click.argument('days_to_check', type=click.INT, default=36500)
+@click.argument('days_to_check', type=click.INT, default=14)
+@click.option('-a', '--all', 'check_all_channels', is_flag=True, default=False)
+@click.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False)
 @click.pass_context
-def kudos_view(ctx, days_to_check):
+def kudos_view(ctx, days_to_check, check_all_channels, send_as_excel):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
-            cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check})
+            if check_all_channels:
+                cur.execute(SQL_KUDOS_VIEW_ALL, {'days': days_to_check})
+            else:
+                cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check, 'channel_id': chat(ctx).channel_id})
             rows = cur.fetchall()
             cols = [col.name for col in cur.description]
     if len(rows) == 0:
         chat(ctx).send_text("No kudos yet!")
     else:
-        table = tabulate(rows, headers=cols, tablefmt='pipe')
-        chat(ctx).send_file(table.encode('utf8'), title="Kudos", filetype='markdown')
+        table = [dict(zip(cols, row)) for row in rows]
+        chat(ctx).send_table(title="Kudos", table=table, send_as_excel=send_as_excel)
 
 
 def _record_kudos(ctx, sender_name, recipient_name, recipient_user_id, reason):
@@ -139,7 +152,8 @@ def _record_kudos(ctx, sender_name, recipient_name, recipient_user_id, reason):
                 'sender_name': sender_name, 'sender_id': chat(ctx).user_id,
                 'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
                 'team_name': chat(ctx).teams[chat(ctx).team_id]['name'], 'team_id': chat(ctx).team_id,
-                'channel_name': chat(ctx).channels[chat(ctx).team_id][chat(ctx).channel_id], 'channel_id': chat(ctx).channel_id,
+                'channel_name': chat(ctx).channels[chat(ctx).team_id][chat(ctx).channel_id],
+                'channel_id': chat(ctx).channel_id,
                 'permalink': chat(ctx).permalink['permalink'], 'reason': reason}
             cur.execute(SQL_KUDOS_INSERT, params=cmd_vars)
             success = cur.rowcount > 0
