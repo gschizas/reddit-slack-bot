@@ -23,6 +23,9 @@ psycopg = {extras = ["binary"], version = "*"}
 pyjwt = {extras = ["crypto"], version = "*"}
 pyte = "*"
 pillow = "*"
+azure-identity = "*"
+azure-mgmt-kubernetesconfiguration = "*"
+kubernetes = "*"
 slack-sdk = "*"
 aiohttp = "*"
 
