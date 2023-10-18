@@ -5,7 +5,6 @@ verify_ssl = true
 
 [packages]
 praw = "*"
-slackclient = "*"
 "ruamel.yaml" = "*"
 requests = "*"
 tqdm = "*"
@@ -24,6 +23,8 @@ psycopg = {extras = ["binary"], version = "*"}
 pyjwt = {extras = ["crypto"], version = "*"}
 pyte = "*"
 pillow = "*"
+slack-sdk = "*"
+aiohttp = "*"
 
 [dev-packages]
 

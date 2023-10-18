@@ -3,8 +3,10 @@ import os
 from typing import List, Dict
 
 import pandas as pd
-import slack
 from tabulate import tabulate
+from slack_sdk import WebClient
+from slack_sdk.rtm import RTMClient
+from slack_sdk.errors import SlackApiError
 
 from chat.chat_wrapper import ChatWrapper
 
@@ -17,7 +19,7 @@ class SlackWrapper(ChatWrapper):
 
     def connect(self):
         slack_api_token = os.environ['SLACK_API_TOKEN']
-        self.slack_client = slack.RTMClient(
+        self.slack_client = RTMClient(
             token=slack_api_token,
             proxy=os.environ.get('HTTPS_PROXY'))
 
@@ -74,7 +76,7 @@ class SlackWrapper(ChatWrapper):
                 filename=filename,
                 title=title,
                 filetype=filetype or 'auto')
-        except slack.errors.SlackApiError as ex:
+        except SlackApiError as ex:
             self.send_text(text=f"Error while uploading {filename}:\n```{ex!r}```", is_error=True)
 
     def send_fields(self, text, fields):
@@ -126,7 +128,7 @@ class SlackWrapper(ChatWrapper):
         # slack.RTMClient.on(event='message', callback=self.handle_message)
 
     @staticmethod
-    @slack.RTMClient.run_on(event='message')
+    @RTMClient.run_on(event='message')
     def handle_message(**payload):
         SlackWrapper.message_handler(**payload)
 
