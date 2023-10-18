@@ -137,6 +137,8 @@ def _do_logout(is_azure):
         logout_command = ['oc', 'logout']
         result_text = subprocess.check_output(logout_command).decode() + '\n\n'
         result_text = re.sub('\n{2,}', '\n', result_text)
+    else:
+        result_text = ""
     return result_text
 
 
