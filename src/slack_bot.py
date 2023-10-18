@@ -231,7 +231,7 @@ def main():
     global chat_obj, logger
     global subreddit_name, subreddit, reddit_session, bot_reddit_session
     global trigger_words, shortcut_words
-    logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
+    logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'), when=os.environ.get('LOG_ROLLOVER'))
     init()
     chat_obj.start()
 
