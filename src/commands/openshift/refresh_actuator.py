@@ -150,6 +150,7 @@ def view_actuator(ctx: click.Context, namespace: str, deployments: list[str], ex
 
 
 def _start_port_forward(ctx: click.Context, pod_to_refresh: str):
+    logger(ctx).debug(f"Starting port forward for {pod_to_refresh}")
     port_fwd = subprocess.Popen(
         ['oc', 'port-forward', pod_to_refresh, '9999:8778'],
         stdout=subprocess.PIPE,
@@ -159,10 +160,13 @@ def _start_port_forward(ctx: click.Context, pod_to_refresh: str):
             if port_fwd.returncode != 0:
                 port_fwd.stderr.flush()
                 err_line = port_fwd.stderr.readline()
-                logger(ctx).debug(err_line.decode().strip())
+                logger(ctx).error(err_line.decode().strip())
             break
         out_line = port_fwd.stdout.readline()
+        err_line = port_fwd.stderr.readline()
         logger(ctx).debug(out_line.decode().strip())
+        if err_line:
+            logger(ctx).error(err_line.decode().strip())
         if out_line == b'Forwarding from 127.0.0.1:9999 -> 8778\n':
             logger(ctx).debug("Port forward Listening ok")
             break
