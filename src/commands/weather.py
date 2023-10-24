@@ -177,4 +177,4 @@ def weather(ctx, place):
             weather_page = requests.get(weather_url + place_full + '_p0.png?m')
             file_data = weather_page.content
         title = place_full
-    chat(ctx).send_file(file_data, title=title, filetype='png')
+    chat(ctx).send_file(file_data, title=title)

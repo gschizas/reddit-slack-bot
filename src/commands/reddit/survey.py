@@ -202,7 +202,7 @@ def survey(ctx):
             tmpfile.flush()
             tmpfile.seek(0, io.SEEK_SET)
             filedata = tmpfile.read()
-        chat(ctx).send_file(filedata, filename="Survey_Results.xlsx", title="Survey Results", filetype='xlsx')
+        chat(ctx).send_file(filedata, filename="Survey_Results.xlsx", title="Survey Results")
     elif result_type == 'full_table_json':
         filedata = json.dumps(result)
-        chat(ctx).send_file(filedata, filename='Survey_Results.json', title="Survey Results", filetype="json")
+        chat(ctx).send_file(filedata, filename='Survey_Results.json', title="Survey Results")

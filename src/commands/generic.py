@@ -407,7 +407,7 @@ def youtube_info(ctx, url):
     youtube_data = requests.get('https://youtube.com/oembed', params={'url': url, 'format': 'json'})
     logger(ctx).debug(youtube_data.text)
     actual_data = json.dumps(json.loads(youtube_data.content), ensure_ascii=False, indent=4).encode()
-    chat(ctx).send_file(actual_data, title=youtube_data.json().get('title', '(no title)'), filetype='json')
+    chat(ctx).send_file(actual_data, title=youtube_data.json().get('title', '(no title)'))
 
 
 @gyrobot.command('unicode')
@@ -419,7 +419,7 @@ def unicode(ctx, text):
     final_text = ''
     for char in text:
         final_text += f"U+{ord(char):06x} {char} {unicodedata.name(char)}\n"
-    chat(ctx).send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode', filetype='txt')
+    chat(ctx).send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode')
 
 
 @gyrobot.command('version')

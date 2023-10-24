@@ -205,8 +205,8 @@ def _send_results(ctx: click.Context,
             property_names = ('bootstrapProperties', 'propertySources')
             if not any([p in env_before for p in property_names]) or not any([p in env_after for p in property_names]):
                 chat(ctx).send_text("Could not find property sources in environment", is_error=True)
-                chat(ctx).send_file(pod_env_before_raw.content, filename='EnvBefore.json', filetype='json')
-                chat(ctx).send_file(pod_env_after_raw.content, filename='EnvAfter.json', filetype='json')
+                chat(ctx).send_file(pod_env_before_raw.content, filename='EnvBefore.json')
+                chat(ctx).send_file(pod_env_after_raw.content, filename='EnvAfter.json')
                 return []
             for ps in env_before.get('propertySources', env_before.get('bootstrapProperties', [])):
                 if c in ps['properties']:
@@ -250,7 +250,7 @@ def _send_env_results(ctx, pod_to_refresh, pod_env, excel: bool):
         property_names = ('bootstrapProperties', 'propertySources')
         if not any([p in env_current for p in property_names]):
             chat(ctx).send_text("Could not find property sources in environment", is_error=True)
-            chat(ctx).send_file(pod_env_raw.content, filename='EnvCurrent.json', filetype='json')
+            chat(ctx).send_file(pod_env_raw.content, filename='EnvCurrent.json')
             return []
         else:
             all_values = []

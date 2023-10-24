@@ -311,13 +311,11 @@ def archive_user(ctx, username):
         urls_to_archive.append(url)
     chat(ctx).send_file(
         file_data='\n'.join(urls_to_archive).encode(),
-        filename=f'archive-{user}-request.txt',
-        filetype='text/plain')
+        filename=f'archive-{user}-request.txt')
     final_urls = [_archive_page(url) for url in urls_to_archive]
     chat(ctx).send_file(
         file_data='\n'.join(final_urls).encode(),
-        filename=f'archive-{user}-response.txt',
-        filetype='text/plain')
+        filename=f'archive-{user}-response.txt')
 
 
 @gyrobot.command('history')
@@ -340,8 +338,7 @@ def do_history(ctx, username):
     comment_full_body = [comment['body'] for comment in comments['data']]
     chat(ctx).send_file(
         file_data='\n'.join(comment_full_body).encode(),
-        filename=f'comment_history-{username}.txt',
-        filetype='text/plain')
+        filename=f'comment_history-{username}.txt')
 
 
 @gyrobot.command('comment_source')
@@ -384,8 +381,7 @@ def deleted_comment_source(ctx, comment_ids):
     comment_full_body = [comment['body'] for comment in comments['data']]
     chat(ctx).send_file(
         file_data='\n'.join(comment_full_body).encode(),
-        filename=f'comment_body-{ids}.txt',
-        filetype='text/plain')
+        filename=f'comment_body-{ids}.txt')
 
 
 @gyrobot.group('configure_enhanced_crowd_control', cls=ClickAliasedGroup, aliases=['order66', 'order_66'])
@@ -517,4 +513,4 @@ def unicode(ctx, thread_id):
     final_text = ''
     for char in post.title:
         final_text += f"U+{ord(char):06x} {char} {unicodedata.name(char)}\n"
-    chat(ctx).send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode', filetype='txt')
+    chat(ctx).send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode')

@@ -66,16 +66,15 @@ class SlackWrapper(ChatWrapper):
             icon_emoji=icon_emoji,
             username=self.bot_name)
 
-    def send_file(self, file_data, title=None, filename=None, filetype=None, channel=None):
+    def send_file(self, file_data, title=None, filename=None, channel=None):
         try:
-            self.web_client.files_upload(
-                channels=channel or self.channel_id,
+            self.web_client.files_upload_v2(
+                channel=channel or self.channel_id,
                 icon_emoji=':robot_face:',
                 username=self.bot_name,
                 file=file_data,
                 filename=filename,
-                title=title,
-                filetype=filetype or 'auto')
+                title=title)
         except SlackApiError as ex:
             self.send_text(text=f"Error while uploading {filename}:\n```{ex!r}```", is_error=True)
 

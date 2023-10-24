@@ -31,7 +31,7 @@ class ChatWrapper(ABC):
         pass
 
     @abstractmethod
-    def send_file(self, file_data, title=None, filename=None, filetype=None, channel=None):
+    def send_file(self, file_data, title=None, filename=None, channel=None):
         pass
 
     @abstractmethod
