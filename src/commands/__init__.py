@@ -128,21 +128,21 @@ def gyrobot(ctx: click.Context):
     pass
 
 
-def chat(ctx) -> ChatWrapper:
+def chat(ctx: click.Context) -> ChatWrapper:
     return ctx.obj['chat']
 
 
-def logger(ctx) -> logging.Logger:
+def logger(ctx: click.Context) -> logging.Logger:
     return ctx.obj['logger']
 
 
-def subreddit(ctx) -> praw.reddit.Subreddit:
+def subreddit(ctx: click.Context) -> praw.reddit.Subreddit:
     return ctx.obj['subreddit']
 
 
-def reddit_session(ctx) -> praw.reddit.Reddit:
+def reddit_session(ctx: click.Context) -> praw.reddit.Reddit:
     return ctx.obj['reddit_session']
 
 
-def bot_reddit_session(ctx) -> praw.reddit.Reddit:
+def bot_reddit_session(ctx: click.Context) -> praw.reddit.Reddit:
     return ctx.obj['bot_reddit_session']
