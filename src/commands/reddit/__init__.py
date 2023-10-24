@@ -5,13 +5,13 @@ import json
 import os
 import pathlib
 import re
-import urllib
-import unicodedata
+import urllib.parse
 import zlib
 
 import click
 import praw
 import requests
+import unicodedata
 from requests.adapters import HTTPAdapter
 from requests.structures import CaseInsensitiveDict
 
