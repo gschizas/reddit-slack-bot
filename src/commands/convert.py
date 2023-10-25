@@ -1,6 +1,6 @@
 import json
-import re
 import pathlib
+import re
 
 import click
 import requests
@@ -10,9 +10,11 @@ from commands.extended_context import ExtendedContext
 
 _conversions = None
 
+
 def _read_conversions():
     with (pathlib.Path(__file__).parent / 'convert.json').open() as f:
         return json.load(f)
+
 
 def _find_unit(unit, search_text):
     if unit['Unit'].casefold() == search_text.casefold():
@@ -22,7 +24,8 @@ def _find_unit(unit, search_text):
         return True
     return False
 
-def _get_conversion_value(unit: str) -> float|None:
+
+def _get_conversion_value(unit: str) -> float | None:
     global _conversions
     if _conversions is None:
         _conversions = _read_conversions()
@@ -34,7 +37,7 @@ def _get_conversion_value(unit: str) -> float|None:
     else:
         return None
 
-    
+
 @gyrobot.command('convert')
 @click.argument('words', type=click.STRING, nargs=-1)
 @click.pass_context
@@ -46,11 +49,11 @@ def convert(ctx: ExtendedContext, words):
 
     if len(words) < 3 or len(words) > 5:
         ctx.chat.send_text("Format is convert «number» «from» to «to»", is_error=True)
-    
+
     if len(words) == 3:
         # Try to find out what the first argument is
-        if unit_length := re.match("^(?:(?P<feet>\d*\.?\d*?)')?(?:(?P<inches>\d*\.?\d*)\")?$", words[0]):
-            unit_feet = int(unit_length.group("feet"))  if unit_length.group(1) else 0
+        if unit_length := re.match(r"^(?:(?P<feet>\d*\.?\d*?)')?(?:(?P<inches>\d*\.?\d*)\")?$", words[0]):
+            unit_feet = int(unit_length.group("feet")) if unit_length.group(1) else 0
             unit_inches = int(unit_length.group("inches")) if unit_length.group(2) else 0
             unit_total_inches = unit_inches + unit_feet * 12
             words = [unit_total_inches, "inch", "to", words[2]]
@@ -92,8 +95,9 @@ def convert(ctx: ExtendedContext, words):
             ctx.chat.send_text("Tautological bot is tautological", is_error=True)
             return
 
-        prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
-                                params={'fsym': unit_from, 'tsyms': unit_to})
+        prices_page = requests.get(
+            "https://min-api.cryptocompare.com/data/price",
+            params={'fsym': unit_from, 'tsyms': unit_to})
         ctx.logger.info(prices_page.url)
         prices = prices_page.json()
         if prices.get('Response') == 'Error':
