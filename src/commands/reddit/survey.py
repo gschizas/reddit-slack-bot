@@ -136,7 +136,7 @@ def survey(ctx: ExtendedContext):
     question_ids = [f'q_{1 + i}' for i in range(len(questions))]
     ctx.obj['questions'] = questions
     ctx.obj['question_ids'] = question_ids
-    args = arg.lower().split()
+    args = ctx.args
     if len(args) == 0:
         args = ['']
     title = None

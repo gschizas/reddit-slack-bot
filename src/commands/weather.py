@@ -4,7 +4,8 @@ import os
 import click
 import requests
 
-from commands import gyrobot, chat
+from commands import gyrobot
+from commands.extended_context import ExtendedContext
 from state_file import state_file
 
 COLS = 180
@@ -137,7 +138,7 @@ def render_ansi(text, options=None):
 @gyrobot.command('weather', aliases=['w'])
 @click.argument("place", nargs=-1, required=False)
 @click.pass_context
-def weather(ctx: extended_context.ExtendedContext, place):
+def weather(ctx: ExtendedContext, place):
     """Display the weather in any place.
 
     Syntax: weather PLACE
