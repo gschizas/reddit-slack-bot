@@ -22,7 +22,7 @@ def _find_unit(unit, search_text):
         return True
     return False
 
-def _get_conversion_value(unit: str) -> float:
+def _get_conversion_value(unit: str) -> float|None:
     global _conversions
     if _conversions is None:
         _conversions = _read_conversions()
