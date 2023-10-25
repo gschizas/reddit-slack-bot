@@ -8,7 +8,7 @@ import subprocess
 import click
 from ruamel.yaml import YAML
 
-from commands import chat, logger
+from commands.extended_context import ExtendedContext
 
 yaml = YAML()
 all_users = []
@@ -102,13 +102,13 @@ def check_security(func=None, *, config=None):
         cfg = final_config['environments'][namespace]
         # config = ctx.obj['config'][namespace]
         allowed_users = cfg['users']
-        if not user_allowed(chat(ctx).user_id, allowed_users):
-            chat(ctx).send_text(f"You don't have permission to {action_name}.", is_error=True)
+        if not user_allowed(ctx.chat.user_id, allowed_users):
+            ctx.chat.send_text(f"You don't have permission to {action_name}.", is_error=True)
             return
         allowed_channels = cfg['channels']
-        channel_name = chat(ctx).channel_name
+        channel_name = ctx.chat.channel_name
         if channel_name not in allowed_channels:
-            chat(ctx).send_text(f"{action_name_proper} commands are not allowed in {channel_name}", is_error=True)
+            ctx.chat.send_text(f"{action_name_proper} commands are not allowed in {channel_name}", is_error=True)
             return
         return ctx.invoke(func, *args, **kwargs)
 
@@ -163,7 +163,8 @@ def rangify(original_input_list, consolidate=True):
         return item_list
 
 
-def azure_login(ctx, service_principal_id, service_principal_key, tenant_id, resource_group, cluster_name):
+def azure_login(ctx: ExtendedContext, service_principal_id, service_principal_key, tenant_id, resource_group,
+                cluster_name):
     az_cli = os.environ.get('AZ_CLI_EXECUTABLE', 'az')
     result_text = ""
     command_arguments = [
@@ -172,19 +173,19 @@ def azure_login(ctx, service_principal_id, service_principal_key, tenant_id, res
         '--username', service_principal_id,
         '--password', service_principal_key,
         '--tenant', tenant_id]
-    logger(ctx).info(command_arguments)
+    ctx.logger.info(command_arguments)
     login_cmd = subprocess.run(command_arguments, capture_output=True)
-    chat(ctx).send_text(f"Logging in to Azure...")
+    ctx.chat.send_text(f"Logging in to Azure...")
     login_result = json.loads(login_cmd.stdout)
-    # chat(ctx).send_file(login_cmd.stdout, filename='login.json')
-    chat(ctx).send_text(
+    # ctx.chat.send_file(login_cmd.stdout, filename='login.json')
+    ctx.chat.send_text(
         f"{login_result[0]['cloudName']} : {login_result[0]['name']} : {login_result[0]['user']['type']}")
     set_project_args = [
         az_cli, 'aks', 'get-credentials',
         '--overwrite-existing',
         '--name', cluster_name,
         '--resource-group', resource_group]
-    logger(ctx).info(set_project_args)
+    ctx.logger.info(set_project_args)
     set_project_cmd = subprocess.run(set_project_args, capture_output=True)
     result_text += set_project_cmd.stdout.decode() + '\n' + set_project_cmd.stderr.decode() + '\n\n'
     convert_login_args = ['kubelogin', 'convert-kubeconfig', '-l', 'azurecli']
@@ -193,5 +194,5 @@ def azure_login(ctx, service_principal_id, service_principal_key, tenant_id, res
     return result_text
 
 
-def env_config(ctx, namespace):
+def env_config(ctx: ExtendedContext, namespace):
     return ctx.obj['config']['environments'][namespace]

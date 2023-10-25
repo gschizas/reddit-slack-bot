@@ -5,7 +5,7 @@ import click
 import psycopg
 
 from bot_framework.yaml_wrapper import yaml
-from commands import gyrobot, chat
+from commands import gyrobot, extended_context
 
 SQL_CHEESE_VIEW = """\
 SELECT "objectData", "lastUpdate"
@@ -62,10 +62,10 @@ def ngrok(ctx):
 
 @ngrok.command('status')
 @click.pass_context
-def ngrok_status(ctx):
+def ngrok_status(ctx: extended_context.ExtendedContext):
     result_fields = []
     for setup_info in config()['setup']:
-        if chat(ctx).user_id in setup_info['slack_ids']:
+        if ctx.chat.user_id in setup_info['slack_ids']:
             computer_name = setup_info['computer_name']
             rows = _cheese_db_view(SQL_CHEESE_VIEW, {'machine_name': computer_name})
 
@@ -80,9 +80,9 @@ def ngrok_status(ctx):
             "type": "section",
             "fields": [{"type": "mrkdwn", "text": result_field} for result_field in result_fields]
         }]
-        chat(ctx).send_ephemeral(blocks=result_blocks)
+        ctx.chat.send_ephemeral(blocks=result_blocks)
     else:
-        chat(ctx).send_text("No Data", is_error=True)
+        ctx.chat.send_text("No Data", is_error=True)
 
 
 @ngrok.command('restart')
@@ -108,10 +108,10 @@ def citrix_restart(computer):
 @citrix.command('status')
 @click.argument('computer')
 @click.pass_context
-def citrix_status(ctx, computer):
+def citrix_status(ctx: extended_context.ExtendedContext, computer):
     result_blocks = []
     for setup_info in config()['setup']:
-        if chat(ctx).user_id in setup_info['slack_ids']:
+        if ctx.chat.user_id in setup_info['slack_ids']:
             computer_name = setup_info['computer_name']
             rows = _cheese_db_view(SQL_CHEESE_VIEW, {'machine_name': computer_name})
 
@@ -150,17 +150,17 @@ def citrix_status(ctx, computer):
                         }
                     })
     if result_blocks:
-        chat(ctx).send_ephemeral(blocks=result_blocks)
+        ctx.chat.send_ephemeral(blocks=result_blocks)
 
 
 @cheese.command('message')
 @click.argument('computer', nargs=1)
 @click.argument('message', nargs=-1)
 @click.pass_context
-def send_message(ctx, computer, message):
+def send_message(ctx: extended_context.ExtendedContext, computer, message):
     message_text = ' '.join(message)
     _cheese_add_to_queue(dict(kind='message', text=message_text), computer_name=computer)
-    chat(ctx).send_ephemeral(f"Send message to {computer}")
+    ctx.chat.send_ephemeral(f"Send message to {computer}")
 
 
 def _cheese_add_to_queue(self, job_data, computer_name=None):

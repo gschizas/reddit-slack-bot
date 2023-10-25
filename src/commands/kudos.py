@@ -56,15 +56,15 @@ def kudos(ctx):
     """
     pass
     # if len(args) == 0:
-    #     chat(ctx).send_text(("You need to specify a user "
+    #     ctx.chat.send_text(("You need to specify a user "
     #                          "(i.e. @pikos_apikos) or "
     #                          "'view' to see leaderboard"), is_error=True)
     #     return
-    # if chat(ctx).message.get('subtype') in ('message_replied', 'message_changed'):
-    #     chat(ctx).send_ephemeral("Kudos not recorded. Replies and edits are ignored.")
+    # if ctx.chat.message.get('subtype') in ('message_replied', 'message_changed'):
+    #     ctx.chat.send_ephemeral("Kudos not recorded. Replies and edits are ignored.")
     #     return
     # elif 'frostmaiden' in arg.lower():
-    #     chat(ctx).send_text("You are welcome mortals! Have some more :snowflake:", icon_emoji=':snowflake:')
+    #     ctx.chat.send_text("You are welcome mortals! Have some more :snowflake:", icon_emoji=':snowflake:')
     #     return
     # else:
     #     chat.send_text(("You need to specify a user "
@@ -74,8 +74,8 @@ def kudos(ctx):
 
 # @kudos.resultcallback(replace=True)
 # @click.pass_context
-# def kudos_epilogue(ctx, result):
-#     chat(ctx).send_text(f"the end {result!r}")
+# def kudos_epilogue(ctx: extended_context.ExtendedContext, result):
+#     ctx.chat.send_text(f"the end {result!r}")
 
 
 GIFTS = ['balloon', 'bear', 'goat', 'lollipop', 'cake', 'pancakes',
@@ -89,22 +89,22 @@ GIFTS = ['balloon', 'bear', 'goat', 'lollipop', 'cake', 'pancakes',
                    'ignore_unknown_options': True,
                    'allow_extra_args': True})
 @click.pass_context
-def kudos_give(ctx: click.Context):
+def kudos_give(ctx: extended_context.ExtendedContext):
     arg = ' '.join(ctx.args)
     reason = html.unescape(arg.split('>')[-1].strip())
     all_users = set(re.findall(r'<@(\w+)>', arg))
 
     for recipient_user_id in all_users:
-        chat(ctx).slack_user_info(recipient_user_id)
-        chat(ctx).slack_channel_info(chat(ctx).team_id, chat(ctx).channel_id)
-        recipient_name = chat(ctx).users[recipient_user_id]['name']
-        sender_name = chat(ctx).users[chat(ctx).user_id]['name']
+        ctx.chat.slack_user_info(recipient_user_id)
+        ctx.chat.slack_channel_info(ctx.chat.team_id, ctx.chat.channel_id)
+        recipient_name = ctx.chat.users[recipient_user_id]['name']
+        sender_name = ctx.chat.users[ctx.chat.user_id]['name']
 
-        if recipient_user_id == chat(ctx).user_id:
-            chat(ctx).send_text("You can't give kudos to yourself, silly!", is_error=True)
+        if recipient_user_id == ctx.chat.user_id:
+            ctx.chat.send_text("You can't give kudos to yourself, silly!", is_error=True)
             continue
 
-        if _record_kudos(ctx, sender_name, recipient_name, recipient_user_id, reason):
+        if _record_kudos(ctx: extended_context.ExtendedContext, sender_name, recipient_name, recipient_user_id, reason):
             text_to_send = f"Kudos from {sender_name} to {recipient_name}"
             give_gift = random.random()
             if reason.strip():
@@ -116,9 +116,9 @@ def kudos_give(ctx: click.Context):
                 if not text_to_send.endswith('.'): text_to_send += '.'
                 gift = random.choice(GIFTS)
                 text_to_send += f" Have a :{gift}:"
-            chat(ctx).send_text(text_to_send)
+            ctx.chat.send_text(text_to_send)
         else:
-            chat(ctx).send_text("Kudos not recorded")
+            ctx.chat.send_text("Kudos not recorded")
 
 
 @kudos.command('view')
@@ -126,35 +126,35 @@ def kudos_give(ctx: click.Context):
 @click.option('-a', '--all', 'check_all_channels', is_flag=True, default=False)
 @click.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False)
 @click.pass_context
-def kudos_view(ctx, days_to_check, check_all_channels, send_as_excel):
+def kudos_view(ctx: extended_context.ExtendedContext, days_to_check, check_all_channels, send_as_excel):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             if check_all_channels:
                 cur.execute(SQL_KUDOS_VIEW_ALL, {'days': days_to_check})
             else:
-                cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check, 'channel_id': chat(ctx).channel_id})
+                cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check, 'channel_id': ctx.chat.channel_id})
             rows = cur.fetchall()
             cols = [col.name for col in cur.description]
     if len(rows) == 0:
-        chat(ctx).send_text("No kudos yet!")
+        ctx.chat.send_text("No kudos yet!")
     else:
         table = [dict(zip(cols, row)) for row in rows]
-        chat(ctx).send_table(title="Kudos", table=table, send_as_excel=send_as_excel)
+        ctx.chat.send_table(title="Kudos", table=table, send_as_excel=send_as_excel)
 
 
-def _record_kudos(ctx, sender_name, recipient_name, recipient_user_id, reason):
+def _record_kudos(ctx: extended_context.ExtendedContext, sender_name, recipient_name, recipient_user_id, reason):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
             cmd_vars = {
-                'sender_name': sender_name, 'sender_id': chat(ctx).user_id,
+                'sender_name': sender_name, 'sender_id': ctx.chat.user_id,
                 'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
-                'team_name': chat(ctx).teams[chat(ctx).team_id]['name'], 'team_id': chat(ctx).team_id,
-                'channel_name': chat(ctx).channels[chat(ctx).team_id][chat(ctx).channel_id],
-                'channel_id': chat(ctx).channel_id,
-                'permalink': chat(ctx).permalink['permalink'], 'reason': reason}
+                'team_name': ctx.chat.teams[ctx.chat.team_id]['name'], 'team_id': ctx.chat.team_id,
+                'channel_name': ctx.chat.channels[ctx.chat.team_id][ctx.chat.channel_id],
+                'channel_id': ctx.chat.channel_id,
+                'permalink': ctx.chat.permalink['permalink'], 'reason': reason}
             cur.execute(SQL_KUDOS_INSERT, params=cmd_vars)
             success = cur.rowcount > 0
     return success

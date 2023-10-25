@@ -137,7 +137,7 @@ def render_ansi(text, options=None):
 @gyrobot.command('weather', aliases=['w'])
 @click.argument("place", nargs=-1, required=False)
 @click.pass_context
-def weather(ctx, place):
+def weather(ctx: extended_context.ExtendedContext, place):
     """Display the weather in any place.
 
     Syntax: weather PLACE
@@ -148,16 +148,16 @@ def weather(ctx, place):
 
     with state_file('weather') as pref_cache:
         if place_full:
-            pref_cache[chat(ctx).user_id] = place_full
+            pref_cache[ctx.chat.user_id] = place_full
         else:
-            place_full = pref_cache.get(chat(ctx).user_id, '')
+            place_full = pref_cache.get(ctx.chat.user_id, '')
 
     if place_full == 'macedonia' or place_full == 'makedonia':
         place_full = 'Thessaloniki'
     if place_full == '':
-        chat(ctx).send_text(
+        ctx.chat.send_text(
             ('You need to first set a default location\n'
-             f'Try `{chat(ctx).bot_name} weather LOCATION`'), is_error=True)
+             f'Try `{ctx.chat.bot_name} weather LOCATION`'), is_error=True)
         return
     place_full = place_full.replace("?", "")
     if place_full in ('brexit', 'pompeii'):
@@ -177,4 +177,4 @@ def weather(ctx, place):
             weather_page = requests.get(weather_url + place_full + '_p0.png?m')
             file_data = weather_page.content
         title = place_full
-    chat(ctx).send_file(file_data, title=title)
+    ctx.chat.send_file(file_data, title=title)

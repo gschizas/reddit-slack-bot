@@ -10,7 +10,8 @@ import xlsxwriter
 from tabulate import tabulate
 
 from bot_framework.yaml_wrapper import yaml
-from commands import gyrobot, chat
+from commands import gyrobot
+from commands.extended_context import ExtendedContext
 
 SQL_SURVEY_PREFILLED_ANSWERS = """select answer[3] AS Code, answer_value as Answer, count(*) AS VoteCount
 from (select regexp_split_to_array(code, '_') AS answer_parts, *
@@ -117,17 +118,17 @@ def _truncate(text, length):
 
 @gyrobot.group('survey')
 @click.pass_context
-def survey(ctx):
+def survey(ctx: ExtendedContext):
     """Get results from survey"""
     if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ:
-        chat(ctx).send_text('No questionnaire found', is_error=True)
+        ctx.chat.send_text('No questionnaire found', is_error=True)
         return
     if 'QUESTIONNAIRE_FILE' not in os.environ:
-        chat(ctx).send_text('No questionnaire file defined', is_error=True)
+        ctx.chat.send_text('No questionnaire file defined', is_error=True)
         return
     questionnaire_file = pathlib.Path('data') / os.environ['QUESTIONNAIRE_FILE']
     if not questionnaire_file.exists():
-        chat(ctx).send_text('No questionnaire file found', is_error=True)
+        ctx.chat.send_text('No questionnaire file found', is_error=True)
         return
     with questionnaire_file.open(encoding='utf8') as qf:
         questionnaire_data = list(yaml.load_all(qf))
@@ -172,13 +173,13 @@ def survey(ctx):
         valid_queries = ['count', 'questions', 'questions_full', 'mods', 'votes_per_day', 'full_replies'] + \
                         ['q_1', '...', f'q_{str(len(questions))}']
         valid_queries_as_code = [f"`{q}`" for q in valid_queries]
-        chat(ctx).send_text(f"You need to specify a query from {', '.join(valid_queries_as_code)}", is_error=True)
+        ctx.chat.send_text(f"You need to specify a query from {', '.join(valid_queries_as_code)}", is_error=True)
         return
 
     if result_type == 'single':
-        chat(ctx).send_text(f"*Result*: `{rows[0][0]}`")
+        ctx.chat.send_text(f"*Result*: `{rows[0][0]}`")
     elif result_type == 'table':
-        chat(ctx).send_table(title=title, table=[dict(zip(cols, row)) for row in rows])
+        ctx.chat.send_table(title=title, table=[dict(zip(cols, row)) for row in rows])
     elif result_type == 'full_table':
         filedata = b''
         with tempfile.TemporaryFile() as tmpfile:
@@ -202,7 +203,7 @@ def survey(ctx):
             tmpfile.flush()
             tmpfile.seek(0, io.SEEK_SET)
             filedata = tmpfile.read()
-        chat(ctx).send_file(filedata, filename="Survey_Results.xlsx", title="Survey Results")
+        ctx.chat.send_file(filedata, filename="Survey_Results.xlsx", title="Survey Results")
     elif result_type == 'full_table_json':
         filedata = json.dumps(result)
-        chat(ctx).send_file(filedata, filename='Survey_Results.json', title="Survey Results")
+        ctx.chat.send_file(filedata, filename='Survey_Results.json', title="Survey Results")

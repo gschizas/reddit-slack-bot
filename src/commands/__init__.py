@@ -1,9 +1,6 @@
-import logging
-
 import click
-import praw
 
-from chat.chat_wrapper import ChatWrapper
+from commands.extended_context import ExtendedContext
 
 
 class DefaultCommandGroup(click.Group):
@@ -25,7 +22,7 @@ class DefaultCommandGroup(click.Group):
 
         return decorator
 
-    def resolve_command(self, ctx, args):
+    def resolve_command(self, ctx: extended_context.ExtendedContext, args):
         try:
             # test if the command parses
             return super().resolve_command(ctx, args)
@@ -106,17 +103,6 @@ class ClickAliasedGroup(click.Group):
                 formatter.write_dl(rows)
 
 
-# class Environment:
-#     def __init__(self):
-#         pass
-#
-#     def send_text(self):
-#         pass
-#
-#
-# pass_environment = click.make_pass_decorator(Environment, ensure=True)
-
-
 @click.group(cls=ClickAliasedGroup,
              context_settings={
                  'help_option_names': ['-h', '-?', '/?', '--help'],
@@ -124,25 +110,5 @@ class ClickAliasedGroup(click.Group):
                  'allow_extra_args': True})
 # @pass_environment
 @click.pass_context
-def gyrobot(ctx: click.Context):
+def gyrobot(ctx: ExtendedContext):
     pass
-
-
-def chat(ctx: click.Context) -> ChatWrapper:
-    return ctx.obj['chat']
-
-
-def logger(ctx: click.Context) -> logging.Logger:
-    return ctx.obj['logger']
-
-
-def subreddit(ctx: click.Context) -> praw.reddit.Subreddit:
-    return ctx.obj['subreddit']
-
-
-def reddit_session(ctx: click.Context) -> praw.reddit.Reddit:
-    return ctx.obj['reddit_session']
-
-
-def bot_reddit_session(ctx: click.Context) -> praw.reddit.Reddit:
-    return ctx.obj['bot_reddit_session']

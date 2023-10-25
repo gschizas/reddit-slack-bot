@@ -37,14 +37,14 @@ def _get_conversion_value(unit: str) -> float:
 @gyrobot.command('convert')
 @click.argument('words', type=click.STRING, nargs=-1)
 @click.pass_context
-def convert(ctx, words):
+def convert(ctx: extended_context.ExtendedContext, words):
     """Convert money from one currency to another.
 
     Example: convert 100.0 USD to EUR
              convert 5'10" to cm"""
 
     if len(words) < 3 or len(words) > 5:
-        chat(ctx).send_text("Format is convert «number» «from» to «to»", is_error=True)
+        ctx.chat.send_text("Format is convert «number» «from» to «to»", is_error=True)
     
     if len(words) == 3:
         # Try to find out what the first argument is
@@ -59,15 +59,15 @@ def convert(ctx, words):
     try:
         value = float(value_text)
     except ValueError:
-        chat(ctx).send_text(f"{value_text} is not a good number", is_error=True)
+        ctx.chat.send_text(f"{value_text} is not a good number", is_error=True)
         return
 
     if not (re.match(r'^\w+$', unit_from)):
-        chat(ctx).send_text(f"{unit_from} is not a real unit or currency", is_error=True)
+        ctx.chat.send_text(f"{unit_from} is not a real unit or currency", is_error=True)
         return
 
     if not (re.match(r'^\w+$', unit_to)):
-        chat(ctx).send_text(f"{unit_to} is not a real unit or currency", is_error=True)
+        ctx.chat.send_text(f"{unit_to} is not a real unit or currency", is_error=True)
         return
 
     if constant_unit_from_conversion := _get_conversion_value(unit_from):
@@ -88,12 +88,12 @@ def convert(ctx, words):
         unit_to = unit_to.upper()
 
         if unit_from == unit_to:
-            chat(ctx).send_text("Tautological bot is tautological", is_error=True)
+            ctx.chat.send_text("Tautological bot is tautological", is_error=True)
             return
 
         prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
                                 params={'fsym': unit_from, 'tsyms': unit_to})
-        logger(ctx).info(prices_page.url)
+        ctx.logger.info(prices_page.url)
         prices = prices_page.json()
         if prices.get('Response') == 'Error':
             text = prices['Message']
@@ -101,7 +101,7 @@ def convert(ctx, words):
             price = prices[unit_to]
             new_value = value * price
             text = f"{value:.2f} {unit_from} is {new_value:.2f} {unit_to}"
-    chat(ctx).send_text(text)
+    ctx.chat.send_text(text)
 
 
 
@@ -110,9 +110,9 @@ def convert(ctx, words):
 #@gyrobot.command('convert')
 #@click.argument('args', type=click.STRING, nargs=1)
 #@click.pass_context
-#def convert(ctx, value_text, currency_from, _literal_to, currency_to):
+#def convert(ctx: extended_context.ExtendedContext, value_text, currency_from, _literal_to, currency_to):
 #    """Convert money or measurements from one currency to another.
 #    Example: convert 100.0 USD to EUR
 #             convert 5'10" to cm"""
 #    if len(args) < 3:
-#        chat(ctx).send_text("Format is convert «number» «from» to «to»", is_error=True)
+#        ctx.chat.send_text("Format is convert «number» «from» to «to»", is_error=True)
