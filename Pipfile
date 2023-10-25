@@ -28,6 +28,7 @@ azure-mgmt-kubernetesconfiguration = "*"
 kubernetes = "*"
 slack-sdk = "*"
 aiohttp = "*"
+docker = "*"
 
 [dev-packages]
 
