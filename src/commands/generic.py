@@ -14,7 +14,8 @@ import psutil
 import requests
 import unicodedata
 
-from commands import gyrobot, DefaultCommandGroup, chat, logger
+from commands import gyrobot, DefaultCommandGroup
+from commands.extended_context import ExtendedContext
 
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
@@ -35,7 +36,7 @@ def binary(ctx):
 
 @gyrobot.command('cointoss')
 @click.pass_context
-def cointoss(ctx):
+def cointoss(ctx: ExtendedContext):
     """Toss a coin"""
     toss = random.randrange(2)
     toss_text = ['Heads', 'Tails'][toss]
@@ -67,7 +68,7 @@ def _lookup_country(country):
                      'allow_extra_args': True})
 @click.argument('country', type=click.STRING)
 @click.pass_context
-def covid(ctx: extended_context.ExtendedContext, country: str):
+def covid(ctx: ExtendedContext, country: str):
     """Display last available statistics for COVID-19 cases
 
     Syntax:
@@ -116,7 +117,7 @@ def covid(ctx: extended_context.ExtendedContext, country: str):
 @gyrobot.command('crypto')
 @click.argument('symbol', nargs=-1)
 @click.pass_context
-def crypto(ctx: extended_context.ExtendedContext, symbol):
+def crypto(ctx: ExtendedContext, symbol):
     """Display the current exchange rate of currency"""
     for cryptocoin in symbol:
         cryptocoin = cryptocoin.upper()
@@ -179,7 +180,7 @@ def _progress_bar(percentage, size):
 
 @gyrobot.command('disk_space')
 @click.pass_context
-def disk_space(ctx):
+def disk_space(ctx: ExtendedContext):
     """\
     Display free disk space"""
     ctx.chat.send_text(_diskfree())
@@ -199,14 +200,14 @@ def disk_space_ex(ctx):
 
 @gyrobot.command('fortune')
 @click.pass_context
-def fortune(ctx):
+def fortune(ctx: ExtendedContext):
     """Like a Chinese fortune cookie, but less yummy"""
     ctx.chat.send_text(subprocess.check_output(['/usr/games/fortune']).decode())
 
 
 @gyrobot.command('joke')
 @click.pass_context
-def joke(ctx):
+def joke(ctx: ExtendedContext):
     """Tell a joke"""
     proxies = {'http': os.environ['ALT_PROXY'], 'https': os.environ['ALT_PROXY']} if 'ALT_PROXY' in os.environ else {}
     joke_page = requests.get(
@@ -255,7 +256,7 @@ def roll():
                   'allow_extra_args': True})
 @click.argument('specs', nargs=-1, required=False)
 @click.pass_context
-def roll_default(ctx: extended_context.ExtendedContext, specs=None):
+def roll_default(ctx: ExtendedContext, specs=None):
     """Roll a dice. Optional sides argument (e.g. roll 1d20+5, roll 1d6+2, d20 etc.)"""
     if specs is None:
         specs = ['1d6+0']
@@ -285,7 +286,7 @@ def roll_default(ctx: extended_context.ExtendedContext, specs=None):
 
 @roll.command('magic8')
 @click.pass_context
-def roll_magic8(ctx):
+def roll_magic8(ctx: ExtendedContext):
     result = random.choice(MAGIC_8_BALL_OUTCOMES)
     ctx.chat.send_text(result)
 
@@ -293,7 +294,7 @@ def roll_magic8(ctx):
 @roll.command('statline')
 @click.argument('spec', nargs=1, required=False)
 @click.pass_context
-def roll_statline(ctx: extended_context.ExtendedContext, spec=None):
+def roll_statline(ctx: ExtendedContext, spec=None):
     min_roll = 2 if spec == 'drop1' else 1
     ability_text = ""
     for roll_line in range(6):
@@ -317,7 +318,7 @@ EMPTY_IMAGE = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAI
 @gyrobot.command('stocks', aliases=['stock', 'stonk'])
 @click.argument("stock_name")
 @click.pass_context
-def stocks(ctx: extended_context.ExtendedContext, stock_name):
+def stocks(ctx: ExtendedContext, stock_name):
     """Show info for a stock"""
     import yfinance as yf
 
@@ -386,7 +387,7 @@ def uptime(ctx):
 @gyrobot.command('urban_dictionary', aliases=['ud'])
 @click.argument('terms', nargs=-1)
 @click.pass_context
-def urban_dictionary(ctx: extended_context.ExtendedContext, terms):
+def urban_dictionary(ctx: ExtendedContext, terms):
     """Search in urban dictionary for the first definition of the word or phrase"""
     term = ' '.join(terms)
     definition_page = requests.get('http://api.urbandictionary.com/v0/define', params={'term': term})
@@ -400,7 +401,7 @@ def urban_dictionary(ctx: extended_context.ExtendedContext, terms):
 @gyrobot.command('youtube_info')
 @click.argument('url')
 @click.pass_context
-def youtube_info(ctx: extended_context.ExtendedContext, url):
+def youtube_info(ctx: ExtendedContext, url):
     if url.startswith('<') and url.endswith('>'):
         url = url[1:-1]
     ctx.logger.info(url)
@@ -413,7 +414,7 @@ def youtube_info(ctx: extended_context.ExtendedContext, url):
 @gyrobot.command('unicode')
 @click.argument('text', nargs=-1)
 @click.pass_context
-def unicode(ctx: extended_context.ExtendedContext, text):
+def unicode(ctx: ExtendedContext, text):
     """Convert text to unicode code points"""
     text = ' '.join(text)
     final_text = ''
