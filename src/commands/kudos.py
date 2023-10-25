@@ -6,7 +6,8 @@ import re
 import click
 import psycopg
 
-from commands import gyrobot, chat, DefaultCommandGroup
+from commands import gyrobot, DefaultCommandGroup
+from commands.extended_context import ExtendedContext
 
 SQL_KUDOS_INSERT = """\
 INSERT INTO kudos (
@@ -89,7 +90,7 @@ GIFTS = ['balloon', 'bear', 'goat', 'lollipop', 'cake', 'pancakes',
                    'ignore_unknown_options': True,
                    'allow_extra_args': True})
 @click.pass_context
-def kudos_give(ctx: extended_context.ExtendedContext):
+def kudos_give(ctx: ExtendedContext):
     arg = ' '.join(ctx.args)
     reason = html.unescape(arg.split('>')[-1].strip())
     all_users = set(re.findall(r'<@(\w+)>', arg))
@@ -126,7 +127,7 @@ def kudos_give(ctx: extended_context.ExtendedContext):
 @click.option('-a', '--all', 'check_all_channels', is_flag=True, default=False)
 @click.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False)
 @click.pass_context
-def kudos_view(ctx: extended_context.ExtendedContext, days_to_check, check_all_channels, send_as_excel):
+def kudos_view(ctx: ExtendedContext, days_to_check, check_all_channels, send_as_excel):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
@@ -143,7 +144,7 @@ def kudos_view(ctx: extended_context.ExtendedContext, days_to_check, check_all_c
         ctx.chat.send_table(title="Kudos", table=table, send_as_excel=send_as_excel)
 
 
-def _record_kudos(ctx: extended_context.ExtendedContext, sender_name, recipient_name, recipient_user_id, reason):
+def _record_kudos(ctx: ExtendedContext, sender_name, recipient_name, recipient_user_id, reason):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         conn.autocommit = True
