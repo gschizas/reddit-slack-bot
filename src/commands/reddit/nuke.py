@@ -52,8 +52,10 @@ def nuke_thread(ctx: ExtendedContext, thread_id):
 @click.argument('thread_id')
 @click.pass_context
 def undo_nuke_thread(ctx: ExtendedContext, thread_id):
-    """Undo previous nuke thread
-    Thread ID should be either the submission URL or the submission id"""
+    """Undo previous nuking of a thread
+
+    :param ctx: command context
+    :param thread_id: either the submission URL or the submission id"""
     thread_id = extract_real_thread_id(thread_id)
     with state_file('nuke_thread') as state:
         if thread_id not in state:

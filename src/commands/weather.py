@@ -40,7 +40,7 @@ def render_ansi(text, options=None):
                 int(color[2:4], 16),
                 int(color[4:6], 16))
         except (ValueError, IndexError):
-            # if we do not know this color and it can not be decoded as RGB,
+            # if we do not know this color, and it can not be decoded as RGB,
             # print it and return it as it is (will be displayed as black)
             # print color
             return color

@@ -5,7 +5,8 @@ import pathlib
 import click
 import requests
 
-from commands import gyrobot, chat, logger
+from commands import gyrobot
+from commands.extended_context import ExtendedContext
 
 _conversions = None
 
@@ -37,7 +38,7 @@ def _get_conversion_value(unit: str) -> float:
 @gyrobot.command('convert')
 @click.argument('words', type=click.STRING, nargs=-1)
 @click.pass_context
-def convert(ctx: extended_context.ExtendedContext, words):
+def convert(ctx: ExtendedContext, words):
     """Convert money from one currency to another.
 
     Example: convert 100.0 USD to EUR
@@ -102,17 +103,3 @@ def convert(ctx: extended_context.ExtendedContext, words):
             new_value = value * price
             text = f"{value:.2f} {unit_from} is {new_value:.2f} {unit_to}"
     ctx.chat.send_text(text)
-
-
-
-
-
-#@gyrobot.command('convert')
-#@click.argument('args', type=click.STRING, nargs=1)
-#@click.pass_context
-#def convert(ctx: extended_context.ExtendedContext, value_text, currency_from, _literal_to, currency_to):
-#    """Convert money or measurements from one currency to another.
-#    Example: convert 100.0 USD to EUR
-#             convert 5'10" to cm"""
-#    if len(args) < 3:
-#        ctx.chat.send_text("Format is convert «number» «from» to «to»", is_error=True)

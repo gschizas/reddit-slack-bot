@@ -104,7 +104,7 @@ def kudos_give(ctx: extended_context.ExtendedContext):
             ctx.chat.send_text("You can't give kudos to yourself, silly!", is_error=True)
             continue
 
-        if _record_kudos(ctx: extended_context.ExtendedContext, sender_name, recipient_name, recipient_user_id, reason):
+        if _record_kudos(ctx, sender_name, recipient_name, recipient_user_id, reason):
             text_to_send = f"Kudos from {sender_name} to {recipient_name}"
             give_gift = random.random()
             if reason.strip():
