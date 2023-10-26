@@ -25,7 +25,7 @@ def _find_unit(unit, search_text):
     return False
 
 
-def _get_conversion_value(unit: str) -> float | None:
+def _get_conversion_value(unit: str) -> float:
     global _conversions
     if _conversions is None:
         _conversions = _read_conversions()
