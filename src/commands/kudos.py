@@ -1,10 +1,9 @@
+import click
 import html
 import os
+import psycopg
 import random
 import re
-
-import click
-import psycopg
 
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
@@ -56,27 +55,6 @@ def kudos(ctx):
     kudos view 15 to see kudos given last 15 days
     """
     pass
-    # if len(args) == 0:
-    #     ctx.chat.send_text(("You need to specify a user "
-    #                          "(i.e. @pikos_apikos) or "
-    #                          "'view' to see leaderboard"), is_error=True)
-    #     return
-    # if ctx.chat.message.get('subtype') in ('message_replied', 'message_changed'):
-    #     ctx.chat.send_ephemeral("Kudos not recorded. Replies and edits are ignored.")
-    #     return
-    # elif 'frostmaiden' in arg.lower():
-    #     ctx.chat.send_text("You are welcome mortals! Have some more :snowflake:", icon_emoji=':snowflake:')
-    #     return
-    # else:
-    #     chat.send_text(("You need to specify a user "
-    #                     "(i.e. @pikos_apikos) or "
-    #                     "'view' to see leaderboard"), is_error=True)
-
-
-# @kudos.resultcallback(replace=True)
-# @click.pass_context
-# def kudos_epilogue(ctx: extended_context.ExtendedContext, result):
-#     ctx.chat.send_text(f"the end {result!r}")
 
 
 GIFTS = ['balloon', 'bear', 'goat', 'lollipop', 'cake', 'pancakes',
@@ -124,17 +102,18 @@ def kudos_give(ctx: ExtendedContext):
 
 @kudos.command('view')
 @click.argument('days_to_check', type=click.INT, default=14)
-@click.option('-a', '--all', 'check_all_channels', is_flag=True, default=False)
+@click.argument('channel', default='')
 @click.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False)
 @click.pass_context
-def kudos_view(ctx: ExtendedContext, days_to_check, check_all_channels, send_as_excel):
+def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str, send_as_excel: bool):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
-            if check_all_channels:
+            if channel == '*':
                 cur.execute(SQL_KUDOS_VIEW_ALL, {'days': days_to_check})
             else:
-                cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check, 'channel_id': ctx.chat.channel_id})
+                channel_id = ctx.chat.channel_id if channel == '' else channel[2:-2]
+                cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check, 'channel_id': channel_id})
             rows = cur.fetchall()
             cols = [col.name for col in cur.description]
     if len(rows) == 0:
