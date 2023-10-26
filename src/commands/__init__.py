@@ -1,6 +1,10 @@
 import click
 
-from commands.extended_context import ExtendedContext
+setattr(click.Context, 'chat', property(lambda self: self.obj['chat']))
+setattr(click.Context, 'logger', property(lambda self: self.obj['logger']))
+setattr(click.Context, 'subreddit', property(lambda self: self.obj['subreddit']))
+setattr(click.Context, 'reddit_session', property(lambda self: self.obj['reddit_session']))
+setattr(click.Context, 'bot_reddit_session', property(lambda self: self.obj['bot_reddit_session']))
 
 
 class DefaultCommandGroup(click.Group):
@@ -22,7 +26,7 @@ class DefaultCommandGroup(click.Group):
 
         return decorator
 
-    def resolve_command(self, ctx: extended_context.ExtendedContext, args):
+    def resolve_command(self, ctx: click.Context, args):
         try:
             # test if the command parses
             return super().resolve_command(ctx, args)
@@ -110,5 +114,5 @@ class ClickAliasedGroup(click.Group):
                  'allow_extra_args': True})
 # @pass_environment
 @click.pass_context
-def gyrobot(ctx: ExtendedContext):
+def gyrobot(ctx: click.Context):
     pass
