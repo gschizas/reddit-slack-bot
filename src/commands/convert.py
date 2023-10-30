@@ -1,17 +1,20 @@
 import json
-import re
 import pathlib
+import re
 
 import click
 import requests
 
-from commands import gyrobot, chat, logger
+from commands import gyrobot
+from commands.extended_context import ExtendedContext
 
 _conversions = None
+
 
 def _read_conversions():
     with (pathlib.Path(__file__).parent / 'convert.json').open() as f:
         return json.load(f)
+
 
 def _find_unit(unit, search_text):
     if unit['Unit'].casefold() == search_text.casefold():
@@ -20,6 +23,7 @@ def _find_unit(unit, search_text):
     if search_text.casefold() in aliases:
         return True
     return False
+
 
 def _get_conversion_value(unit: str) -> float:
     global _conversions
@@ -33,23 +37,23 @@ def _get_conversion_value(unit: str) -> float:
     else:
         return None
 
-    
+
 @gyrobot.command('convert')
 @click.argument('words', type=click.STRING, nargs=-1)
 @click.pass_context
-def convert(ctx, words):
+def convert(ctx: ExtendedContext, words):
     """Convert money from one currency to another.
 
     Example: convert 100.0 USD to EUR
              convert 5'10" to cm"""
 
     if len(words) < 3 or len(words) > 5:
-        chat(ctx).send_text("Format is convert «number» «from» to «to»", is_error=True)
-    
+        ctx.chat.send_text("Format is convert «number» «from» to «to»", is_error=True)
+
     if len(words) == 3:
         # Try to find out what the first argument is
-        if unit_length := re.match("^(?:(?P<feet>\d*\.?\d*?)')?(?:(?P<inches>\d*\.?\d*)\")?$", words[0]):
-            unit_feet = int(unit_length.group("feet"))  if unit_length.group(1) else 0
+        if unit_length := re.match(r"^(?:(?P<feet>\d*\.?\d*?)')?(?:(?P<inches>\d*\.?\d*)\")?$", words[0]):
+            unit_feet = int(unit_length.group("feet")) if unit_length.group(1) else 0
             unit_inches = int(unit_length.group("inches")) if unit_length.group(2) else 0
             unit_total_inches = unit_inches + unit_feet * 12
             words = [unit_total_inches, "inch", "to", words[2]]
@@ -59,15 +63,15 @@ def convert(ctx, words):
     try:
         value = float(value_text)
     except ValueError:
-        chat(ctx).send_text(f"{value_text} is not a good number", is_error=True)
+        ctx.chat.send_text(f"{value_text} is not a good number", is_error=True)
         return
 
     if not (re.match(r'^\w+$', unit_from)):
-        chat(ctx).send_text(f"{unit_from} is not a real unit or currency", is_error=True)
+        ctx.chat.send_text(f"{unit_from} is not a real unit or currency", is_error=True)
         return
 
     if not (re.match(r'^\w+$', unit_to)):
-        chat(ctx).send_text(f"{unit_to} is not a real unit or currency", is_error=True)
+        ctx.chat.send_text(f"{unit_to} is not a real unit or currency", is_error=True)
         return
 
     if constant_unit_from_conversion := _get_conversion_value(unit_from):
@@ -88,12 +92,13 @@ def convert(ctx, words):
         unit_to = unit_to.upper()
 
         if unit_from == unit_to:
-            chat(ctx).send_text("Tautological bot is tautological", is_error=True)
+            ctx.chat.send_text("Tautological bot is tautological", is_error=True)
             return
 
-        prices_page = requests.get("https://min-api.cryptocompare.com/data/price",
-                                params={'fsym': unit_from, 'tsyms': unit_to})
-        logger(ctx).info(prices_page.url)
+        prices_page = requests.get(
+            "https://min-api.cryptocompare.com/data/price",
+            params={'fsym': unit_from, 'tsyms': unit_to})
+        ctx.logger.info(prices_page.url)
         prices = prices_page.json()
         if prices.get('Response') == 'Error':
             text = prices['Message']
@@ -101,18 +106,4 @@ def convert(ctx, words):
             price = prices[unit_to]
             new_value = value * price
             text = f"{value:.2f} {unit_from} is {new_value:.2f} {unit_to}"
-    chat(ctx).send_text(text)
-
-
-
-
-
-#@gyrobot.command('convert')
-#@click.argument('args', type=click.STRING, nargs=1)
-#@click.pass_context
-#def convert(ctx, value_text, currency_from, _literal_to, currency_to):
-#    """Convert money or measurements from one currency to another.
-#    Example: convert 100.0 USD to EUR
-#             convert 5'10" to cm"""
-#    if len(args) < 3:
-#        chat(ctx).send_text("Format is convert «number» «from» to «to»", is_error=True)
+    ctx.chat.send_text(text)

@@ -3,8 +3,10 @@ import os
 from typing import List, Dict
 
 import pandas as pd
-import slack
 from tabulate import tabulate
+from slack_sdk import WebClient
+from slack_sdk.rtm import RTMClient
+from slack_sdk.errors import SlackApiError
 
 from chat.chat_wrapper import ChatWrapper
 
@@ -17,7 +19,7 @@ class SlackWrapper(ChatWrapper):
 
     def connect(self):
         slack_api_token = os.environ['SLACK_API_TOKEN']
-        self.slack_client = slack.RTMClient(
+        self.slack_client = RTMClient(
             token=slack_api_token,
             proxy=os.environ.get('HTTPS_PROXY'))
 
@@ -43,8 +45,8 @@ class SlackWrapper(ChatWrapper):
             icon_emoji=icon_emoji,
             username=self.bot_name)
 
-    def send_table(self, title: str, table: List[Dict]) -> None:
-        if os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
+    def send_table(self, title: str, table: List[Dict], send_as_excel: bool = False) -> None:
+        if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
             with io.BytesIO() as cronjobs_output:
                 table_df = pd.DataFrame(table)
                 table_df.reset_index(drop=True).to_excel(cronjobs_output)
@@ -64,17 +66,16 @@ class SlackWrapper(ChatWrapper):
             icon_emoji=icon_emoji,
             username=self.bot_name)
 
-    def send_file(self, file_data, title=None, filename=None, filetype=None, channel=None):
+    def send_file(self, file_data, title=None, filename=None, channel=None):
         try:
-            self.web_client.files_upload(
-                channels=channel or self.channel_id,
+            self.web_client.files_upload_v2(
+                channel=channel or self.channel_id,
                 icon_emoji=':robot_face:',
                 username=self.bot_name,
                 file=file_data,
                 filename=filename,
-                title=title,
-                filetype=filetype or 'auto')
-        except slack.errors.SlackApiError as ex:
+                title=title)
+        except SlackApiError as ex:
             self.send_text(text=f"Error while uploading {filename}:\n```{ex!r}```", is_error=True)
 
     def send_fields(self, text, fields):
@@ -126,7 +127,7 @@ class SlackWrapper(ChatWrapper):
         # slack.RTMClient.on(event='message', callback=self.handle_message)
 
     @staticmethod
-    @slack.RTMClient.run_on(event='message')
+    @RTMClient.run_on(event='message')
     def handle_message(**payload):
         SlackWrapper.message_handler(**payload)
 

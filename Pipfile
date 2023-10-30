@@ -5,11 +5,9 @@ verify_ssl = true
 
 [packages]
 praw = "*"
-slackclient = "*"
 "ruamel.yaml" = "*"
 requests = "*"
 tqdm = "*"
-tweepy = "*"
 "beautifulsoup4" = "*"
 colorlog = "*"
 colorama = "*"
@@ -17,8 +15,6 @@ colorama = "*"
 soupsieve = "==1.9"
 tabulate = "*"
 xlsxwriter = "*"
-flask = "*"
-celery = "*"
 yfinance = "*"
 psutil = "*"
 humanfriendly = "*"
@@ -27,6 +23,12 @@ psycopg = {extras = ["binary"], version = "*"}
 pyjwt = {extras = ["crypto"], version = "*"}
 pyte = "*"
 pillow = "*"
+azure-identity = "*"
+azure-mgmt-kubernetesconfiguration = "*"
+kubernetes = "*"
+slack-sdk = "*"
+aiohttp = "*"
+docker = "*"
 
 [dev-packages]
 

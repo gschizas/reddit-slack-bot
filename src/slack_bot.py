@@ -182,14 +182,14 @@ def handle_line(text):
         elif 'PERSONAL_DEBUG' in os.environ:
             error_text = str(result.exception)
             exception_full_text = ''.join(traceback.format_exception(*result.exc_info))
-            chat_obj.send_file(filename='error.txt', file_data=exception_full_text.encode(), filetype='text/plain',
+            chat_obj.send_file(filename='error.txt', file_data=exception_full_text.encode(),
                                channel=os.environ['PERSONAL_DEBUG'])
         else:
             error_text = str(result.exception)
         if len(error_text) < 2 ** 11:
             chat_obj.send_text(f"```\n:::Error:::{error_text}```\n", is_error=True)
         else:
-            chat_obj.send_file(filename='error.txt', file_data=error_text.encode(), filetype='text/plain')
+            chat_obj.send_file(filename='error.txt', file_data=error_text.encode())
 
     if result.output != '':
         chat_obj.send_text('```\n' + result.output.strip() + '```\n')
@@ -207,7 +207,6 @@ def precmd(line):
 def default(line):
     instant_answer_page = requests.get("https://api.duckduckgo.com/", params={'q': line, "format": "json"})
     instant_answer = instant_answer_page.json()
-    # self._send_file(instant_answer_page.content, filename='duckduckgo.json', filetype='application/json')
     if isinstance(instant_answer["Answer"], str) and instant_answer["Answer"]:
         chat_obj.send_text(instant_answer["Answer"])
         if 'Image' in instant_answer:
@@ -231,7 +230,7 @@ def main():
     global chat_obj, logger
     global subreddit_name, subreddit, reddit_session, bot_reddit_session
     global trigger_words, shortcut_words
-    logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'))
+    logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'), when=os.environ.get('LOG_ROLLOVER'))
     init()
     chat_obj.start()
 

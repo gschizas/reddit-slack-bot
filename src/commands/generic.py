@@ -14,7 +14,8 @@ import psutil
 import requests
 import unicodedata
 
-from commands import gyrobot, DefaultCommandGroup, chat, logger
+from commands import gyrobot, DefaultCommandGroup
+from commands.extended_context import ExtendedContext
 
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
@@ -30,16 +31,16 @@ def binary(ctx):
     rest_of_text = ' '.join(ctx.args)
     rest_of_text = re.sub(r'(\S{8})\s?', r'\1 ', rest_of_text)
     decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
-    chat(ctx).send_text(''.join(decoded_text))
+    ctx.chat.send_text(''.join(decoded_text))
 
 
 @gyrobot.command('cointoss')
 @click.pass_context
-def cointoss(ctx):
+def cointoss(ctx: ExtendedContext):
     """Toss a coin"""
     toss = random.randrange(2)
     toss_text = ['Heads', 'Tails'][toss]
-    chat(ctx).send_text(toss_text)
+    ctx.chat.send_text(toss_text)
 
 
 def _lookup_country(country):
@@ -67,7 +68,7 @@ def _lookup_country(country):
                      'allow_extra_args': True})
 @click.argument('country', type=click.STRING)
 @click.pass_context
-def covid(ctx, country: str):
+def covid(ctx: ExtendedContext, country: str):
     """Display last available statistics for COVID-19 cases
 
     Syntax:
@@ -82,7 +83,7 @@ def covid(ctx, country: str):
         country += ' ' + ' '.join(ctx.args)
     country_info = _lookup_country(country.lower())
     if not country_info:
-        chat(ctx).send_text(f"Country \"{country}\" not found", is_error=True)
+        ctx.chat.send_text(f"Country \"{country}\" not found", is_error=True)
         return
     country = country_info['cca3'].upper()
 
@@ -106,7 +107,7 @@ def covid(ctx, country: str):
     total_vaccinations = data.get('total_vaccinations', 0.0)
     vaccinations_percent = data.get('total_vaccinations_per_hundred', 0.0)
     vaccinations_on = datetime.datetime.strptime(data['vaccinations_on'], '%Y-%m-%d')
-    chat(ctx).send_text((f"*Date*: {report_date:%h %d %Y}\n"
+    ctx.chat.send_text((f"*Date*: {report_date:%h %d %Y}\n"
                          f"*New Cases*: {new_cases:.10n}\n"
                          f"*Deaths*: {new_deaths:.10n}\n"
                          f"*Vaccinations*: {new_vaccinations:.10n}/{total_vaccinations:.10n} "
@@ -116,16 +117,16 @@ def covid(ctx, country: str):
 @gyrobot.command('crypto')
 @click.argument('symbol', nargs=-1)
 @click.pass_context
-def crypto(ctx, symbol):
+def crypto(ctx: ExtendedContext, symbol):
     """Display the current exchange rate of currency"""
     for cryptocoin in symbol:
         cryptocoin = cryptocoin.upper()
         prices = requests.get("https://min-api.cryptocompare.com/data/price",
                               params={'fsym': cryptocoin, 'tsyms': 'USD,EUR'}).json()
         if prices.get('Response') == 'Error':
-            chat(ctx).send_text('```' + prices['Message'] + '```\n', is_error=True)
+            ctx.chat.send_text('```' + prices['Message'] + '```\n', is_error=True)
         else:
-            chat(ctx).send_text(f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}")
+            ctx.chat.send_text(f"{cryptocoin} price is € {prices['EUR']} or $ {prices['USD']}")
 
 
 def _diskfree():
@@ -179,17 +180,17 @@ def _progress_bar(percentage, size):
 
 @gyrobot.command('disk_space')
 @click.pass_context
-def disk_space(ctx):
+def disk_space(ctx: ExtendedContext):
     """\
     Display free disk space"""
-    chat(ctx).send_text(_diskfree())
+    ctx.chat.send_text(_diskfree())
 
 
 @gyrobot.command('disk_space_ex')
 @click.pass_context
 def disk_space_ex(ctx):
     """Display free disk space"""
-    chat(ctx).send_text('```' + subprocess.check_output(
+    ctx.chat.send_text('```' + subprocess.check_output(
         ['duf',
          '-only', 'local',
          '-output', 'mountpoint,size,avail,usage',
@@ -199,14 +200,14 @@ def disk_space_ex(ctx):
 
 @gyrobot.command('fortune')
 @click.pass_context
-def fortune(ctx):
+def fortune(ctx: ExtendedContext):
     """Like a Chinese fortune cookie, but less yummy"""
-    chat(ctx).send_text(subprocess.check_output(['/usr/games/fortune']).decode())
+    ctx.chat.send_text(subprocess.check_output(['/usr/games/fortune']).decode())
 
 
 @gyrobot.command('joke')
 @click.pass_context
-def joke(ctx):
+def joke(ctx: ExtendedContext):
     """Tell a joke"""
     proxies = {'http': os.environ['ALT_PROXY'], 'https': os.environ['ALT_PROXY']} if 'ALT_PROXY' in os.environ else {}
     joke_page = requests.get(
@@ -216,7 +217,7 @@ def joke(ctx):
             'User-Agent': 'Slack Bot for Reddit (https://github.com/gschizas/slack-bot)'},
         proxies=proxies)
     joke_text = joke_page.content
-    chat(ctx).send_text(joke_text.decode())
+    ctx.chat.send_text(joke_text.decode())
 
 
 MAGIC_8_BALL_OUTCOMES = [
@@ -255,7 +256,7 @@ def roll():
                   'allow_extra_args': True})
 @click.argument('specs', nargs=-1, required=False)
 @click.pass_context
-def roll_default(ctx, specs=None):
+def roll_default(ctx: ExtendedContext, specs=None):
     """Roll a dice. Optional sides argument (e.g. roll 1d20+5, roll 1d6+2, d20 etc.)"""
     if specs is None:
         specs = ['1d6+0']
@@ -278,22 +279,22 @@ def roll_default(ctx, specs=None):
         final_roll = sum(rolls) + bonus
         roll_text = ', '.join(map(str, rolls))
         times_text = 'time' if times == 1 else 'times'
-        chat(ctx).send_text((
+        ctx.chat.send_text((
             f"You rolled a {sides}-sided dice {times} {times_text} with a bonus of +{bonus}."
             f" You got {roll_text}. Final roll: *{final_roll}*"))
 
 
 @roll.command('magic8')
 @click.pass_context
-def roll_magic8(ctx):
+def roll_magic8(ctx: ExtendedContext):
     result = random.choice(MAGIC_8_BALL_OUTCOMES)
-    chat(ctx).send_text(result)
+    ctx.chat.send_text(result)
 
 
 @roll.command('statline')
 @click.argument('spec', nargs=1, required=False)
 @click.pass_context
-def roll_statline(ctx, spec=None):
+def roll_statline(ctx: ExtendedContext, spec=None):
     min_roll = 2 if spec == 'drop1' else 1
     ability_text = ""
     for roll_line in range(6):
@@ -306,17 +307,18 @@ def roll_statline(ctx, spec=None):
             f"You rolled 4d6: {', '.join([str(a) for a in ability_line])}."
             f" Keeping {', '.join([str(a) for a in ability_line_sorted])},"
             f" for a sum of *{sum(ability_line_sorted)}*.\n")
-    chat(ctx).send_text(ability_text)
+    ctx.chat.send_text(ability_text)
 
 
 MID_DOT: str = '\xb7'
 
 EMPTY_IMAGE = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
 
+
 @gyrobot.command('stocks', aliases=['stock', 'stonk'])
 @click.argument("stock_name")
 @click.pass_context
-def stocks(ctx, stock_name):
+def stocks(ctx: ExtendedContext, stock_name):
     """Show info for a stock"""
     import yfinance as yf
 
@@ -368,7 +370,7 @@ def stocks(ctx, stock_name):
             ]
         }
     ]
-    chat(ctx).send_blocks(blocks)
+    ctx.chat.send_blocks(blocks)
 
 
 @gyrobot.command('uptime')
@@ -378,47 +380,47 @@ def uptime(ctx):
     now = datetime.datetime.now()
     server_uptime = now - datetime.datetime.fromtimestamp(psutil.boot_time())
     process_uptime = now - datetime.datetime.fromtimestamp(psutil.Process(os.getpid()).create_time())
-    chat(ctx).send_text((f"Server uptime: {humanfriendly.format_timespan(server_uptime)}\n"
+    ctx.chat.send_text((f"Server uptime: {humanfriendly.format_timespan(server_uptime)}\n"
                          f"Process uptime: {humanfriendly.format_timespan(process_uptime)}"))
 
 
 @gyrobot.command('urban_dictionary', aliases=['ud'])
 @click.argument('terms', nargs=-1)
 @click.pass_context
-def urban_dictionary(ctx, terms):
+def urban_dictionary(ctx: ExtendedContext, terms):
     """Search in urban dictionary for the first definition of the word or phrase"""
     term = ' '.join(terms)
     definition_page = requests.get('http://api.urbandictionary.com/v0/define', params={'term': term})
     definition_answer = definition_page.json()
     if len(definition_answer) > 0:
-        chat(ctx).send_text(definition_answer['list'][0]['definition'])
+        ctx.chat.send_text(definition_answer['list'][0]['definition'])
     else:
-        chat(ctx).send_text(f"Could not find anything for {term}", is_error=True)
+        ctx.chat.send_text(f"Could not find anything for {term}", is_error=True)
 
 
 @gyrobot.command('youtube_info')
 @click.argument('url')
 @click.pass_context
-def youtube_info(ctx, url):
+def youtube_info(ctx: ExtendedContext, url):
     if url.startswith('<') and url.endswith('>'):
         url = url[1:-1]
-    logger(ctx).info(url)
+    ctx.logger.info(url)
     youtube_data = requests.get('https://youtube.com/oembed', params={'url': url, 'format': 'json'})
-    logger(ctx).debug(youtube_data.text)
+    ctx.logger.debug(youtube_data.text)
     actual_data = json.dumps(json.loads(youtube_data.content), ensure_ascii=False, indent=4).encode()
-    chat(ctx).send_file(actual_data, title=youtube_data.json().get('title', '(no title)'), filetype='json')
+    ctx.chat.send_file(actual_data, title=youtube_data.json().get('title', '(no title)'))
 
 
 @gyrobot.command('unicode')
 @click.argument('text', nargs=-1)
 @click.pass_context
-def unicode(ctx, text):
+def unicode(ctx: ExtendedContext, text):
     """Convert text to unicode code points"""
     text = ' '.join(text)
     final_text = ''
     for char in text:
         final_text += f"U+{ord(char):06x} {char} {unicodedata.name(char)}\n"
-    chat(ctx).send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode', filetype='txt')
+    ctx.chat.send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode')
 
 
 @gyrobot.command('version')
@@ -431,4 +433,4 @@ def version(ctx):
         '--all',
         '--long']
     version_text = subprocess.check_output(git_version_command).decode()
-    chat(ctx).send_text(f"Version: {version_text}")
+    ctx.chat.send_text(f"Version: {version_text}")

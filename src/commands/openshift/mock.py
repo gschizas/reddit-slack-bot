@@ -5,7 +5,8 @@ from string import Template
 import click
 from ruamel.yaml import YAML
 
-from commands import gyrobot, chat, DefaultCommandGroup
+from commands import gyrobot, DefaultCommandGroup
+from commands.extended_context import ExtendedContext
 from commands.openshift.common import OpenShiftNamespace, azure_login, check_security, read_config, env_config
 
 yaml = YAML()
@@ -61,7 +62,7 @@ def mock(ctx: click.Context):
 @click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
 @click.argument('mock_status')
 @click.pass_context
-def mock_default(ctx: click.core.Context, namespace: str, mock_status: OpenShiftNamespace):
+def mock_default(ctx: ExtendedContext, namespace: str, mock_status: OpenShiftNamespace):
     ctx.forward(set_mock)
 
 
@@ -70,14 +71,14 @@ def mock_default(ctx: click.core.Context, namespace: str, mock_status: OpenShift
 @click.argument('mock_status')
 @click.pass_context
 @check_security
-def set_mock(ctx, namespace: str, mock_status: str):
+def set_mock(ctx: ExtendedContext, namespace: str, mock_status: str):
     """Switch openshift mock status on environment"""
     env_vars = ctx.obj['config']['env_vars']
     config_env = env_config(ctx, namespace)
     valid_mock_statuses = [k.upper() for k in config_env['status'].keys()]
     mock_status = mock_status.upper()
     if mock_status not in valid_mock_statuses:
-        chat(ctx).send_text((f"Invalid status `{mock_status}`. "
+        ctx.chat.send_text((f"Invalid status `{mock_status}`. "
                              f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
         return
 
@@ -90,7 +91,7 @@ def set_mock(ctx, namespace: str, mock_status: str):
     if _check_recursive(ctx, vartemplates):
         return
 
-    chat(ctx).send_text(f"Setting mock status to {mock_status} for project {project_name} on {namespace}...")
+    ctx.chat.send_text(f"Setting mock status to {mock_status} for project {project_name} on {namespace}...")
 
     for microservice_info, status in statuses.items():
         microservice, env_variable_value = _get_environment_values(env_vars, vartemplates, microservice_info, status)
@@ -102,12 +103,12 @@ def set_mock(ctx, namespace: str, mock_status: str):
         result_text += environment_set_cmd.stdout.decode() + '\n\n'
 
     result_text += _do_logout(is_azure)
-    # chat(ctx).send_text('```' + result_text + '```')
+    # ctx.chat.send_text('```' + result_text + '```')
 
-    chat(ctx).send_file(result_text.encode(), filename='mock.txt')
+    ctx.chat.send_file(result_text.encode(), filename='mock.txt')
 
 
-def _do_login(ctx, config_env, namespace):
+def _do_login(ctx: ExtendedContext, config_env, namespace):
     result_text = ""
     site = config_env['site']
     prefix = config_env['prefix']
@@ -127,7 +128,7 @@ def _do_login(ctx, config_env, namespace):
         login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
         login_result = login_cmd.stderr.decode().strip()
         if login_cmd.returncode != 0:
-            chat(ctx).send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
+            ctx.chat.send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
             should_exit = True
     return is_azure, prefix, project_name, result_text, should_exit
 
@@ -137,6 +138,8 @@ def _do_logout(is_azure):
         logout_command = ['oc', 'logout']
         result_text = subprocess.check_output(logout_command).decode() + '\n\n'
         result_text = re.sub('\n{2,}', '\n', result_text)
+    else:
+        result_text = ""
     return result_text
 
 
@@ -144,7 +147,7 @@ def _check_recursive(ctx, vartemplates):
     """Check that variables don't contain themselves"""
     for name, value in vartemplates.items():
         if '$' + name in value:
-            chat(ctx).send_text(
+            ctx.chat.send_text(
                 f"Recursive variable template: `{value}` contains `{name}`. ",
                 is_error=True)
             return True
@@ -165,7 +168,7 @@ def _get_environment_values(env_vars, vartemplates, microservice_info, status):
 @click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
 @click.pass_context
 @check_security
-def mock_check(ctx, namespace):
+def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
     """View current status of environment"""
     config_env = env_config(ctx, namespace)
 
@@ -183,4 +186,4 @@ def mock_check(ctx, namespace):
 
     result_text += _do_logout(is_azure)
 
-    chat(ctx).send_file(result_text.encode(), title='OpenShift Data', filename='openshift-data.txt')
+    ctx.chat.send_file(result_text.encode(), title='OpenShift Data', filename='openshift-data.txt')

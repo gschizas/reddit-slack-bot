@@ -12,7 +12,8 @@ from ocpconfig import environments, environment_name, dry_run
 from ruamel.yaml import YAML
 from slackconfig import channel_deployment, username_deployment
 
-from commands import gyrobot, chat
+from commands import gyrobot
+from commands.extended_context import ExtendedContext
 
 urllib3.disable_warnings()
 
@@ -44,11 +45,10 @@ def _deploy_config():
 @click.argument('target_env')
 @click.argument('dry_run')
 @click.pass_context
-def deploy(ctx, microservice, version, source_env, target_env, dry_run=False):
+def deploy(ctx: ExtendedContext, microservice, version, source_env, target_env, dry_run=False):
     """Pull microservice image from source env and push to target env"""
-    chat(ctx).send_text("Not implemented yet!", is_error=True)
+    ctx.chat.send_text("Not implemented yet!", is_error=True)
     return
-
 
     source_registry_prefix_template = environments[source_env]['registry']
     target_registry_prefix_template = environments[target_env]['registry']
@@ -63,7 +63,7 @@ def deploy(ctx, microservice, version, source_env, target_env, dry_run=False):
     target_auth_config = {"username": environments[target_env]['user'], "password": environments[target_env]['secret']}
     tag_with_env_name = environments[target_env]['tagWithEnv'].lower() == 'true'
 
-    chat(ctx).send_text(f"Pulling {source_image}:{version} from {source_env}")
+    ctx.chat.send_text(f"Pulling {source_image}:{version} from {source_env}")
 
     image = None
     try:
@@ -77,7 +77,7 @@ def deploy(ctx, microservice, version, source_env, target_env, dry_run=False):
             client.images.remove(target_image + ":" + version)
         else:
             msg += "(dry run)"
-        chat(ctx).send_text(msg)
+        ctx.chat.send_text(msg)
 
         if tag_with_env_name:
             target_env = environment_name[target_env] if target_env in environment_name else target_env
@@ -89,12 +89,12 @@ def deploy(ctx, microservice, version, source_env, target_env, dry_run=False):
                 client.images.remove(target_image + ":" + target_env)
             else:
                 msg += "(dry run)"
-            chat(ctx).send_text(msg)
+            ctx.chat.send_text(msg)
 
         if not dry_run:
             client.images.remove(source_image + ":" + version)
     except APIError as e:
-        chat(ctx).send_text(f"*Failed with error {e}*")
+        ctx.chat.send_text(f"*Failed with error {e}*")
 
 
 def _handle_message(m: dict):
@@ -116,14 +116,14 @@ def _handle_message(m: dict):
     parts = text.split('/')
 
     if len(parts) != 4:
-        chat(ctx).send_text("*Usage: <microservice>/<version>/<source_env>/<target_env>*")
-        chat(ctx).send_text(f"*Environments supported: {list(environments.keys())}*")
+        ctx.chat.send_text("*Usage: <microservice>/<version>/<source_env>/<target_env>*")
+        ctx.chat.send_text(f"*Environments supported: {list(environments.keys())}*")
         return
     if not parts[2] in environments.keys():
-        chat(ctx).send_text(f"*{parts[2]}* environment not recognized")
+        ctx.chat.send_text(f"*{parts[2]}* environment not recognized")
         return
     if not parts[3] in environments.keys():
-        chat(ctx).send_text(f"*{parts[3]}* environment not recognized")
+        ctx.chat.send_text(f"*{parts[3]}* environment not recognized")
         return
 
     deploy(parts[0], parts[1], parts[2], parts[3], dry_run=dry_run)
