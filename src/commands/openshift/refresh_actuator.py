@@ -117,7 +117,7 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         openshift_token = namespace_obj['credentials']
         ses_main.headers['Authorization'] = 'Bearer ' + openshift_token
         login_cmd = subprocess.run(
-            ['kubectl', 'login', f'--token={openshift_token}', f'--server={server_url}'],
+            ['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'],
             capture_output=True)
         if login_cmd.returncode != 0:
             stderr_output = login_cmd.stderr.decode().strip()
@@ -159,7 +159,7 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 def _start_port_forward(ctx: ExtendedContext, pod_to_refresh: str):
     ctx.logger.debug(f"Starting port forward for {pod_to_refresh}")
     port_fwd = subprocess.Popen(
-        ['kubectl', 'port-forward', pod_to_refresh, '9999:8778'],
+        ['oc', 'port-forward', pod_to_refresh, '9999:8778'],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
     while True:
