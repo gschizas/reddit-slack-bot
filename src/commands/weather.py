@@ -88,8 +88,11 @@ def render_ansi(text, options=None):
         cols = max(len(x) for x in buf)
         rows = len(buf)
 
+        h_padding = 8
+        v_padding = 8
+
         bg_color = 0
-        image = Image.new('RGB', (cols * CHAR_WIDTH, rows * CHAR_HEIGHT), color=bg_color)
+        image = Image.new('RGB', (2 * h_padding + cols * CHAR_WIDTH, 2 * v_padding + rows * CHAR_HEIGHT), color=bg_color)
 
         buf = buf[-ROWS:]
 
@@ -103,14 +106,14 @@ def render_ansi(text, options=None):
                 current_color = _color_mapping(char.fg)
                 if char.bg != 'default':
                     draw.rectangle(
-                        ((x_pos, y_pos),
-                         (x_pos + CHAR_WIDTH, y_pos + CHAR_HEIGHT)),
+                        ((h_padding + x_pos, v_padding + y_pos),
+                         (h_padding + x_pos + CHAR_WIDTH, v_padding + y_pos + CHAR_HEIGHT)),
                         fill=_color_mapping(char.bg))
 
                 data = char.data
 
                 draw.text(
-                    (x_pos, y_pos),
+                    (h_padding + x_pos, v_padding + y_pos),
                     data,
                     font=font,
                     fill=current_color)
