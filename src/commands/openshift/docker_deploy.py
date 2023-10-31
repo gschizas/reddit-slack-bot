@@ -1,54 +1,61 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """ocp-deployer.py: Deployment script for OpenShift Container Platform"""
-import os
-import pathlib
 
 import click
 import docker
-import urllib3
-from docker.errors import APIError
-from ocpconfig import environments, environment_name, dry_run
-from ruamel.yaml import YAML
-from slackconfig import channel_deployment, username_deployment
+import docker.errors
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
+from commands.openshift.common import read_config, check_security
 
-urllib3.disable_warnings()
+# from ocpconfig import environments, environment_name, dry_run
+# from slackconfig import channel_deployment, username_deployment
 
-usernames = dict()
-yaml = YAML()
-
-
-def _deploy_config():
-    if os.environ['DOCKER_DEPLOY_CONFIGURATION'].startswith('/'):
-        config_file = pathlib.Path(os.environ['DOCKER_DEPLOY_CONFIGURATION'])
-    else:
-        config_file = pathlib.Path('config') / os.environ['DOCKER_DEPLOY_CONFIGURATION']
-
-    with config_file.open() as f:
-        docker_deploy_config = yaml.load(f)
-    with config_file.with_suffix('.credentials.yaml').open() as f:
-        docker_deploy_credentials = yaml.load(f)
-
-    for env in docker_deploy_config['environments']:
-        if env in docker_deploy_credentials:
-            docker_deploy_config['environments'][env]['secret'] = docker_deploy_credentials[env]
-    return docker_deploy_config
+_docker_config = read_config('DOCKER_DEPLOY_CONFIGURATION')
 
 
-@gyrobot.command('deploy')
+@gyrobot.group('docker')
+@click.pass_context
+def docker(ctx: ExtendedContext):
+    ctx.ensure_object(dict)
+    ctx.obj['config'] = _docker_config
+    ctx.obj['security_text'] = {'deploy': 'deploy'}
+
+
+class DockerEnvironment(click.ParamType):
+    _force_upper: bool
+    name = 'namespace'
+    _config = {}
+
+    def __init__(self, config, force_upper: bool = None) -> None:
+        super().__init__()
+        self._config = config
+        self._force_upper = force_upper or False
+
+    def convert(self, value, param, ctx) -> str:
+        valid_environments = [e.lower() for e in self._config['environments']]
+        valid_environments_text = ', '.join(valid_environments)
+        if value.lower() not in valid_environments:
+            self.fail(
+                f"{value} is not a valid namespace. Try one of those: {valid_environments_text}",
+                param,
+                ctx)
+        return value.upper() if self._force_upper else value.lower()
+
+
+@docker.command('deploy')
 @click.argument('microservice')
 @click.argument('version')
-@click.argument('source_env')
-@click.argument('target_env')
-@click.argument('dry_run')
+@click.argument('source_env', type=DockerEnvironment(_docker_config))
+@click.argument('target_env', type=DockerEnvironment(_docker_config))
+@click.option('dry_run', '-d', '--dry-run', is_flag=True, default=False, help='Do not push image to target env')
 @click.pass_context
-def deploy(ctx: ExtendedContext, microservice, version, source_env, target_env, dry_run=False):
+@check_security
+def deploy(ctx: ExtendedContext, microservice, version, source_env: DockerEnvironment, target_env: DockerEnvironment, dry_run=False):
     """Pull microservice image from source env and push to target env"""
     ctx.chat.send_text("Not implemented yet!", is_error=True)
-    return
 
     source_registry_prefix_template = environments[source_env]['registry']
     target_registry_prefix_template = environments[target_env]['registry']
@@ -93,11 +100,11 @@ def deploy(ctx: ExtendedContext, microservice, version, source_env, target_env, 
 
         if not dry_run:
             client.images.remove(source_image + ":" + version)
-    except APIError as e:
+    except docker.errors.APIError as e:
         ctx.chat.send_text(f"*Failed with error {e}*")
 
 
-def _handle_message(m: dict):
+def _handle_message(ctx: ExtendedContext, m: dict):
     """Handle message"""
     channel = m['channel']
     if channel != channel_deployment:
