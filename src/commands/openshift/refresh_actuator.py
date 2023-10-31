@@ -48,9 +48,9 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
             port_fwd = _start_port_forward(ctx, pod_to_refresh)
             try:
                 empty_proxies = {'http': None, 'https': None}
-                pod_env_before = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
-                refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies)
-                pod_env_after = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
+                pod_env_before = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
+                refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies, timeout=30)
+                pod_env_after = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
                 _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
             except requests.exceptions.ConnectionError as ex:
                 ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
@@ -149,7 +149,7 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
             port_fwd = _start_port_forward(ctx, pod_to_refresh)
             try:
                 empty_proxies = {'http': None, 'https': None}
-                pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies)
+                pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
                 _send_env_results(ctx, pod_to_refresh, pod_env, excel)
             except requests.exceptions.ConnectionError as ex:
                 ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
