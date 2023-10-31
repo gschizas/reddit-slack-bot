@@ -162,7 +162,11 @@ def _start_port_forward(ctx: ExtendedContext, pod_to_refresh: str):
         ['oc', 'port-forward', pod_to_refresh, '9999:8778'],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
+    process_started_at = time.time()
     while True:
+        if process_started_at + 30 < time.time():
+            ctx.logger.error("Port forward timed out")
+            raise RuntimeError("Port forward timed out")
         if port_fwd.poll() is not None:
             if port_fwd.returncode != 0:
                 port_fwd.stderr.flush()
