@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import concurrent.futures
 import locale
 import logging
 import os
 import string
-import sys
 import traceback
 
 import click.testing
@@ -70,14 +70,16 @@ trigger_words: list = []
 shortcut_words: dict = {}
 bot_name: str = None
 runner: click.testing.CliRunner = None
+executor: concurrent.futures.ThreadPoolExecutor = None
 
 
 def init():
-    global chat_obj, logger, subreddit_name, shortcut_words, bot_name, trigger_words
+    global chat_obj, logger, subreddit_name, shortcut_words, bot_name, trigger_words, executor
     global reddit_session, bot_reddit_session, subreddit
     global runner
     runner = click.testing.CliRunner()
     runner.mix_stderr = True
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
     trigger_words = os.environ['BOT_NAME'].split()
     bot_name = trigger_words[0]
@@ -174,8 +176,11 @@ def handle_line(text):
         'reddit_session': reddit_session,
         'bot_reddit_session': bot_reddit_session
     }
-    result = runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
+    executor.submit(run_command, runner, args, context_obj)
 
+
+def run_command(runner, args, context_obj):
+    result = runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
     if result.exception:
         if 'DEBUG' in os.environ:
             error_text = ''.join(traceback.format_exception(*result.exc_info))
