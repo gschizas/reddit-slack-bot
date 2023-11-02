@@ -26,7 +26,7 @@ def _actuator_config():
 def actuator(ctx: ExtendedContext):
     ctx.ensure_object(dict)
     ctx.obj['config'] = _actuator_config()
-    ctx.obj['security_text'] = {'refresh': 'refresh actuator', 'view': 'view actuator variables'}
+    ctx.obj['security_text'] = {'refresh': 'refresh actuator', 'view': 'view actuator variables', 'pods': 'view pods'}
 
 
 @actuator.command('refresh')
@@ -154,6 +154,24 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
             except requests.exceptions.ConnectionError as ex:
                 ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
             port_fwd.terminate()
+
+
+@actuator.command('pods')
+@click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
+@click.pass_context
+@check_security
+def pods(ctx: ExtendedContext, namespace: str):
+    project_name, server_url, ses_k8s = _connect_openshift(ctx, namespace)
+
+    all_pods_raw = ses_k8s.get(
+        f"{server_url}api/v1/namespaces/{namespace.lower()}/pods")
+    if not all_pods_raw.ok:
+        ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
+        return None
+    #ctx.chat.send_file(file_data=all_pods_raw.content, filename=f"{namespace}-pods.json")
+    fields = ['name', 'podIP']
+    pods = [dict(zip(fields, [pod['metadata']['name'], pod['status']['podIP']])) for pod in all_pods_raw.json()['items']]
+    ctx.chat.send_table(title=f"pods-{namespace}", table=pods)
 
 
 def _start_port_forward(ctx: ExtendedContext, pod_to_refresh: str):
