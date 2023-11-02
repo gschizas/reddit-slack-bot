@@ -144,7 +144,7 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 
         pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
         if len(pods_to_refresh) == 0:
-            ctx.chat.send_text(f"Couldn't find any pods on {namespace} to refresh for {deployment}", is_error=True)
+            ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
         for pod_to_refresh in pods_to_refresh:
             port_fwd = _start_port_forward(ctx, pod_to_refresh)
             try:
