@@ -423,14 +423,20 @@ def unicode(ctx: ExtendedContext, text):
     ctx.chat.send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode')
 
 
-@gyrobot.command('version')
-@click.pass_context
-def version(ctx):
-    """Display version"""
+def _get_version():
     git_version_command = [
         'git',
         'describe',
         '--all',
         '--long']
-    version_text = subprocess.check_output(git_version_command).decode()
-    ctx.chat.send_text(f"Version: {version_text}")
+    return subprocess.check_output(git_version_command).decode()
+
+
+_version = _get_version()
+
+
+@gyrobot.command('version')
+@click.pass_context
+def version(ctx):
+    """Display version"""
+    ctx.chat.send_text(f"Version: {_version}")
