@@ -169,8 +169,11 @@ def pods(ctx: ExtendedContext, namespace: str):
         ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
         return None
     #ctx.chat.send_file(file_data=all_pods_raw.content, filename=f"{namespace}-pods.json")
-    fields = ['name', 'podIP']
-    pods = [dict(zip(fields, [pod['metadata']['name'], pod['status']['podIP']])) for pod in all_pods_raw.json()['items']]
+    fields = ['deployment', 'name', 'podIP']
+    pods = [dict(zip(fields, [
+        pod['metadata']['labels'].get('deployment'),
+        pod['metadata']['name'],
+        pod['status']['podIP']])) for pod in all_pods_raw.json()['items']]
     ctx.chat.send_table(title=f"pods-{namespace}", table=pods)
 
 
