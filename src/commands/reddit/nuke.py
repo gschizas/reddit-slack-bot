@@ -182,7 +182,7 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: str = None, remove
     ctx.chat.send_text(result)
 
 
-@nuke.command('ghosts')
+@nuke.command('ghosts', aliases=['ghost'])
 @click.argument('thread_id')
 @click.pass_context
 def nuke_ghosts(ctx: ExtendedContext, thread_id):
