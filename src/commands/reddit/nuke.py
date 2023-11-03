@@ -180,3 +180,31 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: str = None, remove
             f"{too_old_submissions} submissions were too old for the {timeframe} timeframe.\n"
         )
     ctx.chat.send_text(result)
+
+
+@nuke.command('ghosts')
+@click.argument('thread_id')
+@click.pass_context
+def nuke_ghosts(ctx: ExtendedContext, thread_id):
+    """Nuke deleted users in thread.
+    :parameter: thread_id either the submission URL or the submission id"""
+    thread_id = extract_real_thread_id(thread_id)
+    submission = ctx.reddit_session.submission(thread_id)
+    submission.comments.replace_more(limit=None)
+
+    removed_comments = []
+
+    for comment in submission.comments.list():
+        if comment.distinguished:  # comment was from mod
+            continue
+        if comment.banned_by:  # comment was already removed
+            continue
+        if comment.author:  # author exists
+            continue
+        removed_comments.append({
+            'Id': comment.id,
+            'Link': ctx.reddit_session.config.reddit_url + comment.permalink,
+            'Text': comment.body})
+        comment.mod.remove()
+    ctx.chat.send_text(f"{len(removed_comments)} comments were removed.\n")
+    ctx.chat.send_table(title="Removed Comments", table=removed_comments, send_as_excel=True)
