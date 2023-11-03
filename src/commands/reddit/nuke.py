@@ -3,13 +3,13 @@ import datetime
 import click
 import prawcore
 
-from commands import gyrobot
+from commands import gyrobot, ClickAliasedGroup
 from commands.extended_context import ExtendedContext
 from commands.reddit.common import extract_real_thread_id, extract_username
 from state_file import state_file
 
 
-@gyrobot.group('nuke')
+@gyrobot.group('nuke', cls=ClickAliasedGroup)
 def nuke():
     pass
 
