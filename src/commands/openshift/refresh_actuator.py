@@ -46,21 +46,15 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
         if len(pods_to_refresh) == 0:
             ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
         for pod_to_refresh in pods_to_refresh:
-            port_fwd = _start_port_forward(ctx, pod_to_refresh)
-            try:
-                empty_proxies = {'http': None, 'https': None}
-                pod_env_before = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
-                refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies, timeout=30)
-                pod_env_after = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
-                _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
-            except requests.exceptions.ConnectionError as ex:
-                ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
-            port_fwd.terminate()
-            try:
-                port_fwd.wait(timeout=2)
-                ctx.logger.info(f'== subprocess exited with rc = {port_fwd.returncode}')
-            except subprocess.TimeoutExpired:
-                ctx.logger.error('subprocess did not terminate in time')
+            with PortForwardProcess(ctx, pod_to_refresh):
+                try:
+                    empty_proxies = {'http': None, 'https': None}
+                    pod_env_before = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
+                    refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies, timeout=30)
+                    pod_env_after = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
+                    _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
+                except requests.exceptions.ConnectionError as ex:
+                    ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
 
 
 def _connect_openshift(ctx: ExtendedContext, namespace):
@@ -152,19 +146,13 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
         if len(pods_to_refresh) == 0:
             ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
         for pod_to_refresh in pods_to_refresh:
-            port_fwd = _start_port_forward(ctx, pod_to_refresh)
-            try:
-                empty_proxies = {'http': None, 'https': None}
-                pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
-                _send_env_results(ctx, pod_to_refresh, pod_env, excel)
-            except requests.exceptions.ConnectionError as ex:
-                ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
-            port_fwd.terminate()
-            try:
-                port_fwd.wait(timeout=2)
-                ctx.logger.info(f'== subprocess exited with rc = {port_fwd.returncode}')
-            except subprocess.TimeoutExpired:
-                ctx.logger.error('subprocess did not terminate in time')
+            with PortForwardProcess(ctx, pod_to_refresh):
+                try:
+                    empty_proxies = {'http': None, 'https': None}
+                    pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
+                    _send_env_results(ctx, pod_to_refresh, pod_env, excel)
+                except requests.exceptions.ConnectionError as ex:
+                    ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
 
 
 @actuator.command('pods')
@@ -179,7 +167,7 @@ def pods(ctx: ExtendedContext, namespace: str):
     if not all_pods_raw.ok:
         ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
         return None
-    #ctx.chat.send_file(file_data=all_pods_raw.content, filename=f"{namespace}-pods.json")
+
     fields = ['deployment', 'name', 'podIP']
     pods = [dict(zip(fields, [
         pod['metadata']['labels'].get('deployment'),
@@ -193,32 +181,46 @@ def _output_reader(proc, data):
         data.append(line.strip())
 
 
-def _start_port_forward(ctx: ExtendedContext, pod_to_refresh: str):
-    ctx.logger.debug(f"Starting port forward for {pod_to_refresh}")
-    port_fwd_proc = subprocess.Popen(
-        ['oc', 'port-forward', pod_to_refresh, '9999:8778'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding='utf-8',
-        bufsize=0)
-    out_line = []
-    t = threading.Thread(target=_output_reader, args=(port_fwd_proc, out_line))
-    t.start()
-    time.sleep(1)
-    t.join(timeout=5)
-    while True:
-        if port_fwd_proc.poll() is not None:
-            if port_fwd_proc.returncode != 0:
-                port_fwd_proc.stderr.flush()
-                err_line = port_fwd_proc.stderr.readline()
-                ctx.logger.error(err_line.strip())
-            break
-        if (out_line == ['Forwarding from 127.0.0.1:9999 -> 8778'] or
-                out_line == ['Forwarding from 127.0.0.1:9999 -> 8778', 'Forwarding from [::1]:9999 -> 8778']):
-            ctx.logger.debug("Port forward Listening ok")
-            break
-        time.sleep(0.2)
-    return port_fwd_proc
+class PortForwardProcess:
+    proc: subprocess.Popen
+
+    def __init__(self, ctx: ExtendedContext, pod_to_refresh: str):
+        self.ctx = ctx
+        self.pod_to_refresh = pod_to_refresh
+
+    def __enter__(self):
+        self.ctx.logger.debug(f"Starting port forward for {self.pod_to_refresh}")
+        self.proc = subprocess.Popen(
+            ['oc', 'port-forward', self.pod_to_refresh, '9999:8778'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding='utf-8',
+            bufsize=0)
+        out_line = []
+        t = threading.Thread(target=_output_reader, args=(self.proc, out_line))
+        t.start()
+        time.sleep(1)
+        t.join(timeout=5)
+        while True:
+            if self.proc.poll() is not None:
+                if self.proc.returncode != 0:
+                    self.proc.stderr.flush()
+                    err_line = self.proc.stderr.readline()
+                    self.ctx.logger.error(err_line.strip())
+                break
+            if (out_line == ['Forwarding from 127.0.0.1:9999 -> 8778'] or
+                    out_line == ['Forwarding from 127.0.0.1:9999 -> 8778', 'Forwarding from [::1]:9999 -> 8778']):
+                self.ctx.logger.debug("Port forward Listening ok")
+                break
+            time.sleep(0.2)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.proc.terminate()
+        try:
+            self.proc.wait(timeout=2)
+            self.ctx.logger.info(f'== subprocess exited with rc = {self.proc.returncode}')
+        except subprocess.TimeoutExpired:
+            self.ctx.logger.error('subprocess did not terminate in time')
 
 
 def _get_pods(ctx: ExtendedContext, namespace: str, server_url: str, ses: requests.Session, deployment: str):
