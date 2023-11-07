@@ -58,7 +58,7 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
             port_fwd.terminate()
             try:
                 port_fwd.wait(timeout=2)
-                ctx.logger.info('== subprocess exited with rc =', port_fwd.returncode)
+                ctx.logger.info(f'== subprocess exited with rc = {port_fwd.returncode}')
             except subprocess.TimeoutExpired:
                 ctx.logger.error('subprocess did not terminate in time')
 
@@ -162,7 +162,7 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
             port_fwd.terminate()
             try:
                 port_fwd.wait(timeout=2)
-                ctx.logger.info('== subprocess exited with rc =', port_fwd.returncode)
+                ctx.logger.info(f'== subprocess exited with rc = {port_fwd.returncode}')
             except subprocess.TimeoutExpired:
                 ctx.logger.error('subprocess did not terminate in time')
 
