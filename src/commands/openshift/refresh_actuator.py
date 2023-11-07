@@ -199,7 +199,8 @@ def _start_port_forward(ctx: ExtendedContext, pod_to_refresh: str):
         ctx.logger.debug(out_line.decode().strip())
         if err_line:
             ctx.logger.error(err_line.decode().strip())
-        if out_line == b'Forwarding from 127.0.0.1:9999 -> 8778\n':
+        if (out_line == b'Forwarding from 127.0.0.1:9999 -> 8778\n' or
+                out_line == b'Forwarding from 127.0.0.1:9999 -> 8778\nForwarding from [::1]:9999 -> 8778\n'):
             ctx.logger.debug("Port forward Listening ok")
             break
         time.sleep(0.2)
