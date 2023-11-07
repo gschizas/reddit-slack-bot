@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import subprocess
+import threading
 import time
 
 import click
@@ -55,6 +56,11 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
             except requests.exceptions.ConnectionError as ex:
                 ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
             port_fwd.terminate()
+            try:
+                port_fwd.wait(timeout=2)
+                ctx.logger.info('== subprocess exited with rc =', port_fwd.returncode)
+            except subprocess.TimeoutExpired:
+                ctx.logger.error('subprocess did not terminate in time')
 
 
 def _connect_openshift(ctx: ExtendedContext, namespace):
@@ -154,6 +160,11 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
             except requests.exceptions.ConnectionError as ex:
                 ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
             port_fwd.terminate()
+            try:
+                port_fwd.wait(timeout=2)
+                ctx.logger.info('== subprocess exited with rc =', port_fwd.returncode)
+            except subprocess.TimeoutExpired:
+                ctx.logger.error('subprocess did not terminate in time')
 
 
 @actuator.command('pods')
@@ -177,34 +188,37 @@ def pods(ctx: ExtendedContext, namespace: str):
     ctx.chat.send_table(title=f"pods-{namespace}", table=pods)
 
 
+def _output_reader(proc, data):
+    for line in iter(proc.stdout.readline, ''):
+        data.append(line.strip())
+
+
 def _start_port_forward(ctx: ExtendedContext, pod_to_refresh: str):
     ctx.logger.debug(f"Starting port forward for {pod_to_refresh}")
-    port_fwd = subprocess.Popen(
+    port_fwd_proc = subprocess.Popen(
         ['oc', 'port-forward', pod_to_refresh, '9999:8778'],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE)
-    process_started_at = time.time()
+        stderr=subprocess.PIPE,
+        encoding='utf-8',
+        bufsize=0)
+    out_line = []
+    t = threading.Thread(target=_output_reader, args=(port_fwd_proc, out_line))
+    t.start()
+    time.sleep(1)
+    t.join(timeout=5)
     while True:
-        if process_started_at + 30 < time.time():
-            ctx.logger.error("Port forward timed out")
-            raise RuntimeError("Port forward timed out")
-        if port_fwd.poll() is not None:
-            if port_fwd.returncode != 0:
-                port_fwd.stderr.flush()
-                err_line = port_fwd.stderr.readline()
-                ctx.logger.error(err_line.decode().strip())
+        if port_fwd_proc.poll() is not None:
+            if port_fwd_proc.returncode != 0:
+                port_fwd_proc.stderr.flush()
+                err_line = port_fwd_proc.stderr.readline()
+                ctx.logger.error(err_line.strip())
             break
-        out_line = port_fwd.stdout.readline()
-        err_line = port_fwd.stderr.readline()
-        ctx.logger.debug(out_line.decode().strip())
-        if err_line:
-            ctx.logger.error(err_line.decode().strip())
-        if (out_line == b'Forwarding from 127.0.0.1:9999 -> 8778\n' or
-                out_line == b'Forwarding from 127.0.0.1:9999 -> 8778\nForwarding from [::1]:9999 -> 8778\n'):
+        if (out_line == ['Forwarding from 127.0.0.1:9999 -> 8778'] or
+                out_line == ['Forwarding from 127.0.0.1:9999 -> 8778', 'Forwarding from [::1]:9999 -> 8778']):
             ctx.logger.debug("Port forward Listening ok")
             break
         time.sleep(0.2)
-    return port_fwd
+    return port_fwd_proc
 
 
 def _get_pods(ctx: ExtendedContext, namespace: str, server_url: str, ses: requests.Session, deployment: str):
