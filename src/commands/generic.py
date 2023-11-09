@@ -108,10 +108,10 @@ def covid(ctx: ExtendedContext, country: str):
     vaccinations_percent = data.get('total_vaccinations_per_hundred', 0.0)
     vaccinations_on = datetime.datetime.strptime(data['vaccinations_on'], '%Y-%m-%d')
     ctx.chat.send_text((f"*Date*: {report_date:%h %d %Y}\n"
-                         f"*New Cases*: {new_cases:.10n}\n"
-                         f"*Deaths*: {new_deaths:.10n}\n"
-                         f"*Vaccinations*: {new_vaccinations:.10n}/{total_vaccinations:.10n} "
-                         f"({vaccinations_percent:.5n}%) - on {vaccinations_on:%h %d %Y}"))
+                        f"*New Cases*: {new_cases:.10n}\n"
+                        f"*Deaths*: {new_deaths:.10n}\n"
+                        f"*Vaccinations*: {new_vaccinations:.10n}/{total_vaccinations:.10n} "
+                        f"({vaccinations_percent:.5n}%) - on {vaccinations_on:%h %d %Y}"))
 
 
 @gyrobot.command('crypto')
@@ -157,7 +157,7 @@ if hasattr(os, 'statvfs'):  # POSIX
 elif os.name == 'nt':  # Windows
     def _disk_usage_raw(path):
         _, total, free = ctypes.c_ulonglong(), ctypes.c_ulonglong(), \
-                         ctypes.c_ulonglong()
+            ctypes.c_ulonglong()
         fun = ctypes.windll.kernel32.GetDiskFreeSpaceExW
         ret = fun(path, ctypes.byref(_), ctypes.byref(total), ctypes.byref(free))
         if ret == 0:
@@ -381,7 +381,7 @@ def uptime(ctx):
     server_uptime = now - datetime.datetime.fromtimestamp(psutil.boot_time())
     process_uptime = now - datetime.datetime.fromtimestamp(psutil.Process(os.getpid()).create_time())
     ctx.chat.send_text((f"Server uptime: {humanfriendly.format_timespan(server_uptime)}\n"
-                         f"Process uptime: {humanfriendly.format_timespan(process_uptime)}"))
+                        f"Process uptime: {humanfriendly.format_timespan(process_uptime)}"))
 
 
 @gyrobot.command('urban_dictionary', aliases=['ud'])
