@@ -4,6 +4,7 @@ import concurrent.futures
 import locale
 import logging
 import os
+import re
 import string
 import traceback
 
@@ -200,13 +201,16 @@ def run_command(runner, args, context_obj):
         chat_obj.send_text('```\n' + result.output.strip() + '```\n')
 
 
-IDENTCHARS = string.ascii_letters + string.digits + '_'
-
-
 def precmd(line):
-    i, n = 0, len(line)
-    while i < n and line[i] in IDENTCHARS: i += 1
-    return line[:i].lower() + line[i:]
+    """Convert the beginning part of the input string line to lowercase.
+    The “beginning part” is defined as the longest prefix composed only of alphanumeric characters and underscores.
+    The rest of the string will remain unchanged."""
+    match = re.match('^[_A-Za-z0-9]*', line)
+    if match:
+        matched_part = match.group(0)
+        return matched_part.lower() + line[len(matched_part):]
+    else:
+        return line
 
 
 def default(line):
