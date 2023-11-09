@@ -61,17 +61,17 @@ if 'KUDOS_DATABASE_URL' in os.environ:
 if 'GYROBOT_DATABASE_URL' in os.environ:
     import commands.reddit.database
 
-logger: logging.Logger = None
-chat_obj: ChatWrapper = None
+logger: logging.Logger
+chat_obj: ChatWrapper
 reddit_session: praw.Reddit = None
 bot_reddit_session: praw.reddit.Reddit = None
 subreddit: praw.reddit.Subreddit = None
-subreddit_name: str = None
-trigger_words: list = []
-shortcut_words: dict = {}
-bot_name: str = None
-runner: click.testing.CliRunner = None
-executor: concurrent.futures.ThreadPoolExecutor = None
+subreddit_name: str
+trigger_words: list
+shortcut_words: dict
+bot_name: str
+runner: click.testing.CliRunner
+executor: concurrent.futures.ThreadPoolExecutor
 
 
 def init():
