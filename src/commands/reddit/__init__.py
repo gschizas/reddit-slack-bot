@@ -287,7 +287,7 @@ def _archive_page(url):
 @click.pass_context
 def archive_user(ctx: ExtendedContext, username):
     """\
-    Archive all posts and comments of a user. This helps preserving the
+    Archive all posts and comments of a user. This helps to preserve the
     account history when nuking the user's contribution (especially when
     the user then deletes their account).
     Only one argument, the username"""
