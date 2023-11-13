@@ -284,7 +284,10 @@ def roll_default(ctx: ExtendedContext, specs=None):
             f" You got {roll_text}. Final roll: *{final_roll}*"))
 
 
-@roll.command('magic8')
+@roll.command('magic8',
+              context_settings={
+                  'ignore_unknown_options': True,
+                  'allow_extra_args': True})
 @click.pass_context
 def roll_magic8(ctx: ExtendedContext):
     result = random.choice(MAGIC_8_BALL_OUTCOMES)
