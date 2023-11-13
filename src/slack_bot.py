@@ -5,7 +5,6 @@ import locale
 import logging
 import os
 import re
-import string
 import traceback
 
 import click.testing
