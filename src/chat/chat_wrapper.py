@@ -33,6 +33,10 @@ class Conversation(ABC):
     def send_blocks(self, blocks):
         pass
 
+    @abstractmethod
+    def get_user_info(self, user_id) -> Dict:
+        pass
+
 
 class Message:
     conversation: Conversation

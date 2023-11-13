@@ -97,6 +97,10 @@ class SlackConversation(Conversation):
             blocks=blocks,
             username=self.bot_name)
 
+    def get_user_info(self, user_id):
+        _slack_user_info(user_id)
+        return users_cache[user_id]
+
 
 def chat_connect(a_bot_name, a_line_handler):
     global bot_name, line_handler, logger
