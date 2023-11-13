@@ -1,6 +1,8 @@
 import click
 
-setattr(click.Context, 'chat', property(lambda self: self.obj['chat']))
+setattr(click.Context, 'chat_wrapper', property(lambda self: self.obj['chat_wrapper']))
+setattr(click.Context, 'chat', property(lambda self: self.obj['message'].conversation))
+setattr(click.Context, 'message', property(lambda self: self.obj['message']))
 setattr(click.Context, 'logger', property(lambda self: self.obj['logger']))
 setattr(click.Context, 'subreddit', property(lambda self: self.obj['subreddit']))
 setattr(click.Context, 'reddit_session', property(lambda self: self.obj['reddit_session']))

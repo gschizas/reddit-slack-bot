@@ -3,13 +3,22 @@ import logging
 import click
 import praw
 
-from chat import ChatWrapper
+from chat.chat_wrapper import ChatWrapper, Message, Conversation
 
 
 class ExtendedContext(click.Context):
+
     @property
-    def chat(self) -> ChatWrapper:
-        return self.obj['chat']
+    def chat_wrapper(self) -> ChatWrapper:
+        return self.obj['chat_wrapper']
+
+    @property
+    def chat(self) -> Conversation:
+        return self.obj['message'].conversation
+
+    @property
+    def message(self) -> Message:
+        return self.obj['message']
 
     @property
     def logger(self) -> logging.Logger:

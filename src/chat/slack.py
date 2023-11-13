@@ -1,45 +1,49 @@
+import datetime
 import io
+import logging
 import os
-from typing import List, Dict
+from typing import List, Dict, Callable
 
 import pandas as pd
-from tabulate import tabulate
-from slack_sdk import WebClient
-from slack_sdk.rtm import RTMClient
 from slack_sdk.errors import SlackApiError
+from slack_sdk.rtm_v2 import RTMClient
+from slack_sdk.web import WebClient
+from tabulate import tabulate
 
-from chat.chat_wrapper import ChatWrapper
+from chat.chat_wrapper import Conversation, Message
+
+slack_client: RTMClient = RTMClient(token=os.environ['SLACK_API_TOKEN'], proxy=os.environ.get('HTTPS_PROXY'))
+web_client: WebClient = WebClient(token=os.environ['SLACK_API_TOKEN'], proxy=os.environ.get('HTTPS_PROXY'))
+
+teams_cache = {}
+users_cache = {}
+channels_cache = {}
+
+bot_name: str
+handle_message: Callable
+logger: logging.Logger
 
 
-class SlackWrapper(ChatWrapper):
+class SlackConversation(Conversation):
+    bot_name: str
+    channel_id: str
+    user_id: str
+    team_id: str
 
-    def __init__(self, bot_name, message_handler):
-        super().__init__(bot_name, message_handler)
-        self.slack_client = None
-
-    def connect(self):
-        slack_api_token = os.environ['SLACK_API_TOKEN']
-        self.slack_client = RTMClient(
-            token=slack_api_token,
-            proxy=os.environ.get('HTTPS_PROXY'))
-
-    def load(self, web_client, team_id, channel_id, user_id, msg, permalink):
-        self.web_client = web_client
-        self.team_id = team_id
+    def __init__(self, bot_name, channel_id, user_id, team_id):
+        self.bot_name = bot_name
         self.channel_id = channel_id
         self.user_id = user_id
-        self.message = msg
-        self.permalink = permalink
+        self.team_id = team_id
 
-    def preload(self, user_id, team_id, channel_id):
-        self.slack_team_info(team_id)
-        self.slack_user_info(user_id)
-        self.slack_channel_info(team_id, channel_id)
+    @property
+    def channel_name(self):
+        return channels_cache[self.team_id].get(self.channel_id)
 
     def send_text(self, text, is_error=False, icon_emoji=None, channel=None):
         if icon_emoji is None:
             icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
-        self.web_client.chat_postMessage(
+        web_client.chat_postMessage(
             channel=channel or self.channel_id,
             text=text,
             icon_emoji=icon_emoji,
@@ -58,7 +62,7 @@ class SlackWrapper(ChatWrapper):
     def send_ephemeral(self, text=None, blocks=None, is_error=False, icon_emoji=None):
         if icon_emoji is None:
             icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
-        self.web_client.chat_postEphemeral(
+        web_client.chat_postEphemeral(
             channel=self.channel_id,
             blocks=blocks,
             text=text,
@@ -68,7 +72,7 @@ class SlackWrapper(ChatWrapper):
 
     def send_file(self, file_data, title=None, filename=None, channel=None):
         try:
-            self.web_client.files_upload_v2(
+            web_client.files_upload_v2(
                 channel=channel or self.channel_id,
                 icon_emoji=':robot_face:',
                 username=self.bot_name,
@@ -79,7 +83,7 @@ class SlackWrapper(ChatWrapper):
             self.send_text(text=f"Error while uploading {filename}:\n```{ex!r}```", is_error=True)
 
     def send_fields(self, text, fields):
-        self.web_client.chat_postMessage(
+        web_client.chat_postMessage(
             channel=self.channel_id,
             icon_emoji=':robot_face:',
             text=text,
@@ -87,50 +91,79 @@ class SlackWrapper(ChatWrapper):
             attachments=fields)
 
     def send_blocks(self, blocks):
-        self.web_client.chat_postMessage(
+        web_client.chat_postMessage(
             channel=self.channel_id,
             icon_emoji=':robot_face:',
             blocks=blocks,
             username=self.bot_name)
 
-    def slack_user_info(self, user_id):
-        if user_id not in self.users:
-            response_user = self.web_client.users_info(user=user_id)
-            if response_user['ok']:
-                self.users[user_id] = response_user['user']
 
-    def slack_team_info(self, team_id):
-        if team_id not in self.teams:
-            response_team = self.web_client.team_info()
-            if response_team['ok']:
-                self.teams[team_id] = response_team['team']
+def chat_connect(a_bot_name, a_line_handler):
+    global bot_name, line_handler, logger
+    bot_name = a_bot_name
+    line_handler = a_line_handler
+    slack_client.start()
 
-    def slack_channel_info(self, team_id, channel_id):
-        if team_id not in self.channels:
-            self.channels[team_id] = {}
-        if channel_id not in self.channels[team_id]:
-            response_channel = self.web_client.conversations_info(channel=channel_id)
-            channel_info = response_channel['channel'] if response_channel['ok'] else {}
-            if channel_info.get('is_group') or channel_info.get('is_channel'):
-                priv = '🔒' if channel_info.get('is_private') else '#'
-                self.channels[team_id][channel_id] = priv + channel_info['name_normalized']
-            elif channel_info.get('is_im'):
-                response_members = self.web_client.conversations_members(channel=channel_id)
-                for user_id in response_members['members']:
-                    self.slack_user_info(user_id)
-                participants = [f"{self.users[user_id]['real_name']} <{self.users[user_id]['name']}@{user_id}>"
-                                for user_id in response_members['members']]
-                self.channels[team_id][channel_id] = '🧑' + ' '.join(participants)
 
-    def start(self):
-        self.slack_client.start()
-        # slack.RTMClient.on(event='message', callback=self.handle_message)
+def _slack_user_info(user_id):
+    if user_id not in users_cache:
+        response_user = web_client.users_info(user=user_id)
+        if response_user['ok']:
+            users_cache[user_id] = response_user['user']
 
-    @staticmethod
-    @RTMClient.run_on(event='message')
-    def handle_message(**payload):
-        SlackWrapper.message_handler(**payload)
 
-    @property
-    def channel_name(self):
-        return self.channels[self.team_id].get(self.channel_id)
+def _slack_team_info(team_id):
+    if team_id not in teams_cache:
+        response_team = web_client.team_info()
+        if response_team['ok']:
+            teams_cache[team_id] = response_team['team']
+
+
+def _slack_channel_info(team_id, channel_id):
+    if team_id not in channels_cache:
+        channels_cache[team_id] = {}
+    if channel_id not in channels_cache[team_id]:
+        response_channel = web_client.conversations_info(channel=channel_id)
+        channel_info = response_channel['channel'] if response_channel['ok'] else {}
+        if channel_info.get('is_group') or channel_info.get('is_channel'):
+            priv = '🔒' if channel_info.get('is_private') else '#'
+            channels_cache[team_id][channel_id] = priv + channel_info['name_normalized']
+        elif channel_info.get('is_im'):
+            response_members = web_client.conversations_members(channel=channel_id)
+            for user_id in response_members['members']:
+                _slack_user_info(user_id)
+            participants = [f"{users_cache[user_id]['real_name']} <{users_cache[user_id]['name']}@{user_id}>"
+                            for user_id in response_members['members']]
+            channels_cache[team_id][channel_id] = '🧑' + ' '.join(participants)
+
+
+def _preload(user_id, team_id, channel_id):
+    _slack_team_info(team_id)
+    _slack_user_info(user_id)
+    _slack_channel_info(team_id, channel_id)
+
+
+@slack_client.on(event_type='message')
+def handle_slack_message(client: RTMClient, event: dict):
+    global logger
+    if event.get('subtype') in (
+            'message_deleted', 'message_replied', 'file_share', 'bot_message', 'slackbot_response'):
+        logger.debug(f"Found message of subtype {event.get('subtype')}")
+        return
+    if 'message' in event:
+        event.update(event['message'])
+        del event['message']
+
+    channel_id = event['channel']
+    team_id = event.get('team', '')
+    user_id = event.get('user', '')
+
+    _preload(user_id, team_id, channel_id)
+
+    timestamp = datetime.datetime.fromtimestamp(float(event['ts']))
+    permalink_raw = web_client.chat_getPermalink(channel=channel_id, message_ts=event['ts'])
+    permalink = permalink_raw['permalink']
+
+    conversation = SlackConversation(bot_name, channel_id, user_id, team_id)
+    message: Message = Message(conversation, timestamp, permalink, event['text'])
+    handle_message(message)

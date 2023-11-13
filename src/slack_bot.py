@@ -11,6 +11,7 @@ import click.testing
 import praw
 import requests
 
+import chat.chat_wrapper
 import commands
 import commands.convert
 import commands.generic
@@ -19,7 +20,8 @@ from bot_framework.common import normalize_text
 from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
 from bot_framework.yaml_wrapper import yaml
-from chat import get_chat_wrapper, ChatWrapper
+from chat import get_chat_wrapper
+from chat.chat_wrapper import ChatWrapper, Conversation
 
 locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
 
@@ -90,9 +92,13 @@ def init():
     else:
         shortcut_words = {}
 
-    chat_obj = get_chat_wrapper(trigger_words[0], handle_message)
-    chat_obj.connect()
+    chat_obj = get_chat_wrapper(logger, trigger_words[0], handle_message)
+    _init_reddit()
+    chat_obj.start()
 
+
+def _init_reddit():
+    global subreddit_name, reddit_session, subreddit, bot_reddit_session
     subreddit_name = os.environ.get('SUBREDDIT_NAME')
     if subreddit_name:
         base_user_agent = 'python:gr.terrasoft.reddit.slackmodbot'
@@ -107,30 +113,12 @@ def init():
                                               scopes=['*'])
 
 
-def handle_message(**payload):
+def handle_message(message: chat.chat_wrapper.Message):
     global trigger_words, chat_obj
-    msg = payload['data']
-    web_client = payload['web_client']
-    rtm_client = payload['rtm_client']
 
-    if msg.get('subtype') in ('message_deleted', 'message_replied', 'file_share', 'bot_message', 'slackbot_response'):
-        logger.debug(f"Found message of subtype {msg.get('subtype')}")
-        return
-    if 'message' in msg:
-        msg.update(msg['message'])
-        del msg['message']
-
-    channel_id = msg['channel']
-    team_id = msg.get('team', '')
-    user_id = msg.get('user', '')
-
-    permalink = web_client.chat_getPermalink(channel=channel_id, message_ts=msg['ts'])
-    chat_obj.load(web_client, team_id, channel_id, user_id, msg, permalink)
-    chat_obj.preload(user_id, team_id, channel_id)
-
-    text_lines = parse_shortcuts(msg['text'])
+    text_lines = parse_shortcuts(message.text)  # one message may contain multiple commands
     for text_line in text_lines:
-        handle_line(text_line)
+        handle_line(text_line, message)
 
 
 def parse_shortcuts(text):
@@ -159,7 +147,7 @@ def parse_shortcuts(text):
     return text_lines
 
 
-def handle_line(text):
+def handle_line(text, message):
     global chat_obj, trigger_words
     logger.debug(f"Triggerred by {text}")
     line = ' '.join(text.split()[1:])
@@ -170,34 +158,38 @@ def handle_line(text):
         args.append('--help')
     commands.gyrobot.name = trigger_words[0]
     context_obj = {
-        'chat': chat_obj,
+        'chat_wrapper': chat_obj,
         'logger': logger,
         'subreddit': subreddit,
         'reddit_session': reddit_session,
-        'bot_reddit_session': bot_reddit_session
+        'bot_reddit_session': bot_reddit_session,
+        'message': message
     }
     executor.submit(run_command, runner, args, context_obj)
+    # run_command(runner, args, context_obj)
 
 
-def run_command(runner, args, context_obj):
-    result = runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
+def run_command(a_runner, args, context_obj: dict):
+    result = a_runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
+    channel_id = context_obj['message'].conversation.channel_id
+    current_chat: Conversation = context_obj['message'].conversation
     if result.exception:
         if 'DEBUG' in os.environ:
             error_text = ''.join(traceback.format_exception(*result.exc_info))
         elif 'PERSONAL_DEBUG' in os.environ:
             error_text = str(result.exception)
             exception_full_text = ''.join(traceback.format_exception(*result.exc_info))
-            chat_obj.send_file(filename='error.txt', file_data=exception_full_text.encode(),
-                               channel=os.environ['PERSONAL_DEBUG'])
+            current_chat.send_file(filename='error.txt', file_data=exception_full_text.encode(),
+                                   channel=os.environ['PERSONAL_DEBUG'])
         else:
             error_text = str(result.exception)
-        if len(error_text) < 2 ** 11:
-            chat_obj.send_text(f"```\n:::Error:::{error_text}```\n", is_error=True)
+        if len(error_text) < 2 ** 9:
+            current_chat.send_text(f"```\n:::Error:::{error_text}```\n", is_error=True, channel=channel_id)
         else:
-            chat_obj.send_file(filename='error.txt', file_data=error_text.encode())
+            current_chat.send_file(filename='error.txt', file_data=error_text.encode(), channel=channel_id)
 
     if result.output != '':
-        chat_obj.send_text('```\n' + result.output.strip() + '```\n')
+        current_chat.send_text('```\n' + result.output.strip() + '```\n', channel=channel_id)
 
 
 def precmd(line):
@@ -240,7 +232,6 @@ def main():
     global trigger_words, shortcut_words
     logger = setup_logging(os.environ.get('LOG_NAME', 'unknown'), when=os.environ.get('LOG_ROLLOVER'))
     init()
-    chat_obj.start()
 
 
 if __name__ == '__main__':
