@@ -75,10 +75,9 @@ def kudos_give(ctx: ExtendedContext):
     all_users = set(re.findall(r'<@(\w+)>', arg))
 
     for recipient_user_id in all_users:
-        ctx.chat.slack_user_info(recipient_user_id)
-        ctx.chat.slack_channel_info(ctx.chat.team_id, ctx.chat.channel_id)
-        recipient_name = ctx.chat.users[recipient_user_id]['name']
-        sender_name = ctx.chat.users[ctx.chat.user_id]['name']
+        # ctx.chat.preload(recipient_user_id, ctx.chat.team_id, ctx.message.channel_id)
+        recipient_name = ctx.chat.get_user_info(recipient_user_id)['name']
+        sender_name = ctx.chat.get_user_info(ctx.chat.user_id)['name']
 
         if recipient_user_id == ctx.chat.user_id:
             ctx.chat.send_text("You can't give kudos to yourself, silly!", is_error=True)
@@ -132,10 +131,9 @@ def _record_kudos(ctx: ExtendedContext, sender_name, recipient_name, recipient_u
             cmd_vars = {
                 'sender_name': sender_name, 'sender_id': ctx.chat.user_id,
                 'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
-                'team_name': ctx.chat.teams[ctx.chat.team_id]['name'], 'team_id': ctx.chat.team_id,
-                'channel_name': ctx.chat.channels[ctx.chat.team_id][ctx.chat.channel_id],
-                'channel_id': ctx.chat.channel_id,
-                'permalink': ctx.chat.permalink['permalink'], 'reason': reason}
+                'team_name': ctx.chat.get_team_info()['name'], 'team_id': ctx.chat.team_id,
+                'channel_name': ctx.chat.channel_name, 'channel_id': ctx.chat.channel_id,
+                'permalink': ctx.message.permalink, 'reason': reason}
             cur.execute(SQL_KUDOS_INSERT, params=cmd_vars)
             success = cur.rowcount > 0
     return success
