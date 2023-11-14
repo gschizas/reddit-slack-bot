@@ -8,6 +8,13 @@ class Conversation(ABC):
     channel_id: str
     channel_name: str
     user_id: str
+    team_id: str
+
+    def __init__(self, bot_name, channel_id, user_id, team_id):
+        self.bot_name = bot_name
+        self.channel_id = channel_id
+        self.user_id = user_id
+        self.team_id = team_id
 
     @abstractmethod
     def send_text(self, text, is_error: bool = False, icon_emoji: str = None, channel=None) -> None:
@@ -35,6 +42,10 @@ class Conversation(ABC):
 
     @abstractmethod
     def get_user_info(self, user_id) -> Dict:
+        pass
+
+    @abstractmethod
+    def get_team_info(self) -> Dict:
         pass
 
 

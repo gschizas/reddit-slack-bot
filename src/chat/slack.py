@@ -25,17 +25,6 @@ logger: logging.Logger
 
 
 class SlackConversation(Conversation):
-    bot_name: str
-    channel_id: str
-    user_id: str
-    team_id: str
-
-    def __init__(self, bot_name, channel_id, user_id, team_id):
-        self.bot_name = bot_name
-        self.channel_id = channel_id
-        self.user_id = user_id
-        self.team_id = team_id
-
     @property
     def channel_name(self):
         return channels_cache[self.team_id].get(self.channel_id)
@@ -100,6 +89,10 @@ class SlackConversation(Conversation):
     def get_user_info(self, user_id):
         _slack_user_info(user_id)
         return users_cache[user_id]
+
+    def get_team_info(self):
+        _slack_team_info(team_id=self.team_id)
+        return teams_cache[self.team_id]
 
 
 def chat_connect(a_bot_name, a_line_handler):
