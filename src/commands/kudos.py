@@ -1,9 +1,10 @@
-import click
 import html
 import os
-import psycopg
 import random
 import re
+
+import click
+import psycopg
 
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
