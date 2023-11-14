@@ -243,10 +243,7 @@ def add_domain_tag(ctx: ExtendedContext, url, color):
 @click.pass_context
 def add_policy(ctx: ExtendedContext, title):
     """Add a minor policy change done via Slack's #modpolicy channel"""
-    permalink_response = ctx.chat.web_client.chat_getPermalink(
-        channel=ctx.chat.channel_id,
-        message_ts=ctx.chat.message['ts'])
-    permalink = permalink_response['permalink']
+    permalink = ctx.message.permalink
     policy_subreddit = os.environ.get('REDDIT_POLICY_SUBREDDIT', ctx.subreddit.display_name)
     policy_page = os.environ.get('REDDIT_POLICY_PAGE', 'mod_policy_votes')
     sr = ctx.reddit_session.subreddit(policy_subreddit)
