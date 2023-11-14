@@ -1,10 +1,12 @@
 import re
 
+REDDIT_USERNAME_PATTERN = r'^<https://(?:www\.|old\.)?reddit\.com/u(?:ser)?/(?P<username>[a-zA-Z0-9_-]+)/?(?:\|\1)?>$'
+
 
 def extract_username(username):
     if re.match('^[a-zA-Z0-9_-]+$', username):
         pass
-    elif m := re.match(r'^<https://(?:www\.|old\.)?reddit\.com/u(?:ser)?/(?P<username>[a-zA-Z0-9_-]+)/?(?:\|\1)?>$', username):
+    elif m := re.match(REDDIT_USERNAME_PATTERN, username):
         username = m.group('username')
     elif re.match(r'^u/[a-zA-Z0-9_-]+$', username):
         username = username.split('/')[-1]

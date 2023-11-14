@@ -49,9 +49,12 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
             with PortForwardProcess(ctx, pod_to_refresh):
                 try:
                     empty_proxies = {'http': None, 'https': None}
-                    pod_env_before = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
-                    refresh_result = requests.post("http://localhost:9999/actuator/refresh", proxies=empty_proxies, timeout=30)
-                    pod_env_after = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
+                    pod_env_before = requests.get("http://localhost:9999/actuator/env",
+                                                  proxies=empty_proxies, timeout=30)
+                    refresh_result = requests.post("http://localhost:9999/actuator/refresh",
+                                                   proxies=empty_proxies, timeout=30)
+                    pod_env_after = requests.get("http://localhost:9999/actuator/env",
+                                                 proxies=empty_proxies, timeout=30)
                     _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
                 except requests.exceptions.ConnectionError as ex:
                     ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
@@ -169,11 +172,11 @@ def pods(ctx: ExtendedContext, namespace: str):
         return None
 
     fields = ['deployment', 'name', 'podIP']
-    pods = [dict(zip(fields, [
+    pods_list = [dict(zip(fields, [
         pod['metadata']['labels'].get('deployment'),
         pod['metadata']['name'],
         pod['status']['podIP']])) for pod in all_pods_raw.json()['items']]
-    ctx.chat.send_table(title=f"pods-{namespace}", table=pods)
+    ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
 
 
 def _output_reader(proc, data):

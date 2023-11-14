@@ -13,13 +13,13 @@ from bot_framework.yaml_wrapper import yaml
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 
-SQL_SURVEY_PREFILLED_ANSWERS = """select answer[3] AS Code, answer_value as Answer, count(*) AS VoteCount
+SQL_SURVEY_PREFILLED_ANSWERS = r"""select answer[3] AS Code, answer_value as Answer, count(*) AS VoteCount
 from (select regexp_split_to_array(code, '_') AS answer_parts, *
       from "Answers"
       where  code = 'q_{0}' or code like 'q\_{0}\_%') AS dt(answer)
 group by 1, 2
 order by 3 desc"""
-SQL_SURVEY_TEXT = """select answer_value as Answer, count(*) AS VoteCount 
+SQL_SURVEY_TEXT = r"""select answer_value as Answer, count(*) AS VoteCount 
 from "Answers"
 where code = 'q_{0}'
 group by 1
@@ -30,7 +30,7 @@ from (select regexp_split_to_array(code, '_') AS answer_parts, *
       where code like 'q\_{0}\_%') AS dt(answer)
 group by 1, 2
 order by 1, 3 desc"""
-SQL_SURVEY_PARTICIPATION = """select count(*), date(datestamp) from "Votes"
+SQL_SURVEY_PARTICIPATION = r"""select count(*), date(datestamp) from "Votes"
 group by date(datestamp)
 order by date(datestamp);"""
 

@@ -79,7 +79,7 @@ def set_mock(ctx: ExtendedContext, namespace: str, mock_status: str):
     mock_status = mock_status.upper()
     if mock_status not in valid_mock_statuses:
         ctx.chat.send_text((f"Invalid status `{mock_status}`. "
-                             f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
+                            f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
         return
 
     is_azure, prefix, project_name, result_text, should_exit = _do_login(ctx, config_env, namespace)

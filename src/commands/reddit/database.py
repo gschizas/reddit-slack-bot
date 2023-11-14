@@ -2,7 +2,6 @@ import os
 
 import click
 import psycopg
-from tabulate import tabulate
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext

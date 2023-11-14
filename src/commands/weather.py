@@ -21,7 +21,7 @@ def render_ansi(text, options=None):
 
     Return: file content
     """
-    import pyte.screens
+    import pyte.modes
     from PIL import Image, ImageFont, ImageDraw
 
     def _color_mapping(color):

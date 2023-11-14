@@ -33,7 +33,7 @@ def cronjob(ctx: ExtendedContext):
 def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
     cronjobs = get_cronjobs(ctx, namespace)
     if not excel:
-        cronjobs = [{k: v for k, v in cronjob.items() if k not in REMOVE_CRONJOB_KEYS} for cronjob in cronjobs]
+        cronjobs = [{k: v for k, v in cj.items() if k not in REMOVE_CRONJOB_KEYS} for cj in cronjobs]
     ctx.chat.send_table(title='cronjobs', table=cronjobs, send_as_excel=excel)
 
 

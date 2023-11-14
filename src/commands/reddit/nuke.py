@@ -74,8 +74,10 @@ CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH
 
 @nuke.command('user')
 @click.argument('username')
-@click.argument('timeframe', required=False, type=click.Choice(list(CUTOFF_AGES.keys()), case_sensitive=False))
-@click.option('-s', '-p', '--submissions', '--posts', 'remove_submissions', is_flag=True, default=False, type=click.BOOL)
+@click.argument('timeframe',
+                required=False, type=click.Choice(list(CUTOFF_AGES.keys()), case_sensitive=False))
+@click.option('-s', '-p', '--submissions', '--posts', 'remove_submissions',
+              is_flag=True, default=False, type=click.BOOL)
 @click.pass_context
 def nuke_user(ctx: ExtendedContext, username: str, timeframe: str = None, remove_submissions: bool = False):
     """\

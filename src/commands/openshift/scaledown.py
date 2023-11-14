@@ -38,7 +38,8 @@ def scaledown(ctx: ExtendedContext, namespace):
 
     result = ""
 
-    login_cmd = subprocess.run(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'], capture_output=True)
+    login_cmd = subprocess.run(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'],
+                               capture_output=True)
     if login_cmd.returncode != 0:
         ctx.chat.send_text("Error while logging in:\n```" + login_cmd.stderr.decode().strip() + "```", is_error=True)
         return
@@ -48,16 +49,22 @@ def scaledown(ctx: ExtendedContext, namespace):
 
     change_project_cmd = subprocess.run(['oc', 'project', namespace], capture_output=True)
     if change_project_cmd.returncode != 0:
-        ctx.chat.send_text(f"Error while selecting project {namespace} in:\n```" + change_project_cmd.stderr.decode().strip() + "```", is_error=True)
+        change_project_output = change_project_cmd.stderr.decode().strip()
+        ctx.chat.send_text(f"Error while selecting project {namespace} in:\n```{change_project_output}```",
+                           is_error=True)
         return
 
     project_cmd = subprocess.run(['oc', 'project'], capture_output=True)
     result += project_cmd.stdout.decode() + '\n'
 
-    deployments_to_scaledown_cmd_line = ['oc', 'get', '-o', 'go-template={{range .items}}{{.metadata.name}}{{"\\n"}}{{end}}', 'deployment']
+    deployments_to_scaledown_cmd_line = ['oc', 'get', '-o',
+                                         'go-template={{range .items}}{{.metadata.name}}{{"\\n"}}{{end}}',
+                                         'deployment']
     deployments_to_scaledown_cmd = subprocess.run(deployments_to_scaledown_cmd_line, capture_output=True)
     if deployments_to_scaledown_cmd.returncode != 0:
-        ctx.chat.send_text(f"Error while retrieveing deployments:\n```" + deployments_to_scaledown_cmd.stderr.decode().strip() + "```", is_error=True)
+        deployments_to_scaledown_output = deployments_to_scaledown_cmd.stderr.decode().strip()
+        ctx.chat.send_text(f"Error while retrieveing deployments:\n```{deployments_to_scaledown_output}```",
+                           is_error=True)
         return
 
     deployments_to_scaledown_raw = deployments_to_scaledown_cmd.stdout.decode()
@@ -67,13 +74,14 @@ def scaledown(ctx: ExtendedContext, namespace):
         return
 
     for deployment_to_scaledown in deployments_to_scaledown:
-        if deployment_to_scaledown in namespace_obj.get('~deployments', []): continue # ignore deployment
+        if deployment_to_scaledown in namespace_obj.get('~deployments', []): continue  # ignore deployment
         result += "\n"
         scaledown_cmd_line = ['oc', 'scale', 'deployment', deployment_to_scaledown, '--replicas=0']
         result += shlex.join(scaledown_cmd_line)
         scaledown_cmd = subprocess.run(scaledown_cmd_line, capture_output=True)
         if scaledown_cmd.returncode != 0:
-            result += f"\nError {scaledown_cmd.returncode} while scaling down deployment {deployment_to_scaledown} to scale down\n"
+            result += (f"\nError {scaledown_cmd.returncode} while scaling down "
+                       f"deployment {deployment_to_scaledown} to scale down\n")
         result += scaledown_cmd.stdout.decode().strip() + "\n"
         result += scaledown_cmd.stderr.decode().strip() + "\n"
 
@@ -82,7 +90,8 @@ def scaledown(ctx: ExtendedContext, namespace):
         scaledown_cmd_line = ['oc', 'scale', 'sts', resource_to_scaledown, '--replicas=0']
         scaledown_cmd = subprocess.run(scaledown_cmd_line, capture_output=True)
         if scaledown_cmd.returncode != 0:
-            result += f"\nError {scaledown_cmd.returncode} while scaling down stateful set {resource_to_scaledown} to scale down\n"
+            result += (f"\nError {scaledown_cmd.returncode} while scaling down "
+                       f"stateful set {resource_to_scaledown} to scale down\n")
         result += scaledown_cmd.stdout.decode().strip() + "\n"
         result += scaledown_cmd.stderr.decode().strip() + "\n"
 
@@ -96,4 +105,4 @@ def scaledown(ctx: ExtendedContext, namespace):
     result += logout_cmd.stdout.decode().strip() + "\n"
     result += logout_cmd.stderr.decode().strip() + "\n"
 
-    ctx.chat.send_file(file_data = result.encode(), filename='scaledown.txt')
+    ctx.chat.send_file(file_data=result.encode(), filename='scaledown.txt')

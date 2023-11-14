@@ -44,7 +44,8 @@ def _send_usernote(ctx: ExtendedContext, redditor_username, notes, warnings, use
         link_href = '???'
         if link_parts[0] == 'l':
             if len(link_parts) == 2:
-                link_href = f'{ctx.reddit_session.config.reddit_url}/r/{ctx.subreddit.display_name}/comments/{link_parts[1]}'
+                link_href = (f'{ctx.reddit_session.config.reddit_url}/r/'
+                             f'{ctx.subreddit.display_name}/comments/{link_parts[1]}')
             elif len(link_parts) == 3:
                 link_href = (
                     f'{ctx.reddit_session.config.reddit_url}/r/{ctx.subreddit.display_name}/comments/'
