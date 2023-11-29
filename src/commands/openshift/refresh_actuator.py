@@ -45,6 +45,7 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
         pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
         if len(pods_to_refresh) == 0:
             ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
+        pods_to_refresh_successful = 0
         for pod_to_refresh in pods_to_refresh:
             with PortForwardProcess(ctx, pod_to_refresh):
                 try:
@@ -56,8 +57,10 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
                     pod_env_after = requests.get("http://localhost:9999/actuator/env",
                                                  proxies=empty_proxies, timeout=30)
                     _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
+                    pods_to_refresh_successful += 1
                 except requests.exceptions.ConnectionError as ex:
                     ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
+        ctx.chat.send_text(f"Refreshed {pods_to_refresh_successful}/{len(pods_to_refresh)} pods for {deployment}")
 
 
 def _connect_openshift(ctx: ExtendedContext, namespace):
