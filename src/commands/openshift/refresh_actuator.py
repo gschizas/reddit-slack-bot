@@ -112,7 +112,7 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         kubernetes_token = kubernetes_token_raw.json()
 
         kubelogin_proc = subprocess.run(
-            ['kubelogin', '-v', '4', 'convert-kubeconfig', '-l,' 'azurecli'],
+            ['kubelogin', '-v', '4', 'convert-kubeconfig', '-l', 'azurecli'],
             capture_output=True)
 
         ctx.logger.debug('Kubelogin Result: ' + repr(kubelogin_proc))
