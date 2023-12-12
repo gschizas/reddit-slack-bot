@@ -189,3 +189,5 @@ confusables.txt
 .sourcetrail/
 oc.exe
 src/requirements.txt # temporary requirements file
+.run/
+.scratch/
