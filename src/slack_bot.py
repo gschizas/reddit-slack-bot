@@ -174,6 +174,7 @@ def run_command(a_runner, args, context_obj: dict):
     channel_id = context_obj['message'].conversation.channel_id
     current_chat: Conversation = context_obj['message'].conversation
     if result.exception:
+        logger.error(f"Error while running command {args}: {result.exception!r}")
         if 'DEBUG' in os.environ:
             error_text = ''.join(traceback.format_exception(*result.exc_info))
         elif 'PERSONAL_DEBUG' in os.environ:
