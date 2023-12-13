@@ -62,6 +62,8 @@ GIFTS = ['balloon', 'bear', 'goat', 'lollipop', 'cake', 'pancakes',
          'apple', 'pineapple', 'cherries', 'grapes', 'pizza', 'popcorn',
          'rose', 'tulip', 'baby_chick', 'beer', 'doughnut', 'cookie']
 
+EXTRACT_SLACK_ID = re.compile(r'<(?:[#@])(?P<id>\w+)(?:\|)?(?:[-.\w]+)?>')
+
 
 @kudos.command('give',
                default_command=True,
@@ -72,7 +74,7 @@ GIFTS = ['balloon', 'bear', 'goat', 'lollipop', 'cake', 'pancakes',
 def kudos_give(ctx: ExtendedContext):
     arg = ' '.join(ctx.args)
     reason = html.unescape(arg.split('>')[-1].strip())
-    all_users = set(re.findall(r'<@(\w+)>', arg))
+    all_users = set(EXTRACT_SLACK_ID.findall(arg))
 
     for recipient_user_id in all_users:
         # ctx.chat.preload(recipient_user_id, ctx.chat.team_id, ctx.message.channel_id)
@@ -112,7 +114,7 @@ def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str, send_as_e
             if channel == '*':
                 cur.execute(SQL_KUDOS_VIEW_ALL, {'days': days_to_check})
             else:
-                channel_id = ctx.chat.channel_id if channel == '' else channel[2:-2]
+                channel_id = ctx.chat.channel_id if channel == '' else (EXTRACT_SLACK_ID.findall(channel) or [''])[0]
                 cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check, 'channel_id': channel_id})
             rows = cur.fetchall()
             cols = [col.name for col in cur.description]
