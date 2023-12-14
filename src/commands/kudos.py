@@ -76,6 +76,8 @@ def kudos_give(ctx: ExtendedContext):
     reason = html.unescape(arg.split('>')[-1].strip())
     all_users = set(EXTRACT_SLACK_ID.findall(arg))
 
+    final_text = ""
+
     for recipient_user_id in all_users:
         # ctx.chat.preload(recipient_user_id, ctx.chat.team_id, ctx.message.channel_id)
         recipient_name = ctx.chat.get_user_info(recipient_user_id)['name']
@@ -97,9 +99,10 @@ def kudos_give(ctx: ExtendedContext):
                 if not text_to_send.endswith('.'): text_to_send += '.'
                 gift = random.choice(GIFTS)
                 text_to_send += f" Have a :{gift}:"
-            ctx.chat.send_text(text_to_send)
+            final_text += text_to_send + '\n'
         else:
-            ctx.chat.send_text("Kudos not recorded")
+            final_text += f"⚠️Kudos not recorded for {recipient_name}" + '\n'
+    ctx.chat.send_text(final_text)
 
 
 @kudos.command('view')
