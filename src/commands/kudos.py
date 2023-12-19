@@ -136,7 +136,7 @@ def _record_kudos(ctx: ExtendedContext, sender_name, recipient_name, recipient_u
             cmd_vars = {
                 'sender_name': sender_name, 'sender_id': ctx.chat.user_id,
                 'recipient_name': recipient_name, 'recipient_id': recipient_user_id,
-                'team_name': ctx.chat.get_team_info()['name'], 'team_id': ctx.chat.team_id,
+                'team_name': ctx.chat.team_name, 'team_id': ctx.chat.team_id,
                 'channel_name': ctx.chat.channel_name, 'channel_id': ctx.chat.channel_id,
                 'permalink': ctx.message.permalink, 'reason': reason}
             cur.execute(SQL_KUDOS_INSERT, params=cmd_vars)

@@ -48,6 +48,10 @@ class Conversation(ABC):
     def get_team_info(self) -> Dict:
         pass
 
+    @property
+    def team_name(self) -> str:
+        return self.get_team_info()['name']
+
 
 class Message:
     conversation: Conversation
