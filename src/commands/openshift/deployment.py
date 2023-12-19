@@ -42,8 +42,8 @@ def pause_deployment(ctx: ExtendedContext, namespace: str):
     for one_deployment in deployments:
         result.append(change_deployment_pause_state(ctx, namespace, one_deployment['Name'], True))
     result_markdown = _make_deployments_table(result)
-    ctx.chat.send_table(title='deployments.md', table=result_markdown)
-    ctx.chat.send_file(json.dumps(result).encode(), filename='deployments.json')
+    ctx.chat.send_table(title='deployments', table=result_markdown)
+    # ctx.chat.send_file(json.dumps(result).encode(), filename='deployments.json')
 
 
 @deployment.command('resume')
@@ -56,7 +56,7 @@ def resume_deployment(ctx: ExtendedContext, namespace):
     for one_deployment in deployments:
         result.append(change_deployment_pause_state(ctx, namespace, one_deployment['Name'], None))
     ctx.chat.send_table(title='deployments', table=_make_deployments_table(result))
-    ctx.chat.send_file(json.dumps(result).encode(), filename='deployments.json')
+    # ctx.chat.send_file(json.dumps(result).encode(), filename='deployments.json')
 
 
 def _make_deployments_table(result) -> List[Dict]:
