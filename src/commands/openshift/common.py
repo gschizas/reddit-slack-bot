@@ -62,11 +62,15 @@ class OpenShiftNamespace(click.ParamType):
         return value.upper() if self._force_upper else value.lower()
 
 
-def user_allowed(slack_user_id, allowed_users):
+def _get_chat_user_id(user, chat_team_name):
+    return user.get(f'$slack-user-id.{chat_team_name}', user.get('$slack-user-id'))
+
+
+def user_allowed(chat_team_name, chat_user_id, allowed_users):
     global all_users, all_users_last_update
     if '*' in allowed_users:
         return True
-    if slack_user_id in allowed_users:
+    if chat_user_id in allowed_users:
         return True
     allowed_groups = [g[1:] for g in allowed_users if g.startswith('@')]
 
@@ -75,7 +79,7 @@ def user_allowed(slack_user_id, allowed_users):
         with all_users_file.open(encoding='utf8') as f:
             all_users = yaml.load(f)
         all_users_last_update = all_users_file.stat().st_mtime
-    crowd_users = list(filter(lambda x: x.get('$slack-user-id') == slack_user_id, all_users))
+    crowd_users = list(filter(lambda user: _get_chat_user_id(user, chat_team_name) == chat_user_id, all_users))
     if len(crowd_users) != 1:
         return False
     crowd_user = crowd_users[0]
@@ -102,7 +106,7 @@ def check_security(func=None, *, config=None):
         cfg = final_config['environments'][namespace]
         # config = ctx.obj['config'][namespace]
         allowed_users = cfg['users']
-        if not user_allowed(ctx.chat.user_id, allowed_users):
+        if not user_allowed(ctx.chat.team_name, ctx.chat.user_id, allowed_users):
             ctx.chat.send_text(f"You don't have permission to {action_name}.", is_error=True)
             return
         allowed_channels = cfg['channels']

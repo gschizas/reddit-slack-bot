@@ -26,7 +26,7 @@ def scaledown(ctx: ExtendedContext, namespace):
     namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
     allowed_users = namespace_obj['users']
-    if not user_allowed(ctx.chat.user_id, allowed_users):
+    if not user_allowed(ctx.chat.team_name, ctx.chat.user_id, allowed_users):
         ctx.chat.send_text(f"You don't have permission to scale down kubernetes objects.", is_error=True)
         return
     allowed_channels = namespace_obj['channels']
