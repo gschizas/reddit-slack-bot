@@ -178,7 +178,7 @@ def pods(ctx: ExtendedContext, namespace: str):
     pods_list = [dict(zip(fields, [
         pod['metadata']['labels'].get('deployment'),
         pod['metadata']['name'],
-        pod['status']['podIP']])) for pod in all_pods_raw.json()['items']]
+        pod['status'].get('podIP', '')])) for pod in all_pods_raw.json()['items']]
     ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
 
 
