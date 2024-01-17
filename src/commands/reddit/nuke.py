@@ -82,7 +82,7 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: tuple[str] = None,
     Add SUBMISSIONS or POSTS to remove submissions as well.
     """
     if timeframe[0] in ('a', 'an'):
-        timeframe[0] = '1'
+        timeframe = ('1',) + timeframe[1:]
     if timeframe in (('forever_and_ever',), ('forever', 'and', 'ever'), ('forever',)):
         timeframe = ('100', 'years')  # should be enough
     timeframe = ' '.join(timeframe) or '24 hours'
