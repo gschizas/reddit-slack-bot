@@ -29,6 +29,8 @@ kubernetes = "*"
 slack-sdk = "*"
 aiohttp = "*"
 docker = "*"
+python-dateutil = "*"
+durations-nlp = "*"
 
 [dev-packages]
 

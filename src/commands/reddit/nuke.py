@@ -2,6 +2,7 @@ import datetime
 
 import click
 import prawcore
+from durations_nlp import Duration
 
 from commands import gyrobot, ClickAliasedGroup
 from commands.extended_context import ExtendedContext
@@ -68,27 +69,25 @@ def undo_nuke_thread(ctx: ExtendedContext, thread_id):
         ctx.chat.send_text(f"Nuking {len(removed_comments)} comments was undone")
 
 
-CUTOFF_AGES = {'24': 1, '48': 2, '72': 3, 'A_WEEK': 7, 'TWO_WEEKS': 14, 'A_MONTH': 30, 'THREE_MONTHS': 90,
-               'FOREVER_AND_EVER': 36525}
-
-
 @nuke.command('user')
 @click.argument('username')
-@click.argument('timeframe',
-                required=False, type=click.Choice(list(CUTOFF_AGES.keys()), case_sensitive=False))
+@click.argument('timeframe', required=False, nargs=-1)
 @click.option('-s', '-p', '--submissions', '--posts', 'remove_submissions',
               is_flag=True, default=False, type=click.BOOL)
 @click.pass_context
-def nuke_user(ctx: ExtendedContext, username: str, timeframe: str = None, remove_submissions: bool = False):
+def nuke_user(ctx: ExtendedContext, username: str, timeframe: tuple[str] = None, remove_submissions: bool = False):
     """\
     Nuke the comments of a user. Append the timeframe to search.
-    Accepted values are 24 (default), 48, 72, A_WEEK, TWO_WEEKS, A_MONTH, THREE_MONTHS, FOREVER_AND_EVER
+    Default value is 24 hours. You can use standard values, e.g. "48 hours", "2 months", "10 years" etc.
     Add SUBMISSIONS or POSTS to remove submissions as well.
     """
-    # FOREVER_AND_EVER is 100 years. Should be enough.
-
-    timeframe = timeframe or '24'
-    if timeframe not in CUTOFF_AGES:
+    if timeframe[0] in ('a', 'an'):
+        timeframe[0] = '1'
+    if timeframe in (('forever_and_ever',), ('forever', 'and', 'ever'), ('forever',)):
+        timeframe = ('100', 'years')  # should be enough
+    timeframe = ' '.join(timeframe) or '24 hours'
+    cutoff_age = Duration(timeframe)
+    if not cutoff_age.parsed_durations:
         ctx.chat.send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
         return
     if (username := extract_username(username)) is None:
@@ -114,7 +113,6 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: str = None, remove
     already_removed = 0
     too_old = 0
     other_subreddit_history = {}
-    cutoff_age = CUTOFF_AGES[timeframe]
     now = datetime.datetime.utcnow()
 
     result = ""
@@ -141,7 +139,7 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: str = None, remove
             continue
         comment_created = datetime.datetime.fromtimestamp(c.created_utc)
         comment_age = now - comment_created
-        if comment_age.days > cutoff_age:
+        if comment_age.days > cutoff_age.to_days():
             too_old += 1
             continue
         c.mod.remove()
@@ -150,7 +148,7 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: str = None, remove
         f"Removed {removed_comments} comments.\n"
         f"{other_subreddits} comments in other subreddits.\n"
         f"{already_removed} comments were already removed.\n"
-        f"{too_old} comments were too old for the {timeframe} timeframe.\n"
+        f"{too_old} comments were too old for the {timeframe} ({cutoff_age.to_days()} d) timeframe.\n"
     )
     if remove_submissions:
         all_submissions = u.submissions.new(limit=None)
