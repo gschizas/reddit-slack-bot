@@ -81,11 +81,13 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: tuple[str] = None,
     Default value is 24 hours. You can use standard values, e.g. "48 hours", "2 months", "10 years" etc.
     Add SUBMISSIONS or POSTS to remove submissions as well.
     """
+    if not timeframe:
+        timeframe = ('24', 'hours')
     if timeframe[0] in ('a', 'an'):
         timeframe = ('1',) + timeframe[1:]
     if timeframe in (('forever_and_ever',), ('forever', 'and', 'ever'), ('forever',)):
         timeframe = ('100', 'years')  # should be enough
-    timeframe = ' '.join(timeframe) or '24 hours'
+    timeframe = ' '.join(timeframe)
     cutoff_age = Duration(timeframe)
     if not cutoff_age.parsed_durations:
         ctx.chat.send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
