@@ -258,8 +258,13 @@ def _send_results(ctx: ExtendedContext,
                 ctx.chat.send_file(pod_env_after_raw.content, filename='EnvAfter.json')
                 return []
             for ps in env_before.get('propertySources', env_before.get('bootstrapProperties', [])):
-                if c in ps['properties']:
-                    values_before[c] = ps['properties'][c]
+                try:
+                    if c in ps['properties']:
+                        values_before[c] = ps['properties'][c]
+                except TypeError:
+                    ctx.chat.send_text(f"Error when reading environment before for {c}", is_error=True)
+                    ctx.chat.send_file(pod_env_before_raw.content, filename='EnvBefore.json')
+                    return
             for ps in env_after.get('propertySources', env_after.get('bootstrapProperties', [])):
                 if c in ps['properties']:
                     values_after[c] = ps['properties'][c]
