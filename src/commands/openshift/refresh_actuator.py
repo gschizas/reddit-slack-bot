@@ -163,13 +163,20 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 
 @actuator.command('pods')
 @click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
+@click.argument('pod_name', type=str, required=False)
 @click.pass_context
 @check_security
-def pods(ctx: ExtendedContext, namespace: str):
+def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
     project_name, server_url, ses_k8s = _connect_openshift(ctx, namespace)
 
+    query = {}
+    if pod_name:
+        query['labelSelector'] = f'deployment={pod_name}'
+
     all_pods_raw = ses_k8s.get(
-        f"{server_url}api/v1/namespaces/{namespace.lower()}/pods")
+        f"{server_url}api/v1/namespaces/{namespace.lower()}/pods",
+        params=query)
+
     if not all_pods_raw.ok:
         ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
         return None
