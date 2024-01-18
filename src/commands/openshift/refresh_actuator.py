@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import subprocess
+import tempfile
 import threading
 import time
 
@@ -15,7 +16,7 @@ from commands.openshift.common import read_config, OpenShiftNamespace, rangify, 
 
 KUBERNETES_SERVICE_AAD_SERVER_GUID = '6dae42f8-4368-4678-94ff-3960e28e3630'
 yaml = YAML()
-
+tmp_cert_authority = None
 
 def _actuator_config():
     env_var = 'OPENSHIFT_ACTUATOR_REFRESH'
@@ -64,6 +65,7 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
 
 
 def _connect_openshift(ctx: ExtendedContext, namespace):
+    global tmp_cert_authority
     namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
     ses_main = requests.session()
@@ -98,6 +100,9 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         cluster_url = list(filter(lambda x: x['name'] == cluster_name, aks_value['clusters']))[0]['cluster']['server']
         server_url = cluster_url + '/'
 
+        tmp_cert_authority = tempfile.NamedTemporaryFile()
+        tmp_cert_authority.write(base64.b64decode(aks_value['clusters'][0]['cluster']['certificate-authority-data']))
+
         kubernetes_token_raw = ses_main.post(
             f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token',
             data={
@@ -116,6 +121,7 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         ctx.logger.debug('Kubelogin Result: ' + repr(kubelogin_proc))
 
         ses_k8s = requests.session()
+        ses_k8s.verify = tmp_cert_authority.name
         ses_k8s.headers['Authorization'] = 'Bearer ' + kubernetes_token['access_token']
     else:
         openshift_token = namespace_obj['credentials']
