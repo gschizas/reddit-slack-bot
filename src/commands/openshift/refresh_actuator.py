@@ -169,7 +169,7 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
     project_name, server_url, ses_k8s = _connect_openshift(ctx, namespace)
 
-    query = {}
+    query = {'limit': 500}
     if pod_name:
         query['labelSelector'] = f'deployment={pod_name}'
 
