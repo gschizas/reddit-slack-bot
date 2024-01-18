@@ -87,8 +87,6 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         subscriptions_page = ses_main.get('https://management.azure.com/subscriptions?api-version=2019-11-01')
         subscription_id = subscriptions_page.json()['value'][0]['subscriptionId']
 
-        ctx.chat.send_file(subscriptions_page.content, filename='subscriptions.json')
-
         aks_credentials_page = ses_main.post(
             (f'https://management.azure.com/subscriptions/{subscription_id}/resourceGroups'
              f'/{resource_group}/providers/Microsoft.ContainerService/managedClusters'
