@@ -84,15 +84,15 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         })
         azure_token = login_page.json()['access_token']
         ses_main.headers['Authorization'] = 'Bearer ' + azure_token
-        subscriptions_page = ses_main.get("https://management.azure.com/subscriptions?api-version=2019-11-01")
+        subscriptions_page = ses_main.get('https://management.azure.com/subscriptions?api-version=2019-11-01')
         subscription_id = subscriptions_page.json()['value'][0]['subscriptionId']
 
         ctx.chat.send_file(subscriptions_page.content, filename='subscriptions.json')
 
         aks_credentials_page = ses_main.post(
-            (f"https://management.azure.com/subscriptions/{subscription_id}/resourceGroups"
-             f"/{resource_group}/providers/Microsoft.ContainerService/managedClusters"
-             f"/{cluster_name}/listClusterUserCredential?api-version=2022-03-01"))
+            (f'https://management.azure.com/subscriptions/{subscription_id}/resourceGroups'
+             f'/{resource_group}/providers/Microsoft.ContainerService/managedClusters'
+             f'/{cluster_name}/listClusterUserCredential?api-version=2022-03-01'))
         aks_credentials = aks_credentials_page.json()
         aks_value_raw = list(filter(lambda x: x['name'] == 'clusterUser', aks_credentials['kubeconfigs']))[0]['value']
         with io.BytesIO(base64.b64decode(aks_value_raw)) as f:
