@@ -114,12 +114,6 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
             })
         kubernetes_token = kubernetes_token_raw.json()
 
-        kubelogin_proc = subprocess.run(
-            ['kubelogin', '-v', '4', 'convert-kubeconfig', '-l', 'azurecli'],
-            capture_output=True)
-
-        ctx.logger.debug('Kubelogin Result: ' + repr(kubelogin_proc))
-
         ses_k8s = requests.session()
         ses_k8s.verify = tmp_cert_authority.name
         ses_k8s.headers['Authorization'] = 'Bearer ' + kubernetes_token['access_token']
