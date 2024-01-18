@@ -181,10 +181,14 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
         ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
         return None
 
-    fields = ['deployment', 'name', 'podIP']
+    fields = ["Deployment", "Name", "Ready", "Status", "Restarts", "Host IP", "Pod IP"]
     pods_list = [dict(zip(fields, [
         pod['metadata'].get('labels', {'deployment': ''}).get('deployment'),
         pod['metadata'].get('name', ''),
+        f"",
+        pod['status'].get('phase', ''),
+        sum([cs.get('restartCount', 0) for cs in pod['status'].get('containerStatuses', [])]),
+        pod['status'].get('hostIP', ''),
         pod['status'].get('podIP', '')])) for pod in all_pods_raw.json()['items']]
     ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
 
