@@ -88,6 +88,7 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: tuple[str] = None,
     if timeframe in (('forever_and_ever',), ('forever', 'and', 'ever'), ('forever',)):
         timeframe = ('100', 'years')  # should be enough
     timeframe = ' '.join(timeframe)
+    timeframe = ' '.join(timeframe.replace('_', ' ').split())
     cutoff_age = Duration(timeframe)
     if not cutoff_age.parsed_durations:
         ctx.chat.send_text(f'{timeframe} is not an acceptable timeframe', is_error=True)
