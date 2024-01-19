@@ -16,7 +16,7 @@ from commands.openshift.common import read_config, OpenShiftNamespace, rangify, 
 
 KUBERNETES_SERVICE_AAD_SERVER_GUID = '6dae42f8-4368-4678-94ff-3960e28e3630'
 yaml = YAML()
-tmp_cert_authority = None
+
 
 def _actuator_config():
     env_var = 'OPENSHIFT_ACTUATOR_REFRESH'
