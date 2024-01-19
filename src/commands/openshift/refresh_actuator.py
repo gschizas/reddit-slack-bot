@@ -37,7 +37,7 @@ def actuator(ctx: ExtendedContext):
 @click.pass_context
 @check_security
 def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str]):
-    project_name, server_url, ses_k8s = _connect_openshift(ctx, namespace)
+    project_name, server_url, ses_k8s, cert_authority = _connect_openshift(ctx, namespace)
 
     for deployment in deployments:
         all_pods = _get_pods(ctx, project_name, server_url, ses_k8s, deployment)
@@ -62,10 +62,11 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
                 except requests.exceptions.ConnectionError as ex:
                     ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
         ctx.chat.send_text(f"Refreshed {pods_to_refresh_successful}/{len(pods_to_refresh)} pods for {deployment}")
+    if cert_authority:
+        cert_authority.close()
 
 
 def _connect_openshift(ctx: ExtendedContext, namespace):
-    global tmp_cert_authority
     namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
     ses_main = requests.session()
@@ -100,8 +101,8 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         cluster_url = list(filter(lambda x: x['name'] == cluster_name, aks_value['clusters']))[0]['cluster']['server']
         server_url = cluster_url + '/'
 
-        tmp_cert_authority = tempfile.NamedTemporaryFile()
-        tmp_cert_authority.write(base64.b64decode(aks_value['clusters'][0]['cluster']['certificate-authority-data']))
+        cert_authority = tempfile.NamedTemporaryFile()
+        cert_authority.write(base64.b64decode(aks_value['clusters'][0]['cluster']['certificate-authority-data']))
 
         kubernetes_token_raw = ses_main.post(
             f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token',
@@ -115,7 +116,7 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         kubernetes_token = kubernetes_token_raw.json()
 
         ses_k8s = requests.session()
-        ses_k8s.verify = tmp_cert_authority.name
+        ses_k8s.verify = cert_authority.name
         ses_k8s.headers['Authorization'] = 'Bearer ' + kubernetes_token['access_token']
     else:
         openshift_token = namespace_obj['credentials']
@@ -130,7 +131,8 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
             raise RuntimeError("Error while logging in", stderr_output)
         ses_k8s = ses_main
         project_name = namespace
-    return project_name, server_url, ses_k8s
+        cert_authority = None
+    return project_name, server_url, ses_k8s, cert_authority
 
 
 @actuator.command('view')
@@ -140,7 +142,7 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
 @click.pass_context
 @check_security
 def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
-    project_name, server_url, ses_k8s = _connect_openshift(ctx, namespace)
+    project_name, server_url, ses_k8s, cert_authority = _connect_openshift(ctx, namespace)
 
     for deployment in deployments:
         all_pods = _get_pods(ctx, project_name, server_url, ses_k8s, deployment)
@@ -157,6 +159,8 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
                     _send_env_results(ctx, pod_to_refresh, pod_env, excel)
                 except requests.exceptions.ConnectionError as ex:
                     ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
+    if cert_authority:
+        cert_authority.close()
 
 
 @actuator.command('pods')
@@ -165,7 +169,7 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 @click.pass_context
 @check_security
 def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
-    project_name, server_url, ses_k8s = _connect_openshift(ctx, namespace)
+    project_name, server_url, ses_k8s, cert_authority = _connect_openshift(ctx, namespace)
 
     query = {'limit': 500}
     if pod_name:
@@ -189,6 +193,8 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
         pod['status'].get('hostIP', ''),
         pod['status'].get('podIP', '')])) for pod in all_pods_raw.json()['items']]
     ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
+    if cert_authority:
+        cert_authority.close()
 
 
 def _output_reader(proc, data):
