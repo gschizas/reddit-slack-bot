@@ -178,8 +178,8 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
         query['labelSelector'] = f'deployment={pod_name}'
 
     all_pods_raw = ses_k8s.get(
-        f"{server_url}api/v1/namespaces/{namespace.lower()}/pods",
-        params=query)
+        f"{server_url}api/v1/namespaces/{project_name.lower()}/pods",
+        params=query, verify=ses_k8s.verify)
 
     if not all_pods_raw.ok:
         ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
