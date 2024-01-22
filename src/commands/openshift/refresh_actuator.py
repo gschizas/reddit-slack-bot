@@ -102,7 +102,9 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
         server_url = cluster_url + '/'
 
         cert_authority = tempfile.NamedTemporaryFile()
-        cert_authority.write(base64.b64decode(aks_value['clusters'][0]['cluster']['certificate-authority-data']))
+        cert_authority_data = base64.b64decode(aks_value['clusters'][0]['cluster']['certificate-authority-data'])
+        cert_authority.write(cert_authority_data)
+        cert_authority.flush()
 
         kubernetes_token_raw = ses_main.post(
             f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token',
