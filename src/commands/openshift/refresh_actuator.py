@@ -69,7 +69,7 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
 def _connect_openshift(ctx: ExtendedContext, namespace):
     namespace_obj = env_config(ctx, namespace)
     server_url = namespace_obj['url']
-    ses_main = requests.session()
+    ses_main = requests.Session()
     if server_url == 'azure':
         tenant_id = namespace_obj['credentials']['tenantId']
         service_principal_id = namespace_obj['credentials']['servicePrincipalId']
@@ -115,7 +115,7 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
             })
         kubernetes_token = kubernetes_token_raw.json()
 
-        ses_k8s = requests.session()
+        ses_k8s = requests.Session()
         ses_k8s.verify = cert_authority.name
         ses_k8s.headers['Authorization'] = 'Bearer ' + kubernetes_token['access_token']
     else:
