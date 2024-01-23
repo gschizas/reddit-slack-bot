@@ -120,9 +120,13 @@ class OpenShiftConnection:
             self.cert_authority.close()
 
     def get_pods(self, deployment: str):
+        query = {'limit': 500}
+        if deployment:
+            query['labelSelector'] = f'deployment={deployment}'
         all_pods_raw = self.ses_k8s.get(
             f"{self.server_url}api/v1/namespaces/{self.project_name.lower()}/pods",
-            params={'labelSelector': f'deployment={deployment}'})
+            params=query,
+            verify=self.ses_k8s.verify)
         if not all_pods_raw.ok:
             self.ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
             return None
@@ -196,17 +200,7 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 @check_security
 def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
     with OpenShiftConnection(ctx, namespace) as conn:
-        query = {'limit': 500}
-        if pod_name:
-            query['labelSelector'] = f'deployment={pod_name}'
-
-        all_pods_raw = conn.ses_k8s.get(
-            f"{conn.server_url}api/v1/namespaces/{conn.project_name.lower()}/pods",
-            params=query, verify=conn.ses_k8s.verify)
-
-        if not all_pods_raw.ok:
-            ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
-            return None
+        all_pods_raw = conn.get_pods(pod_name)
 
         fields = ["Deployment", "Name", "Ready", "Status", "Restarts", "Host IP", "Pod IP"]
         pods_list = [dict(zip(fields, [
