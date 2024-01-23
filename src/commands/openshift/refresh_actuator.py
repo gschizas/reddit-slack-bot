@@ -31,54 +31,48 @@ def actuator(ctx: ExtendedContext):
     ctx.obj['security_text'] = {'refresh': 'refresh actuator', 'view': 'view actuator variables', 'pods': 'view pods'}
 
 
-@actuator.command('refresh')
-@click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
-@click.argument('deployments', type=str, nargs=-1)
-@click.pass_context
-@check_security
-def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str]):
-    project_name, server_url, ses_k8s, cert_authority = _connect_openshift(ctx, namespace)
+class OpenShiftConnection:
+    project_name: str
+    server_url: str
+    ses_k8s: requests.Session
+    cert_authority = None
 
-    for deployment in deployments:
-        all_pods = _get_pods(ctx, project_name, server_url, ses_k8s, deployment)
-        if not all_pods: continue
+    def __init__(self, ctx: ExtendedContext, namespace: str):
+        self.ctx = ctx
+        self.namespace = namespace
+        self.namespace_obj = env_config(self.ctx, self.namespace)
+        self.server_url = self.namespace_obj['url']
+        self.ses_main = requests.Session()
+        self.is_azure = self.server_url == 'azure'
 
-        pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
-        if len(pods_to_refresh) == 0:
-            ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
-        pods_to_refresh_successful = 0
-        for pod_to_refresh in pods_to_refresh:
-            with PortForwardProcess(ctx, pod_to_refresh):
-                try:
-                    empty_proxies = {'http': None, 'https': None}
-                    pod_env_before = requests.get("http://localhost:9999/actuator/env",
-                                                  proxies=empty_proxies, timeout=30)
-                    refresh_result = requests.post("http://localhost:9999/actuator/refresh",
-                                                   proxies=empty_proxies, timeout=30)
-                    pod_env_after = requests.get("http://localhost:9999/actuator/env",
-                                                 proxies=empty_proxies, timeout=30)
-                    _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
-                    pods_to_refresh_successful += 1
-                except requests.exceptions.ConnectionError as ex:
-                    ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
-        ctx.chat.send_text(f"Refreshed {pods_to_refresh_successful}/{len(pods_to_refresh)} pods for {deployment}")
-    if cert_authority:
-        cert_authority.close()
+    def __enter__(self):
+        if self.is_azure:
+            self._login_azure()
+        else:
+            self._login_openshift(self.namespace)
+        return self
 
+    def _login_openshift(self, namespace):
+        openshift_token = self.namespace_obj['credentials']
+        self.ses_main.headers['Authorization'] = 'Bearer ' + openshift_token
+        login_cmd = subprocess.run(
+            ['oc', 'login', f'--token={openshift_token}', f'--server={self.server_url}'],
+            capture_output=True)
+        if login_cmd.returncode != 0:
+            stderr_output = login_cmd.stderr.decode().strip()
+            raise RuntimeError("Error while logging in", stderr_output)
+        self.ses_k8s = self.ses_main
+        self.project_name = namespace
+        self.cert_authority = None
 
-def _connect_openshift(ctx: ExtendedContext, namespace):
-    namespace_obj = env_config(ctx, namespace)
-    server_url = namespace_obj['url']
-    ses_main = requests.Session()
-    if server_url == 'azure':
-        tenant_id = namespace_obj['credentials']['tenantId']
-        service_principal_id = namespace_obj['credentials']['servicePrincipalId']
-        service_principal_key = namespace_obj['credentials']['servicePrincipalKey']
-        resource_group = namespace_obj['azure_resource_group']
-        cluster_name = namespace_obj['azure_cluster_name']
-        project_name = namespace_obj['project_name']
-
-        login_page = ses_main.post(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', data={
+    def _login_azure(self):
+        tenant_id = self.namespace_obj['credentials']['tenantId']
+        service_principal_id = self.namespace_obj['credentials']['servicePrincipalId']
+        service_principal_key = self.namespace_obj['credentials']['servicePrincipalKey']
+        resource_group = self.namespace_obj['azure_resource_group']
+        cluster_name = self.namespace_obj['azure_cluster_name']
+        self.project_name = self.namespace_obj['project_name']
+        login_page = self.ses_main.post(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', data={
             'client_id': service_principal_id,
             'grant_type': 'client_credentials',
             'client_info': 1,
@@ -86,27 +80,27 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
             'scope': 'https://management.core.windows.net/.default'
         })
         azure_token = login_page.json()['access_token']
-        ses_main.headers['Authorization'] = 'Bearer ' + azure_token
-        subscriptions_page = ses_main.get('https://management.azure.com/subscriptions?api-version=2019-11-01')
+        self.ses_main.headers['Authorization'] = 'Bearer ' + azure_token
+        subscriptions_page = self.ses_main.get('https://management.azure.com/subscriptions?api-version=2019-11-01')
         subscription_id = subscriptions_page.json()['value'][0]['subscriptionId']
-
-        aks_credentials_page = ses_main.post(
+        aks_credentials_page = self.ses_main.post(
             (f'https://management.azure.com/subscriptions/{subscription_id}/resourceGroups'
              f'/{resource_group}/providers/Microsoft.ContainerService/managedClusters'
              f'/{cluster_name}/listClusterUserCredential?api-version=2022-03-01'))
         aks_credentials = aks_credentials_page.json()
-        aks_value_raw = list(filter(lambda x: x['name'] == 'clusterUser', aks_credentials['kubeconfigs']))[0]['value']
+        aks_value_raw = list(filter(lambda x: x['name'] == 'clusterUser', aks_credentials['kubeconfigs']))[0][
+            'value']
         with io.BytesIO(base64.b64decode(aks_value_raw)) as f:
             aks_value = yaml.load(f)
-        cluster_url = list(filter(lambda x: x['name'] == cluster_name, aks_value['clusters']))[0]['cluster']['server']
-        server_url = cluster_url + '/'
-
-        cert_authority = tempfile.NamedTemporaryFile()
-        cert_authority_data = base64.b64decode(aks_value['clusters'][0]['cluster']['certificate-authority-data'])
-        cert_authority.write(cert_authority_data)
-        cert_authority.flush()
-
-        kubernetes_token_raw = ses_main.post(
+        cluster_url = list(filter(lambda x: x['name'] == cluster_name, aks_value['clusters']))[0]['cluster'][
+            'server']
+        self.server_url = cluster_url + '/'
+        self.cert_authority = tempfile.NamedTemporaryFile()
+        cert_authority_data_raw = aks_value['clusters'][0]['cluster']['certificate-authority-data']
+        cert_authority_data = base64.b64decode(cert_authority_data_raw)
+        self.cert_authority.write(cert_authority_data)
+        self.cert_authority.flush()
+        kubernetes_token_raw = self.ses_main.post(
             f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token',
             data={
                 'client_id': service_principal_id,
@@ -116,25 +110,56 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
                 'scope': f'{KUBERNETES_SERVICE_AAD_SERVER_GUID}/.default'
             })
         kubernetes_token = kubernetes_token_raw.json()
+        self.ses_k8s = requests.Session()
+        self.ses_k8s.verify = self.cert_authority.name
+        self.ses_k8s.headers['Authorization'] = 'Bearer ' + kubernetes_token['access_token']
 
-        ses_k8s = requests.Session()
-        ses_k8s.verify = cert_authority.name
-        ses_k8s.headers['Authorization'] = 'Bearer ' + kubernetes_token['access_token']
-    else:
-        openshift_token = namespace_obj['credentials']
-        ses_main.headers['Authorization'] = 'Bearer ' + openshift_token
-        login_cmd = subprocess.run(
-            ['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'],
-            capture_output=True)
-        if login_cmd.returncode != 0:
-            stderr_output = login_cmd.stderr.decode().strip()
-            error_text = f"Error while logging in:\n```{stderr_output}```"
-            ctx.chat.send_text(error_text, is_error=True)
-            raise RuntimeError("Error while logging in", stderr_output)
-        ses_k8s = ses_main
-        project_name = namespace
-        cert_authority = None
-    return project_name, server_url, ses_k8s, cert_authority
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.cert_authority:
+            self.cert_authority.close()
+
+    def get_pods(self, deployment: str):
+        all_pods_raw = self.ses_k8s.get(
+            f"{self.server_url}api/v1/namespaces/{self.project_name.lower()}/pods",
+            params={'labelSelector': f'deployment={deployment}'})
+        if not all_pods_raw.ok:
+            self.ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
+            return None
+        all_pods = all_pods_raw.json()
+        return all_pods
+
+
+@actuator.command('refresh')
+@click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
+@click.argument('deployments', type=str, nargs=-1)
+@click.pass_context
+@check_security
+def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str]):
+    with OpenShiftConnection(ctx, namespace) as conn:
+        for deployment in deployments:
+            all_pods = conn.get_pods(deployment)
+            if not all_pods:
+                continue
+
+            pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
+            if len(pods_to_refresh) == 0:
+                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
+            pods_to_refresh_successful = 0
+            for pod_to_refresh in pods_to_refresh:
+                with PortForwardProcess(ctx, pod_to_refresh):
+                    try:
+                        empty_proxies = {'http': None, 'https': None}
+                        pod_env_before = requests.get("http://localhost:9999/actuator/env",
+                                                      proxies=empty_proxies, timeout=30)
+                        refresh_result = requests.post("http://localhost:9999/actuator/refresh",
+                                                       proxies=empty_proxies, timeout=30)
+                        pod_env_after = requests.get("http://localhost:9999/actuator/env",
+                                                     proxies=empty_proxies, timeout=30)
+                        _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
+                        pods_to_refresh_successful += 1
+                    except requests.exceptions.ConnectionError as ex:
+                        ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
+            ctx.chat.send_text(f"Refreshed {pods_to_refresh_successful}/{len(pods_to_refresh)} pods for {deployment}")
 
 
 @actuator.command('view')
@@ -144,25 +169,23 @@ def _connect_openshift(ctx: ExtendedContext, namespace):
 @click.pass_context
 @check_security
 def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
-    project_name, server_url, ses_k8s, cert_authority = _connect_openshift(ctx, namespace)
+    with OpenShiftConnection(ctx, namespace) as conn:
+        for deployment in deployments:
+            all_pods = conn.get_pods(deployment)
+            if not all_pods:
+                continue
 
-    for deployment in deployments:
-        all_pods = _get_pods(ctx, project_name, server_url, ses_k8s, deployment)
-        if not all_pods: continue
-
-        pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
-        if len(pods_to_refresh) == 0:
-            ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
-        for pod_to_refresh in pods_to_refresh:
-            with PortForwardProcess(ctx, pod_to_refresh):
-                try:
-                    empty_proxies = {'http': None, 'https': None}
-                    pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
-                    _send_env_results(ctx, pod_to_refresh, pod_env, excel)
-                except requests.exceptions.ConnectionError as ex:
-                    ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
-    if cert_authority:
-        cert_authority.close()
+            pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
+            if len(pods_to_refresh) == 0:
+                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
+            for pod_to_refresh in pods_to_refresh:
+                with PortForwardProcess(ctx, pod_to_refresh):
+                    try:
+                        empty_proxies = {'http': None, 'https': None}
+                        pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
+                        _send_env_results(ctx, pod_to_refresh, pod_env, excel)
+                    except requests.exceptions.ConnectionError as ex:
+                        ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
 
 
 @actuator.command('pods')
@@ -171,32 +194,29 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 @click.pass_context
 @check_security
 def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
-    project_name, server_url, ses_k8s, cert_authority = _connect_openshift(ctx, namespace)
+    with OpenShiftConnection(ctx, namespace) as conn:
+        query = {'limit': 500}
+        if pod_name:
+            query['labelSelector'] = f'deployment={pod_name}'
 
-    query = {'limit': 500}
-    if pod_name:
-        query['labelSelector'] = f'deployment={pod_name}'
+        all_pods_raw = conn.ses_k8s.get(
+            f"{conn.server_url}api/v1/namespaces/{conn.project_name.lower()}/pods",
+            params=query, verify=conn.ses_k8s.verify)
 
-    all_pods_raw = ses_k8s.get(
-        f"{server_url}api/v1/namespaces/{project_name.lower()}/pods",
-        params=query, verify=ses_k8s.verify)
+        if not all_pods_raw.ok:
+            ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
+            return None
 
-    if not all_pods_raw.ok:
-        ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
-        return None
-
-    fields = ["Deployment", "Name", "Ready", "Status", "Restarts", "Host IP", "Pod IP"]
-    pods_list = [dict(zip(fields, [
-        pod['metadata'].get('labels', {'deployment': ''}).get('deployment'),
-        pod['metadata'].get('name', ''),
-        f"",
-        pod['status'].get('phase', ''),
-        sum([cs.get('restartCount', 0) for cs in pod['status'].get('containerStatuses', [])]),
-        pod['status'].get('hostIP', ''),
-        pod['status'].get('podIP', '')])) for pod in all_pods_raw.json()['items']]
-    ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
-    if cert_authority:
-        cert_authority.close()
+        fields = ["Deployment", "Name", "Ready", "Status", "Restarts", "Host IP", "Pod IP"]
+        pods_list = [dict(zip(fields, [
+            pod['metadata'].get('labels', {'deployment': ''}).get('deployment'),
+            pod['metadata'].get('name', ''),
+            f"",
+            pod['status'].get('phase', ''),
+            sum([cs.get('restartCount', 0) for cs in pod['status'].get('containerStatuses', [])]),
+            pod['status'].get('hostIP', ''),
+            pod['status'].get('podIP', '')])) for pod in all_pods_raw.json()['items']]
+        ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
 
 
 def _output_reader(proc, data):
@@ -244,17 +264,6 @@ class PortForwardProcess:
             self.ctx.logger.info(f'== subprocess exited with rc = {self.proc.returncode}')
         except subprocess.TimeoutExpired:
             self.ctx.logger.error('subprocess did not terminate in time')
-
-
-def _get_pods(ctx: ExtendedContext, namespace: str, server_url: str, ses: requests.Session, deployment: str):
-    all_pods_raw = ses.get(
-        f"{server_url}api/v1/namespaces/{namespace.lower()}/pods",
-        params={'labelSelector': f'deployment={deployment}'})
-    if not all_pods_raw.ok:
-        ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
-        return None
-    all_pods = all_pods_raw.json()
-    return all_pods
 
 
 def _send_results(ctx: ExtendedContext,
