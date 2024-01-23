@@ -327,20 +327,33 @@ def _send_results(ctx: ExtendedContext,
 def _send_env_results(ctx: ExtendedContext, pod_to_refresh, pod_env, excel: bool):
     def _environment_table(pod_env_raw):
         env_current = json.loads(pod_env_raw.content)
-        property_names = ('bootstrapProperties', 'propertySources')
-        if not any([p in env_current for p in property_names]):
+
+        if 'propertySources' in env_current:  # list of property sources, find the one called bootstrapProperties
+            property_sources = env_current.get('propertySources')
+            bootstrap_properties = [prop for prop in property_sources if prop['name'] == 'bootstrapProperties']
+            property_root = bootstrap_properties[0]['properties']
+            complex_properties = True
+        elif 'bootstrapProperties' in env_current:  # only one dictionary, get to it directly
+            property_root = env_current.get('bootstrapProperties')
+            complex_properties = False
+        else:
             ctx.chat.send_text("Could not find property sources in environment", is_error=True)
             ctx.chat.send_file(pod_env_raw.content, filename='EnvCurrent.json')
-            return []
-        else:
+            return
+
             all_values = []
-            for ps in env_current.get('propertySources', env_current.get('bootstrapProperties', [])):
-                for prop_name, prop_value in sorted(ps['properties'].items()):
+        for prop_name, prop_value in sorted(property_root.items()):
+            if complex_properties:
+                real_value = prop_value['value']
+                prop_origin = prop_value.get('origin')
+            else:
+                real_value = prop_value
+                prop_origin = None
+
                     all_values.append({
-                        'sourceName': ps['name'],
                         'name': prop_name,
-                        'value': prop_value['value'],
-                        'origin': prop_value.get('origin')})
+                'value': real_value,
+                'origin': prop_origin})
             return all_values
 
     if full_env := _environment_table(pod_env):
