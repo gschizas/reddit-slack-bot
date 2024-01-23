@@ -200,7 +200,7 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 @check_security
 def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
     with OpenShiftConnection(ctx, namespace) as conn:
-        all_pods_raw = conn.get_pods(pod_name)
+        all_pods = conn.get_pods(pod_name)
 
         fields = ["Deployment", "Name", "Ready", "Status", "Restarts", "Host IP", "Pod IP"]
         pods_list = [dict(zip(fields, [
@@ -210,7 +210,7 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
             pod['status'].get('phase', ''),
             sum([cs.get('restartCount', 0) for cs in pod['status'].get('containerStatuses', [])]),
             pod['status'].get('hostIP', ''),
-            pod['status'].get('podIP', '')])) for pod in all_pods_raw.json()['items']]
+            pod['status'].get('podIP', '')])) for pod in all_pods['items']]
         ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
 
 
