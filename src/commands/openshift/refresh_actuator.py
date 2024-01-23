@@ -129,7 +129,7 @@ class OpenShiftConnection:
             verify=self.ses_k8s.verify)
         if not all_pods_raw.ok:
             self.ctx.chat.send_file(file_data=all_pods_raw.content, filename='error.txt')
-            return None
+            return []
         all_pods = all_pods_raw.json()
         return all_pods
 
