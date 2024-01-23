@@ -8,6 +8,7 @@ import time
 
 import click
 import requests
+from cryptography import x509
 from ruamel.yaml import YAML
 
 from commands import gyrobot
@@ -341,7 +342,7 @@ def _send_env_results(ctx: ExtendedContext, pod_to_refresh, pod_env, excel: bool
             ctx.chat.send_file(pod_env_raw.content, filename='EnvCurrent.json')
             return
 
-            all_values = []
+        all_values = []
         for prop_name, prop_value in sorted(property_root.items()):
             if complex_properties:
                 real_value = prop_value['value']
@@ -350,11 +351,16 @@ def _send_env_results(ctx: ExtendedContext, pod_to_refresh, pod_env, excel: bool
                 real_value = prop_value
                 prop_origin = None
 
-                    all_values.append({
-                        'name': prop_name,
+            if type(real_value) is str and real_value.startswith('-----BEGIN CERTIFICATE-----\n'):
+                cert = x509.load_pem_x509_certificate(real_value.encode())
+                real_value = (f"Certificate ({cert.serial_number}) "
+                              f"valid {cert.not_valid_before_utc} — {cert.not_valid_after_utc} (UTC)")
+
+            all_values.append({
+                'name': prop_name,
                 'value': real_value,
                 'origin': prop_origin})
-            return all_values
+        return all_values
 
     if full_env := _environment_table(pod_env):
         ctx.chat.send_table(f"Changes for pod {pod_to_refresh}", full_env, send_as_excel=excel)
