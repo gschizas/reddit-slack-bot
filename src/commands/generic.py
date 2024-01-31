@@ -43,25 +43,6 @@ def cointoss(ctx: ExtendedContext):
     ctx.chat.send_text(toss_text)
 
 
-def _lookup_country(country):
-    country = country.lower()
-    country = {'uk': 'gb'}.get(country, country)
-    with open('countries.json') as f:
-        country_lookup = json.load(f)
-    # if country == 'usa': search_country = 'us'
-
-    found_countries = [c for c in country_lookup
-                       if country == c['name']['common'].lower()
-                       or country == c['name']['official'].lower()
-                       or any([country == names['common'].lower() for lang, names in c['name']['native'].items()])
-                       or any([country == names['official'].lower() for lang, names in c['name']['native'].items()])
-                       or country == c['cca2'].lower()
-                       or country == c['cca3'].lower()
-                       or country == c['cioc'].lower()]
-    result = found_countries[0] if len(found_countries) > 0 else None
-    return result
-
-
 @gyrobot.command('covid', aliases=['covid19', 'covid_19'],
                  context_settings={
                      'ignore_unknown_options': True,
@@ -77,6 +58,26 @@ def covid(ctx: ExtendedContext, country: str):
     covid19 GRC
     covid19 Greece
     covid19 Ελλάδα"""
+
+    def _lookup_country(a_country):
+        a_country = a_country.lower()
+        a_country = {'uk': 'gb'}.get(a_country, a_country)
+        with open('countries.json') as f:
+            country_lookup = json.load(f)
+        # if a_country == 'usa': search_country = 'us'
+
+        found_countries = [c for c in country_lookup
+                           if a_country == c['name']['common'].lower()
+                           or a_country == c['name']['official'].lower()
+                           or any([a_country == names['common'].lower() for lang, names in c['name']['native'].items()])
+                           or any(
+                [a_country == names['official'].lower() for lang, names in c['name']['native'].items()])
+                           or a_country == c['cca2'].lower()
+                           or a_country == c['cca3'].lower()
+                           or a_country == c['cioc'].lower()]
+        result = found_countries[0] if len(found_countries) > 0 else None
+        return result
+
     if country == '19' and len(ctx.args):
         country = ctx.args.pop(0)
     if len(ctx.args) > 0:
