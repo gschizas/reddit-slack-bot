@@ -21,7 +21,7 @@ from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
 from bot_framework.yaml_wrapper import yaml
 from chat import get_chat_wrapper
-from chat.chat_wrapper import ChatWrapper, Conversation
+from chat.chat_wrapper import ChatWrapper, Conversation, Message
 
 locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
 
@@ -171,8 +171,9 @@ def handle_line(text, message):
 
 def run_command(a_runner, args, context_obj: dict):
     result = a_runner.invoke(commands.gyrobot, args=args, obj=context_obj, catch_exceptions=True)
-    channel_id = context_obj['message'].conversation.channel_id
-    current_chat: Conversation = context_obj['message'].conversation
+    current_message: Message = context_obj['message']
+    current_chat: Conversation = current_message.conversation
+    channel_id = current_chat.channel_id
     if result.exception:
         logger.error(f"Error while running command {args}: {result.exception!r}")
         if 'DEBUG' in os.environ:
@@ -181,6 +182,8 @@ def run_command(a_runner, args, context_obj: dict):
             error_text = str(result.exception)
             exception_full_text = ''.join(traceback.format_exception(*result.exc_info))
             current_chat.send_file(filename='error.txt', file_data=exception_full_text.encode(),
+                                   channel=os.environ['PERSONAL_DEBUG'])
+            current_chat.send_text(f"Exception caused by {current_message.permalink}", is_error=True,
                                    channel=os.environ['PERSONAL_DEBUG'])
         else:
             error_text = str(result.exception)
