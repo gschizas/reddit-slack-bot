@@ -56,7 +56,6 @@ class SlackConversation(Conversation):
                     for table_name, table in tables.items():
                         table_df = pd.DataFrame(table)
                         table_df.reset_index(drop=True).to_excel(writer, sheet_name=table_name)
-                    writer.save()
                 excel_output.seek(0)
                 excel_data = excel_output.read()
                 self.send_file(excel_data, filename=f'{title}.xlsx')
