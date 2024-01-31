@@ -25,6 +25,10 @@ class Conversation(ABC):
         pass
 
     @abstractmethod
+    def send_tables(self, title: str, tables: Dict[str, List[Dict]], send_as_excel: bool = False) -> None:
+        pass
+
+    @abstractmethod
     def send_ephemeral(self, text, blocks, is_error, icon_emoji):
         pass
 

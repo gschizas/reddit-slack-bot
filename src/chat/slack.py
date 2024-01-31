@@ -2,6 +2,7 @@ import datetime
 import io
 import logging
 import os
+import zipfile
 from typing import List, Dict, Callable
 
 import pandas as pd
@@ -40,13 +41,32 @@ class SlackConversation(Conversation):
 
     def send_table(self, title: str, table: List[Dict], send_as_excel: bool = False) -> None:
         if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
-            with io.BytesIO() as cronjobs_output:
+            with io.BytesIO() as table_output:
                 table_df = pd.DataFrame(table)
-                table_df.reset_index(drop=True).to_excel(cronjobs_output)
-                self.send_file(cronjobs_output.getvalue(), filename=f'{title}.xlsx')
+                table_df.reset_index(drop=True).to_excel(table_output)
+                self.send_file(table_output.getvalue(), filename=f'{title}.xlsx')
         else:
             table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
             self.send_file(file_data=table_markdown.encode(), filename=f'{title}.md')
+
+    def send_tables(self, title: str, tables: Dict[str, List[Dict]], send_as_excel: bool = False) -> None:
+        if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
+            with io.BytesIO() as excel_output:
+                with pd.ExcelWriter(excel_output, engine='xlsxwriter') as writer:
+                    for table_name, table in tables.items():
+                        table_df = pd.DataFrame(table)
+                        table_df.reset_index(drop=True).to_excel(writer, sheet_name=table_name)
+                    writer.save()
+                excel_output.seek(0)
+                excel_data = excel_output.read()
+                self.send_file(excel_data, filename=f'{title}.xlsx')
+        else:
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+                for table_name, table in tables.items():
+                    table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
+                    zip_file.writestr(f"{table_name}.md", table_markdown.encode())
+            self.send_file(zip_buffer.getvalue(), filename=f'{title}.zip')
 
     def send_ephemeral(self, text=None, blocks=None, is_error=False, icon_emoji=None):
         if icon_emoji is None:
