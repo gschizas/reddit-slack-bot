@@ -133,7 +133,7 @@ class PortForwardProcess:
             encoding='utf-8',
             bufsize=0)
         out_line = []
-        t = threading.Thread(target=_output_reader, args=(self.proc, out_line))
+        t = threading.Thread(target=self._output_reader, args=(self.proc, out_line))
         t.start()
         time.sleep(1)
         t.join(timeout=5)
@@ -159,6 +159,6 @@ class PortForwardProcess:
             self.ctx.logger.error('subprocess did not terminate in time')
 
 
-def _output_reader(proc, data):
-    for line in iter(proc.stdout.readline, ''):
-        data.append(line.strip())
+    def _output_reader(proc, data):
+        for line in iter(proc.stdout.readline, ''):
+            data.append(line.strip())
