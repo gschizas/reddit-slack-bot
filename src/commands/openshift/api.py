@@ -34,7 +34,8 @@ def _get_table(ses, url):
     return result
 
 
-def _openshift_session(ctx: ExtendedContext, namespace, enforce_content_type=True):
+def _openshift_session(ctx: ExtendedContext, namespace: str, enforce_content_type: bool = True) \
+        -> tuple(str, requests.Session):
     config: dict = env_config(ctx, namespace)
     openshift_token = config['credentials']
     server_url = config['url']
