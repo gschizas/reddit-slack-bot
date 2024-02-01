@@ -72,14 +72,17 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
             pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
             if len(pods_to_refresh) == 0:
                 ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
+            pod_results = {}
             for pod_to_refresh in pods_to_refresh:
                 with PortForwardProcess(ctx, pod_to_refresh):
                     try:
                         empty_proxies = {'http': None, 'https': None}
                         pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
-                        _send_env_results(ctx, pod_to_refresh, pod_env, excel)
+                        pod_results[pod_to_refresh] = pod_env
                     except requests.exceptions.ConnectionError as ex:
-                        ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
+                        ctx.chat.send_text(f"Error when viewing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
+                        pod_results[pod_to_refresh] = [{'State': 'Error', 'Message': repr(ex)}]
+            ctx.chat.send_tables('PodStatus', pod_results, excel)
 
 
 @actuator.command('pods')
