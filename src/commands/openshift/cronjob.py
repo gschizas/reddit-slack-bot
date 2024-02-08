@@ -6,7 +6,7 @@ from ruamel.yaml import YAML
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
-from commands.openshift.api import get_cronjobs, change_cronjob_suspend_state
+from commands.openshift.api_obsolete_1 import get_cronjobs, change_cronjob_suspend_state
 from commands.openshift.common import read_config, OpenShiftNamespace, check_security
 
 yaml = YAML()

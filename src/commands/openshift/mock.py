@@ -7,7 +7,8 @@ from ruamel.yaml import YAML
 
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
-from commands.openshift.common import OpenShiftNamespace, azure_login, check_security, read_config, env_config
+from commands.openshift.common import OpenShiftNamespace, check_security, read_config, env_config
+from commands.openshift.api_obsolete_3 import azure_login
 
 yaml = YAML()
 

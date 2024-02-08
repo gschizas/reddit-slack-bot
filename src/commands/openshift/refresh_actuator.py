@@ -7,7 +7,7 @@ from cryptography import x509
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security
-from commands.openshift.core import OpenShiftConnection, PortForwardProcess
+from commands.openshift.api_obsolete_2 import OpenShiftConnection, PortForwardProcess
 
 
 def _actuator_config():

@@ -5,7 +5,7 @@ import click
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
-from commands.openshift.api import get_deployments, change_deployment_pause_state
+from commands.openshift.api_obsolete_1 import get_deployments, change_deployment_pause_state
 from commands.openshift.common import read_config, OpenShiftNamespace, check_security
 
 REMOVE_DEPLOYMENT_KEYS = ['Containers', 'Images', 'Selector']
