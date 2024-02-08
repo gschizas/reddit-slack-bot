@@ -27,15 +27,15 @@ def read_config(env_var):
             permissions = yaml.load(f)
     else:
         permissions = []
-    for env_name, env_config in config['environments'].items():
+    for env_name, env_cfg in config['environments'].items():
         if env_name in credentials:
             credentials_object = credentials[env_name]
             if isinstance(credentials_object, str):
                 credentials_object = credentials_object.replace('\n', '')
-            env_config['credentials'] = credentials_object
+            env_cfg['credentials'] = credentials_object
         if env_name in permissions:
-            env_config['users'] = permissions[env_name]['users']
-            env_config['channels'] = permissions[env_name]['channels']
+            env_cfg['users'] = permissions[env_name]['users']
+            env_cfg['channels'] = permissions[env_name]['channels']
     return config
 
 
