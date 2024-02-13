@@ -1,6 +1,6 @@
 import re
 
-REDDIT_USERNAME_PATTERN = r'^<https://(?:www\.|old\.)?reddit\.com/u(?:ser)?/(?P<username>[a-zA-Z0-9_-]+)/?(?:\|\1)?>$'
+REDDIT_USERNAME_PATTERN = r'^<https://(?:www\.|old\.|new\.)?reddit\.com/u(?:ser)?/(?P<username>[a-zA-Z0-9_-]+)/?(?:\|\1)?>$'
 
 
 def extract_username(username):
