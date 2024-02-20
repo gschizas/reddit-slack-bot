@@ -1,13 +1,15 @@
 import json
 
 import click
+import kubernetes.client
 import requests
 from cryptography import x509
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
-from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security
+from commands.openshift.api import KubernetesConnection
 from commands.openshift.api_obsolete_2 import OpenShiftConnection, PortForwardProcess
+from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security
 
 
 def _actuator_config():
@@ -91,18 +93,20 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 @click.pass_context
 @check_security
 def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
-    with OpenShiftConnection(ctx, namespace) as conn:
-        all_pods = conn.get_pods(pod_name)
+    with KubernetesConnection(ctx, namespace) as conn:
+        label_selector = f'deployment={pod_name}' if pod_name else None
+        all_pods: kubernetes.client.V1PodList = conn.core_v1_api.list_namespaced_pod(namespace=conn.project_name,
+                                                                                     label_selector=label_selector)
 
         fields = ["Deployment", "Name", "Ready", "Status", "Restarts", "Host IP", "Pod IP"]
         pods_list = [dict(zip(fields, [
-            pod['metadata'].get('labels', {'deployment': ''}).get('deployment'),
-            pod['metadata'].get('name', ''),
-            f"",
-            pod['status'].get('phase', ''),
-            sum([cs.get('restartCount', 0) for cs in pod['status'].get('containerStatuses', [])]),
-            pod['status'].get('hostIP', ''),
-            pod['status'].get('podIP', '')])) for pod in all_pods['items']]
+            pod.metadata.labels.get('deployment'),
+            pod.metadata.name,
+            all([cs.ready for cs in pod.status.container_statuses]),
+            pod.status.phase,
+            sum([cs.restart_count for cs in pod.status.container_statuses]),
+            pod.status.host_ip,
+            pod.status.pod_ip])) for pod in all_pods.items]
         ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
 
 
