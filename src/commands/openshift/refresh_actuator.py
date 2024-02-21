@@ -1,4 +1,5 @@
 import json
+from typing import Callable
 
 import click
 import kubernetes.client
@@ -31,42 +32,25 @@ def actuator(ctx: ExtendedContext):
 @click.pass_context
 @check_security
 def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
-    with KubernetesConnection(ctx, namespace) as conn:
-        for deployment in deployments:
-            label_selector = f'deployment={deployment}'
-            all_pods: kubernetes.client.V1PodList = conn.core_v1_api.list_namespaced_pod(namespace=conn.project_name,
-                                                                                         label_selector=label_selector)
-            pods_to_refresh = [pod.metadata.name for pod in all_pods.items]
-            if len(pods_to_refresh) == 0:
-                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to refresh for {deployment}", is_error=True)
-                continue
+    def refresh_action(conn, pod_results, pod_to_refresh):
+        empty_proxies = {'http': None, 'https': None}
+        response_before = requests.get(
+            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
+            proxies=empty_proxies, timeout=30)
+        refresh_result = requests.post(
+            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/refresh',
+            proxies=empty_proxies, timeout=30)
+        response_after = requests.get(
+            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
+            proxies=empty_proxies, timeout=30)
+        pod_results[pod_to_refresh + ' - before'] = _environment_table(response_before)
+        pod_results[pod_to_refresh + ' - change'] = _environment_changes_table(
+            response_before, response_after, refresh_result)
+        pod_results[pod_to_refresh + ' - after'] = _environment_table(response_after)
 
-            pods_to_refresh_successful = 0
-            pod_results = {}
-            for pod_to_refresh in pods_to_refresh:
-                with conn.port_forward():
-                    try:
-                        empty_proxies = {'http': None, 'https': None}
-                        response_before = requests.get(
-                            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
-                            proxies=empty_proxies, timeout=30)
-                        refresh_result = requests.post(
-                            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/refresh',
-                            proxies=empty_proxies, timeout=30)
-                        response_after = requests.get(
-                            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
-                            proxies=empty_proxies, timeout=30)
+    action_names = ('refresh', 'refreshing', 'Refreshed')
 
-                        pod_results[pod_to_refresh + ' - before'] = _environment_table(response_before)
-                        pod_results[pod_to_refresh + ' - change'] = _environment_changes_table(
-                            response_before, response_after, refresh_result)
-                        pod_results[pod_to_refresh + ' - after'] = _environment_table(response_after)
-                        pods_to_refresh_successful += 1
-                    except requests.exceptions.ConnectionError as ex:
-                        ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
-                        pod_results[pod_to_refresh] = [{'State': 'Error', 'Message': repr(ex)}]
-            ctx.chat.send_text(f"Refreshed {pods_to_refresh_successful}/{len(pods_to_refresh)} pods for {deployment}")
-            ctx.chat.send_tables('PodStatus', pod_results, excel)
+    _actuator_action(ctx, namespace, deployments, excel, action_names, refresh_action)
 
 
 @actuator.command('view')
@@ -76,28 +60,44 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
 @click.pass_context
 @check_security
 def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
+    def view_action(conn, pod_results, pod_to_refresh):
+        response = requests.get(
+            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
+            proxies={'http': None, 'https': None},
+            timeout=30)
+        pod_results[pod_to_refresh] = _environment_table(response)
+
+    action_names = ('view', 'viewing', 'Viewed')
+
+    _actuator_action(ctx, namespace, deployments, excel, action_names, view_action)
+
+
+def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool,
+                     action_names: tuple[str, str, str], action: Callable):
     with KubernetesConnection(ctx, namespace) as conn:
         for deployment in deployments:
             label_selector = f'deployment={deployment}'
             all_pods: kubernetes.client.V1PodList = conn.core_v1_api.list_namespaced_pod(namespace=conn.project_name,
                                                                                          label_selector=label_selector)
-
             pods_to_refresh = [pod.metadata.name for pod in all_pods.items]
             if len(pods_to_refresh) == 0:
-                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
+                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to {action_names[0]} for {deployment}",
+                                   is_error=True)
                 continue
+
+            pods_actioned_successful = 0
             pod_results = {}
             for pod_to_refresh in pods_to_refresh:
                 with conn.port_forward():
                     try:
-                        response = requests.get(
-                            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
-                            proxies={'http': None, 'https': None},
-                            timeout=30)
-                        pod_results[pod_to_refresh] = _environment_table(response)
+                        action(conn, pod_results, pod_to_refresh)
+                        pods_actioned_successful += 1
                     except requests.exceptions.ConnectionError as ex:
-                        ctx.chat.send_text(f"Error when viewing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
+                        ctx.chat.send_text(f"Error when {action_names[1]} pod {pod_to_refresh}\n```{ex!r}```",
+                                           is_error=True)
                         pod_results[pod_to_refresh] = [{'State': 'Error', 'Message': repr(ex)}]
+            ctx.chat.send_text(
+                f"{action_names[2]} {pods_actioned_successful}/{len(pods_to_refresh)} pods for {deployment}")
             ctx.chat.send_tables('PodStatus', pod_results, excel)
 
 
