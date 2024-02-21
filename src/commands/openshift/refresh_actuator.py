@@ -65,22 +65,26 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
 @click.pass_context
 @check_security
 def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
-    with OpenShiftConnection(ctx, namespace) as conn:
+    with KubernetesConnection(ctx, namespace) as conn:
         for deployment in deployments:
-            all_pods = conn.get_pods(deployment)
-            if not all_pods:
-                continue
+            label_selector = f'deployment={deployment}'
+            all_pods: kubernetes.client.V1PodList = conn.core_v1_api.list_namespaced_pod(namespace=conn.project_name,
+                                                                                         label_selector=label_selector)
 
-            pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
+            pods_to_refresh = [pod.metadata.name for pod in all_pods.items]
             if len(pods_to_refresh) == 0:
                 ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
+                continue
             pod_results = {}
             for pod_to_refresh in pods_to_refresh:
-                with PortForwardProcess(ctx, pod_to_refresh):
+                with conn.port_forward():
                     try:
-                        empty_proxies = {'http': None, 'https': None}
-                        pod_env = requests.get("http://localhost:9999/actuator/env", proxies=empty_proxies, timeout=30)
-                        pod_results[pod_to_refresh] = pod_env
+                        response = requests.get(
+                            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
+                            proxies={'http': None, 'https': None},
+                            timeout=30)
+                        ctx.chat.send_file(response.content, filename='pod_env.json')
+                        pod_results[pod_to_refresh] = _environment_table(response)
                     except requests.exceptions.ConnectionError as ex:
                         ctx.chat.send_text(f"Error when viewing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
                         pod_results[pod_to_refresh] = [{'State': 'Error', 'Message': repr(ex)}]
@@ -109,6 +113,40 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
             pod.status.pod_ip])) for pod in all_pods.items]
         ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
 
+
+def _environment_table(pod_env_raw):
+    env_current = json.loads(pod_env_raw.content)
+
+    if 'propertySources' in env_current:  # list of property sources, find the one called bootstrapProperties
+        property_sources = env_current.get('propertySources')
+        bootstrap_properties = [prop for prop in property_sources if prop['name'] == 'bootstrapProperties']
+        property_root = bootstrap_properties[0]['properties']
+        complex_properties = True
+    elif 'bootstrapProperties' in env_current:  # only one dictionary, get to it directly
+        property_root = env_current.get('bootstrapProperties')
+        complex_properties = False
+    else:
+        return [{'Status': 'Error', 'Message': "Could not find property sources in environment"}]
+
+    all_values = []
+    for prop_name, prop_value in sorted(property_root.items()):
+        if complex_properties:
+            real_value = prop_value['value']
+            prop_origin = prop_value.get('origin')
+        else:
+            real_value = prop_value
+            prop_origin = None
+
+        if type(real_value) is str and real_value.startswith('-----BEGIN CERTIFICATE-----\n'):
+            cert = x509.load_pem_x509_certificate(real_value.encode())
+            real_value = (f"Certificate ({cert.serial_number}) "
+                          f"valid {cert.not_valid_before_utc} — {cert.not_valid_after_utc} (UTC)")
+
+        all_values.append({
+            'name': prop_name,
+            'value': real_value,
+            'origin': prop_origin})
+    return all_values
 
 def _send_results(ctx: ExtendedContext,
                   pod_to_refresh: str,
@@ -168,42 +206,3 @@ def _send_results(ctx: ExtendedContext,
             filename=f'pod_env_after_raw-{pod_to_refresh}.json')
 
 
-def _send_env_results(ctx: ExtendedContext, pod_to_refresh, pod_env, excel: bool):
-    def _environment_table(pod_env_raw):
-        env_current = json.loads(pod_env_raw.content)
-
-        if 'propertySources' in env_current:  # list of property sources, find the one called bootstrapProperties
-            property_sources = env_current.get('propertySources')
-            bootstrap_properties = [prop for prop in property_sources if prop['name'] == 'bootstrapProperties']
-            property_root = bootstrap_properties[0]['properties']
-            complex_properties = True
-        elif 'bootstrapProperties' in env_current:  # only one dictionary, get to it directly
-            property_root = env_current.get('bootstrapProperties')
-            complex_properties = False
-        else:
-            ctx.chat.send_text("Could not find property sources in environment", is_error=True)
-            ctx.chat.send_file(pod_env_raw.content, filename='EnvCurrent.json')
-            return
-
-        all_values = []
-        for prop_name, prop_value in sorted(property_root.items()):
-            if complex_properties:
-                real_value = prop_value['value']
-                prop_origin = prop_value.get('origin')
-            else:
-                real_value = prop_value
-                prop_origin = None
-
-            if type(real_value) is str and real_value.startswith('-----BEGIN CERTIFICATE-----\n'):
-                cert = x509.load_pem_x509_certificate(real_value.encode())
-                real_value = (f"Certificate ({cert.serial_number}) "
-                              f"valid {cert.not_valid_before_utc} — {cert.not_valid_after_utc} (UTC)")
-
-            all_values.append({
-                'name': prop_name,
-                'value': real_value,
-                'origin': prop_origin})
-        return all_values
-
-    if full_env := _environment_table(pod_env):
-        ctx.chat.send_table(f"Changes for pod {pod_to_refresh}", full_env, send_as_excel=excel)

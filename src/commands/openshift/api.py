@@ -2,10 +2,10 @@ import base64
 import io
 import pathlib
 
-import requests
-import urllib3
 import kubernetes.client
 import kubernetes.stream
+import requests
+import urllib3
 from ruamel.yaml import YAML
 
 from commands.extended_context import ExtendedContext
@@ -18,6 +18,39 @@ class KubernetesConnection:
     server_url: str
     cert_authority: str
     api_key: str
+
+    class PortForward:
+        def __init__(self, kubernetes_connection):
+            self.kubernetes_connection = kubernetes_connection
+
+        def __enter__(self):
+            def kubernetes_create_connection(address, *args, **kwargs):
+                dns_name = address[0]
+                if isinstance(dns_name, bytes):
+                    dns_name = dns_name.decode()
+                dns_name = dns_name.split(".")
+                if dns_name[-1] != 'kubernetes':
+                    return self.original_create_connection(address, *args, **kwargs)
+                if len(dns_name) not in (3, 4):
+                    raise RuntimeError("Unexpected kubernetes DNS name.")
+                namespace = dns_name[-2]
+                name = dns_name[0]
+                port = address[1]
+                if len(dns_name) == 4:
+                    if dns_name[1] != 'pod':
+                        raise RuntimeError(
+                            f"Unsupported resource type: {dns_name[1]}")
+                pf = kubernetes.stream.portforward(
+                    self.kubernetes_connection.core_v1_api.connect_get_namespaced_pod_portforward, name, namespace,
+                    ports=str(port))
+                return pf.socket(port)
+
+            self.original_create_connection = urllib3.util.connection.create_connection
+            urllib3.util.connection.create_connection = kubernetes_create_connection
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            urllib3.util.connection.create_connection = self.original_create_connection
 
     def __init__(self, ctx: ExtendedContext, namespace: str):
         self.ctx = ctx
@@ -98,7 +131,6 @@ class KubernetesConnection:
 
         if self.cert_authority:
             kubernetes_configuration.ssl_ca_cert = self.cert_authority
-            # kubernetes_configuration.host = self.cert_authority.name
 
         self.api_client = kubernetes.client.ApiClient(kubernetes_configuration)
         self.core_v1_api = kubernetes.client.CoreV1Api(self.api_client)
@@ -108,34 +140,6 @@ class KubernetesConnection:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.api_client:
             self.api_client.close()
-        # if self.cert_authority:
-        #     self.cert_authority.close()
 
-    def exec_portforward_command(self, namespace, pod_name, command_name):
-        original_create_connection = urllib3.util.connection.create_connection
-
-        def kubernetes_create_connection(address, *args, **kwargs):
-            dns_name = address[0]
-            if isinstance(dns_name, bytes):
-                dns_name = dns_name.decode()
-            dns_name = dns_name.split(".")
-            if dns_name[-1] != 'kubernetes':
-                return original_create_connection(address, *args, **kwargs)
-            if len(dns_name) not in (3, 4):
-                raise RuntimeError("Unexpected kubernetes DNS name.")
-            namespace = dns_name[-2]
-            name = dns_name[0]
-            port = address[1]
-            if len(dns_name) == 4:
-                if dns_name[1] != 'pod':
-                    raise RuntimeError(
-                        f"Unsupported resource type: {dns_name[1]}")
-            pf = kubernetes.stream.portforward(self.core_v1_api, name, namespace, ports=str(port))
-            return pf.socket(port)
-
-        urllib3.util.connection.create_connection = kubernetes_create_connection
-
-        response = requests.get(f'http://{pod_name}.pod.{namespace}.kubernetes:8778/{command_name}',
-                                proxies={'http': None, 'https': None})
-        urllib3.util.connection.create_connection = original_create_connection
-        return response.json()
+    def port_forward(self):
+        return KubernetesConnection.PortForward(self)
