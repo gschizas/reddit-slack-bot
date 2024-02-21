@@ -104,9 +104,10 @@ def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str
 @actuator.command('pods')
 @click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
 @click.argument('pod_name', type=str, required=False)
+@click.option('-x', '--excel', is_flag=True, default=False)
 @click.pass_context
 @check_security
-def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
+def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None, excel: bool = False):
     with KubernetesConnection(ctx, namespace) as conn:
         label_selector = f'deployment={pod_name}' if pod_name else None
         all_pods: kubernetes.client.V1PodList = conn.core_v1_api.list_namespaced_pod(namespace=conn.project_name,
@@ -121,7 +122,7 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None):
             sum([cs.restart_count for cs in pod.status.container_statuses]),
             pod.status.host_ip,
             pod.status.pod_ip])) for pod in all_pods.items]
-        ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list)
+        ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list, send_as_excel=excel)
 
 
 def _environment_table(pod_env_raw):
