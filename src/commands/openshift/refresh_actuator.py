@@ -8,7 +8,6 @@ from cryptography import x509
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
-from commands.openshift.api_obsolete_2 import OpenShiftConnection, PortForwardProcess
 from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security
 
 
@@ -28,34 +27,46 @@ def actuator(ctx: ExtendedContext):
 @actuator.command('refresh')
 @click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
 @click.argument('deployments', type=str, nargs=-1)
+@click.option('-x', '--excel', is_flag=True, default=False)
 @click.pass_context
 @check_security
-def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str]):
-    with OpenShiftConnection(ctx, namespace) as conn:
+def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
+    with KubernetesConnection(ctx, namespace) as conn:
         for deployment in deployments:
-            all_pods = conn.get_pods(deployment)
-            if not all_pods:
+            label_selector = f'deployment={deployment}'
+            all_pods: kubernetes.client.V1PodList = conn.core_v1_api.list_namespaced_pod(namespace=conn.project_name,
+                                                                                         label_selector=label_selector)
+            pods_to_refresh = [pod.metadata.name for pod in all_pods.items]
+            if len(pods_to_refresh) == 0:
+                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to refresh for {deployment}", is_error=True)
                 continue
 
-            pods_to_refresh = [pod['metadata']['name'] for pod in all_pods['items']]
-            if len(pods_to_refresh) == 0:
-                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to view for {deployment}", is_error=True)
             pods_to_refresh_successful = 0
+            pod_results = {}
             for pod_to_refresh in pods_to_refresh:
-                with PortForwardProcess(ctx, pod_to_refresh):
+                with conn.port_forward():
                     try:
                         empty_proxies = {'http': None, 'https': None}
-                        pod_env_before = requests.get("http://localhost:9999/actuator/env",
-                                                      proxies=empty_proxies, timeout=30)
-                        refresh_result = requests.post("http://localhost:9999/actuator/refresh",
-                                                       proxies=empty_proxies, timeout=30)
-                        pod_env_after = requests.get("http://localhost:9999/actuator/env",
-                                                     proxies=empty_proxies, timeout=30)
-                        _send_results(ctx, pod_to_refresh, pod_env_before, refresh_result, pod_env_after)
+                        response_before = requests.get(
+                            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
+                            proxies=empty_proxies, timeout=30)
+                        refresh_result = requests.post(
+                            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/refresh',
+                            proxies=empty_proxies, timeout=30)
+                        response_after = requests.get(
+                            url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
+                            proxies=empty_proxies, timeout=30)
+
+                        pod_results[pod_to_refresh + ' - before'] = _environment_table(response_before)
+                        pod_results[pod_to_refresh + ' - change'] = _environment_changes_table(
+                            response_before, response_after, refresh_result)
+                        pod_results[pod_to_refresh + ' - after'] = _environment_table(response_after)
                         pods_to_refresh_successful += 1
                     except requests.exceptions.ConnectionError as ex:
                         ctx.chat.send_text(f"Error when refreshing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
+                        pod_results[pod_to_refresh] = [{'State': 'Error', 'Message': repr(ex)}]
             ctx.chat.send_text(f"Refreshed {pods_to_refresh_successful}/{len(pods_to_refresh)} pods for {deployment}")
+            ctx.chat.send_tables('PodStatus', pod_results, excel)
 
 
 @actuator.command('view')
@@ -83,7 +94,6 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
                             url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
                             proxies={'http': None, 'https': None},
                             timeout=30)
-                        ctx.chat.send_file(response.content, filename='pod_env.json')
                         pod_results[pod_to_refresh] = _environment_table(response)
                     except requests.exceptions.ConnectionError as ex:
                         ctx.chat.send_text(f"Error when viewing pod {pod_to_refresh}\n```{ex!r}```", is_error=True)
@@ -148,40 +158,38 @@ def _environment_table(pod_env_raw):
             'origin': prop_origin})
     return all_values
 
+
+def _environment_changes_table(pod_env_before_raw, pod_env_after_raw, result_list):
+    env_before = json.loads(pod_env_before_raw.content)
+    env_after = json.loads(pod_env_after_raw.content)
+    values_before = {}
+    values_after = {}
+    for c in result_list:
+        property_names = ('bootstrapProperties', 'propertySources')
+        if not any([p in env_before for p in property_names]) or not any([p in env_after for p in property_names]):
+            return [{'State': 'Error', 'Message': "Could not find property sources in environment"}]
+        for ps in env_before.get('propertySources', env_before.get('bootstrapProperties', [])):
+            try:
+                if c in ps['properties']:
+                    values_before[c] = ps['properties'][c]
+            except TypeError:
+                return [{'State': 'Error', 'Message': f"Error when reading environment before for {c}"}]
+        for ps in env_after.get('propertySources', env_after.get('bootstrapProperties', [])):
+            if c in ps['properties']:
+                values_after[c] = ps['properties'][c]
+    return [{
+        'variable': c,
+        'before': values_before.get(c, {'value': None})['value'],
+        'after_value': values_after.get(c, {'value': None})['value'],
+        'after_origin': values_after.get(c, {'origin': None}).get('origin')}
+        for c in result_list]
+
+
 def _send_results(ctx: ExtendedContext,
                   pod_to_refresh: str,
                   pod_env_before: requests.Response,
                   refresh_result: requests.Response,
                   pod_env_after: requests.Response):
-    def _environment_changes_table(pod_env_before_raw, pod_env_after_raw, result_list):
-        env_before = json.loads(pod_env_before_raw.content)
-        env_after = json.loads(pod_env_after_raw.content)
-        values_before = {}
-        values_after = {}
-        for c in result_list:
-            property_names = ('bootstrapProperties', 'propertySources')
-            if not any([p in env_before for p in property_names]) or not any([p in env_after for p in property_names]):
-                ctx.chat.send_text("Could not find property sources in environment", is_error=True)
-                ctx.chat.send_file(pod_env_before_raw.content, filename='EnvBefore.json')
-                ctx.chat.send_file(pod_env_after_raw.content, filename='EnvAfter.json')
-                return []
-            for ps in env_before.get('propertySources', env_before.get('bootstrapProperties', [])):
-                try:
-                    if c in ps['properties']:
-                        values_before[c] = ps['properties'][c]
-                except TypeError:
-                    ctx.chat.send_text(f"Error when reading environment before for {c}", is_error=True)
-                    ctx.chat.send_file(pod_env_before_raw.content, filename='EnvBefore.json')
-                    return
-            for ps in env_after.get('propertySources', env_after.get('bootstrapProperties', [])):
-                if c in ps['properties']:
-                    values_after[c] = ps['properties'][c]
-        return [{
-            'variable': c,
-            'before': values_before.get(c, {'value': None})['value'],
-            'after_value': values_after.get(c, {'value': None})['value'],
-            'after_origin': values_after.get(c, {'origin': None}).get('origin')}
-            for c in result_list]
 
     refresh_actuator_result = refresh_result.json()
     if type(refresh_actuator_result) is list:
