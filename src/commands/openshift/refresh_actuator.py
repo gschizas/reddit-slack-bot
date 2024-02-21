@@ -131,6 +131,10 @@ def _environment_table(pod_env_raw):
     if 'propertySources' in env_current:  # list of property sources, find the one called bootstrapProperties
         property_sources = env_current.get('propertySources')
         bootstrap_properties = [prop for prop in property_sources if prop['name'] == 'bootstrapProperties']
+        if not bootstrap_properties:
+            return [
+                {'Status': 'Error',
+                 'Message': "Could not find property sources in environment (maybe spring boot 2.7?)"}]
         property_root = bootstrap_properties[0]['properties']
         complex_properties = True
     elif 'bootstrapProperties' in env_current:  # only one dictionary, get to it directly
