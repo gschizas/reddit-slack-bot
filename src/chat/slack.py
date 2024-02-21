@@ -1,7 +1,9 @@
+import base64
 import datetime
 import io
 import logging
 import os
+import uuid
 import zipfile
 from typing import List, Dict, Callable
 
@@ -23,6 +25,13 @@ channels_cache = {}
 bot_name: str
 handle_message: Callable
 logger: logging.Logger
+
+
+def _random_name():
+    random_bytes = uuid.uuid4().bytes
+    shorter_text = base64.b64encode(random_bytes)
+    cleaned_up_text = shorter_text.strip(b'=').replace(b'/', b'.')
+    return cleaned_up_text.decode()
 
 
 class SlackConversation(Conversation):
@@ -53,9 +62,18 @@ class SlackConversation(Conversation):
         if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
             with io.BytesIO() as excel_output:
                 with pd.ExcelWriter(excel_output, engine='xlsxwriter') as writer:
+                    long_sheet_names = []
                     for table_name, table in tables.items():
+                        if len(sheet_name) <= 31:
+                            sheet_name = table_name
+                        else:
+                            sheet_name = _random_name()
+                            long_sheet_names.append({'Original Name': table_name, 'Translated Name': sheet_name})
                         table_df = pd.DataFrame(table)
-                        table_df.reset_index(drop=True).to_excel(writer, sheet_name=table_name)
+                        table_df.reset_index(drop=True).to_excel(writer, sheet_name=sheet_name)
+                    if long_sheet_names:
+                        table_sheet_names = pd.DataFrame(long_sheet_names)
+                        table_sheet_names.reset_index(drop=True).to_excel(writer, sheet_name='__LongNames')
                 excel_output.seek(0)
                 excel_data = excel_output.read()
                 self.send_file(excel_data, filename=f'{title}.xlsx')
