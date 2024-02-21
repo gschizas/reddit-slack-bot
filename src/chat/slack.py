@@ -64,7 +64,7 @@ class SlackConversation(Conversation):
                 with pd.ExcelWriter(excel_output, engine='xlsxwriter') as writer:
                     long_sheet_names = []
                     for table_name, table in tables.items():
-                        if len(sheet_name) <= 31:
+                        if len(table_name) <= 31:
                             sheet_name = table_name
                         else:
                             sheet_name = _random_name()
