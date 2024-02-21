@@ -60,30 +60,41 @@ class SlackConversation(Conversation):
 
     def send_tables(self, title: str, tables: Dict[str, List[Dict]], send_as_excel: bool = False) -> None:
         if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
-            with io.BytesIO() as excel_output:
-                with pd.ExcelWriter(excel_output, engine='xlsxwriter') as writer:
-                    long_sheet_names = []
-                    for table_name, table in tables.items():
-                        if len(table_name) <= 31:
-                            sheet_name = table_name
-                        else:
-                            sheet_name = _random_name()
-                            long_sheet_names.append({'Original Name': table_name, 'Translated Name': sheet_name})
-                        table_df = pd.DataFrame(table)
-                        table_df.reset_index(drop=True).to_excel(writer, sheet_name=sheet_name)
-                    if long_sheet_names:
-                        table_sheet_names = pd.DataFrame(long_sheet_names)
-                        table_sheet_names.reset_index(drop=True).to_excel(writer, sheet_name='__LongNames')
-                excel_output.seek(0)
-                excel_data = excel_output.read()
-                self.send_file(excel_data, filename=f'{title}.xlsx')
+            excel_data = self.excel_from_tables(tables)
+            self.send_file(excel_data, filename=f'{title}.xlsx')
         else:
-            zip_buffer = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+            zip_data = self.zipped_markdown_from_tables(tables)
+            self.send_file(zip_data, filename=f'{title}.zip')
+
+    @staticmethod
+    def zipped_markdown_from_tables(tables):
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+            for table_name, table in tables.items():
+                table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
+                zip_file.writestr(f"{table_name}.md", table_markdown.encode())
+        zip_data = zip_buffer.getvalue()
+        return zip_data
+
+    @staticmethod
+    def excel_from_tables(tables):
+        with io.BytesIO() as excel_output:
+            with pd.ExcelWriter(excel_output, engine='xlsxwriter') as writer:
+                long_sheet_names = []
                 for table_name, table in tables.items():
-                    table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
-                    zip_file.writestr(f"{table_name}.md", table_markdown.encode())
-            self.send_file(zip_buffer.getvalue(), filename=f'{title}.zip')
+                    if len(table_name) <= 31:
+                        sheet_name = table_name
+                    else:
+                        sheet_name = _random_name()
+                        long_sheet_names.append({'Original Name': table_name, 'Translated Name': sheet_name})
+                    table_df = pd.DataFrame(table)
+                    table_df.reset_index(drop=True).to_excel(writer, sheet_name=sheet_name)
+                if long_sheet_names:
+                    table_sheet_names = pd.DataFrame(long_sheet_names)
+                    table_sheet_names.reset_index(drop=True).to_excel(writer, sheet_name='__LongNames')
+            excel_output.seek(0)
+            excel_data = excel_output.read()
+        return excel_data
 
     def send_ephemeral(self, text=None, blocks=None, is_error=False, icon_emoji=None):
         if icon_emoji is None:
