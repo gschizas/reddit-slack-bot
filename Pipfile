@@ -32,6 +32,8 @@ docker = "*"
 python-dateutil = "*"
 durations-nlp = "*"
 cryptography = "*"
+imageio = {extras = ["ffmpeg"], version = "*"}
+cloup = "*"
 
 [dev-packages]
 

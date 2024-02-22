@@ -4,6 +4,7 @@ import random
 import re
 
 import click
+import cloup
 import psycopg
 
 from commands import gyrobot, DefaultCommandGroup
@@ -108,9 +109,14 @@ def kudos_give(ctx: ExtendedContext):
 @kudos.command('view')
 @click.argument('days_to_check', type=click.INT, default=14)
 @click.argument('channel', default='')
-@click.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False)
+@cloup.option_group("Format",
+                    cloup.option('-t', '--text', 'send_as_text', is_flag=True, default=False),
+                    cloup.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False),
+                    cloup.option('-v', '--video', 'send_as_video', is_flag=True, default=True),
+                    constraint=cloup.constraints.require_one)
 @click.pass_context
-def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str, send_as_excel: bool):
+def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str,
+               send_as_text: bool, send_as_excel: bool, send_as_video: bool):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
@@ -125,7 +131,88 @@ def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str, send_as_e
         ctx.chat.send_text("No kudos yet!")
     else:
         table = [dict(zip(cols, row)) for row in rows]
-        ctx.chat.send_table(title="Kudos", table=table, send_as_excel=send_as_excel)
+        if send_as_video:
+            video_file = _create_kudos_video(table)
+            ctx.chat.send_file(video_file, title="Kudos", filename="kudos.mp4")
+        else:
+            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=send_as_excel)
+
+
+def _create_kudos_video(high_scores):
+    from PIL import Image, ImageDraw, ImageFont
+    import numpy as np
+    import imageio.v3 as imageio
+
+    width, height = 320, 480
+
+    frame = 0
+    score_moving = 0
+    wait_counter = 0
+
+    high_scores = high_scores[:10]
+
+    # Set the initial x position for the text
+    x_pos = [width] * len(high_scores)
+    x_speed = [5 * (i + 1) for i in range(len(high_scores))]
+
+    # Set the final x position for the text
+    final_x_pos = 20
+
+    score_font = ImageFont.truetype("img/kudos/amstrad_cpc464.ttf", 12)
+    title_font = ImageFont.truetype("img/kudos/amstrad_cpc464.ttf", 18)
+    images = []
+    bg = Image.open("img/kudos/wallpaper.jpg").resize((width, height))
+    state = "flying in"
+    while True:
+        # Create a new image
+        image = Image.new("RGB", (width, height), (0, 0, 0))
+        image.paste(bg, (0, 0))
+        draw = ImageDraw.Draw(image)
+
+        draw.text((50, 50), "::: Kudos :::", fill=(255, 255, 255), font=title_font)
+
+        # Draw the high scores
+        for i, player_and_score in enumerate(high_scores):
+            player, score = player_and_score['User'], player_and_score['kudos']
+            score_text = f"{score:> 4} {player}"
+            draw.text(
+                (x_pos[i] + 1, 101 + i * 20),
+                score_text,
+                fill=(0, 0, 0),
+                font=score_font,
+            )
+            draw.text(
+                (x_pos[i], 100 + i * 20),
+                score_text,
+                fill=(255, 255, 255),
+                font=score_font,
+            )
+
+        # Save the image
+        images.append(np.array(image))
+
+        frame += 1
+
+        if state == "flying in":
+            # Move the x position to the left
+            if x_pos[score_moving] - x_speed[score_moving] < final_x_pos:
+                x_speed[score_moving] = x_pos[score_moving] - final_x_pos
+            if x_pos[score_moving] > final_x_pos:
+                x_pos[score_moving] -= x_speed[score_moving]
+            else:
+                x_speed[score_moving] = 0
+                score_moving += 1
+            if score_moving == len(high_scores):
+                state = "waiting"
+                wait_counter = 0
+        elif state == "waiting":
+            # Do nothing
+            wait_counter += 1
+            if wait_counter > 50:  # 2 seconds?
+                state = "finished"
+        elif state == "finished":
+            break
+    return imageio.imwrite("<bytes>", images, fps=30, extension=".mp4")
 
 
 def _record_kudos(ctx: ExtendedContext, sender_name, recipient_name, recipient_user_id, reason):
