@@ -62,7 +62,7 @@ def _cron_descriptor_options():
     cron_descriptor_options.casing_type = cron_descriptor.CasingTypeEnum.Sentence
     if locale.getlocale()[0] in ['el_GR', 'Greek_Greece']:
         cron_descriptor_options.locale_code = 'el_GR'
-        cron_descriptor_options.locale_location = '.'
+        cron_descriptor_options.locale_location = 'locale/cron_descriptor'
     cron_descriptor_options.use_24hour_time_format = True
     return cron_descriptor_options
 
