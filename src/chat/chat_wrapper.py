@@ -69,10 +69,17 @@ class Conversation(ABC):
         table_output: BytesIO
         with io.BytesIO() as table_output:
             table_df = pd.DataFrame(table)
+            Conversation.localize_datetime(table_df)
             # noinspection PyTypeChecker
             table_df.reset_index(drop=True).to_excel(table_output)
             excel_data = table_output.getvalue()
         return excel_data
+
+    @staticmethod
+    def localize_datetime(table_df):
+        dt_cols = table_df.select_dtypes(include=['datetime64[ns, UTC]']).columns
+        for col in dt_cols:
+            table_df[col] = table_df[col].dt.tz_localize(None)
 
     @staticmethod
     def zipped_markdown_from_tables(tables):
@@ -98,6 +105,7 @@ class Conversation(ABC):
                         sheet_name = Conversation.random_name()
                         long_sheet_names.append({'Original Name': table_name, 'Translated Name': sheet_name})
                     table_df = pd.DataFrame(table)
+                    Conversation.localize_datetime(table_df)
                     table_df.reset_index(drop=True).to_excel(writer, sheet_name=sheet_name)
                 if long_sheet_names:
                     table_sheet_names = pd.DataFrame(long_sheet_names)
