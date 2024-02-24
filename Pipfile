@@ -34,6 +34,7 @@ durations-nlp = "*"
 cryptography = "*"
 imageio = {extras = ["ffmpeg"], version = "*"}
 cloup = "*"
+cron-descriptor = "*"
 
 [dev-packages]
 

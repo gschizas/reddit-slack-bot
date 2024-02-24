@@ -1,7 +1,10 @@
+import datetime
 import json
+import locale
 import pathlib
 
 import click
+import cron_descriptor
 from ruamel.yaml import YAML
 
 from commands import gyrobot
@@ -18,6 +21,55 @@ if not _data_file.exists():
     _data_file.write_text('')
 
 
+def _new_get_month_description(self):
+    """Generates a description for only the MONTH portion of the expression
+
+    Returns:
+        The MONTH description
+
+    """
+    month_names_accusative = {
+        'Ιανουάριος': 'ν Ιανουάριο',
+        'Φεβρουάριος': ' Φεβρουάριο',
+        'Μάρτιος': ' Μάρτιο',
+        'Απρίλιος': 'ν Απρίλιο',
+        'Μάιος': ' Μάιο',
+        'Ιούνιος': 'ν Ιούνιο',
+        'Ιούλιος': 'ν Ιούλιο',
+        'Αύγουστος': 'ν Αύγουστο',
+        'Σεπτέμβριος': ' Σεπτέμβριο',
+        'Οκτώβριος': 'ν Οκτώβριο',
+        'Νοέμβριος': ' Νοέμβριο',
+        'Δεκέμβριος': ' Δεκέμβριο'
+    }
+    if locale.getlocale()[0] in ['el_GR', 'Greek_Greece']:
+        extras = lambda x: month_names_accusative.get(x, x)
+    else:
+        extras = lambda x: x
+    return self.get_segment_description(
+        self._expression_parts[4],
+        '',
+        lambda s: extras(datetime.date(datetime.date.today().year, int(s), 1).strftime("%B")),
+        lambda s: self._(", every {0} months").format(s),
+        lambda s: self._(", month {0} through month {1}") or self._(", {0} through {1}"),
+        lambda s: self._(", only in {0}"),
+        lambda s: self._(", month {0} through month {1}") or self._(", {0} through {1}")
+    )
+
+
+def _cron_descriptor_options():
+    cron_descriptor_options = cron_descriptor.Options()
+    cron_descriptor_options.casing_type = cron_descriptor.CasingTypeEnum.Sentence
+    if locale.getlocale()[0] in ['el_GR', 'Greek_Greece']:
+        cron_descriptor_options.locale_code = 'el_GR'
+        cron_descriptor_options.locale_location = '.'
+    cron_descriptor_options.use_24hour_time_format = True
+    return cron_descriptor_options
+
+
+cron_descriptor.ExpressionDescriptor.get_month_description = _new_get_month_description
+
+
 @gyrobot.group('cronjob')
 @click.pass_context
 def cronjob(ctx: ExtendedContext):
@@ -32,6 +84,11 @@ def cronjob(ctx: ExtendedContext):
 @click.pass_context
 @check_security
 def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
+    def schedule_description(schedule: str) -> str:
+        cron_descriptor_options = _cron_descriptor_options()
+        return cron_descriptor.ExpressionDescriptor(schedule, cron_descriptor_options).get_description(
+            cron_descriptor.DescriptionTypeEnum.FULL)
+
     with KubernetesConnection(ctx, namespace) as conn:
         cronjobs = conn.batch_v1_api.list_namespaced_cron_job(namespace)
 
@@ -40,7 +97,8 @@ def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
         'Suspended': r.spec.suspend,
         'Last Schedule Time': r.status.last_schedule_time,
         'Last Successful Tiome': r.status.last_successful_time,
-        'Schedule': r.spec.schedule}
+        'Schedule': schedule_description(r.spec.schedule),
+        'Schedule Raw': r.spec.schedule}
         for r in cronjobs.items]
     ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
 
