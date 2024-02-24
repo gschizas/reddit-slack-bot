@@ -134,6 +134,7 @@ class KubernetesConnection:
 
         self.api_client = kubernetes.client.ApiClient(kubernetes_configuration)
         self.core_v1_api = kubernetes.client.CoreV1Api(self.api_client)
+        self.batch_v1_api = kubernetes.client.BatchV1Api(self.api_client)
         self.well_known_api = kubernetes.client.WellKnownApi(self.api_client)
         return self
 

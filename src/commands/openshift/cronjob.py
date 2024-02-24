@@ -6,6 +6,7 @@ from ruamel.yaml import YAML
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
+from commands.openshift.api import KubernetesConnection
 from commands.openshift.api_obsolete_1 import get_cronjobs, change_cronjob_suspend_state
 from commands.openshift.common import read_config, OpenShiftNamespace, check_security
 
@@ -31,10 +32,17 @@ def cronjob(ctx: ExtendedContext):
 @click.pass_context
 @check_security
 def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
-    cronjobs = get_cronjobs(ctx, namespace)
-    if not excel:
-        cronjobs = [{k: v for k, v in cj.items() if k not in REMOVE_CRONJOB_KEYS} for cj in cronjobs]
-    ctx.chat.send_table(title='cronjobs', table=cronjobs, send_as_excel=excel)
+    with KubernetesConnection(ctx, namespace) as conn:
+        cronjobs = conn.batch_v1_api.list_namespaced_cron_job(namespace)
+
+    cronjob_table = [{
+        'Name': r.metadata.name,
+        'Suspended': r.spec.suspend,
+        'Last Schedule Time': r.status.last_schedule_time,
+        'Last Successful Tiome': r.status.last_successful_time,
+        'Schedule': r.spec.schedule}
+        for r in cronjobs.items]
+    ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
 
 
 @cronjob.command('pause')
