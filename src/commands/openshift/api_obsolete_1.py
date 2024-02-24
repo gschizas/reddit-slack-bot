@@ -57,16 +57,3 @@ def change_deployment_pause_state(ctx: ExtendedContext, namespace: str, deployme
         f'{server_url}apis/apps/v1/namespaces/{namespace}/deployments/{deployment_name}',
         json={"spec": {"paused": pause_state}})
     return rq.json()
-
-
-def get_cronjobs(ctx: ExtendedContext, namespace: str):
-    server_url, ses = _openshift_session(ctx, namespace, False)
-    return _get_table(ses, f'{server_url}apis/batch/v1/namespaces/{namespace}/cronjobs')
-
-
-def change_cronjob_suspend_state(ctx: ExtendedContext, namespace: str, cronjob_name: str, suspend_state: bool):
-    server_url, ses = _openshift_session(ctx, namespace)
-    rq = ses.patch(
-        f'{server_url}apis/batch/v1/namespaces/{namespace}/cronjobs/{cronjob_name}',
-        json={"spec": {"suspend": suspend_state}})
-    return rq.json()
