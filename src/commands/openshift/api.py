@@ -1,5 +1,6 @@
 import base64
 import io
+import logging
 import pathlib
 
 import kubernetes.client
@@ -59,6 +60,7 @@ class KubernetesConnection:
         self.config = self.ctx.obj['config']['environments'][self.namespace]
         self.server_url = self.config['url']
         self.is_azure = self.server_url == 'azure'
+        logging.getLogger('kubernetes.client.rest').setLevel(logging.INFO)
 
     def _login_openshift(self):
         self.api_key = self.config['credentials']
