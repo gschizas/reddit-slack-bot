@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 
 from commands.extended_context import ExtendedContext
@@ -34,3 +35,46 @@ def azure_login(ctx: ExtendedContext, service_principal_id, service_principal_ke
     convert_login_cmd = subprocess.run(convert_login_args, capture_output=True)
     result_text += convert_login_cmd.stdout.decode() + '\n' + convert_login_cmd.stderr.decode() + '\n\n'
     return result_text
+
+
+def do_login(ctx: ExtendedContext, config_env, namespace):
+    result_text = ""
+    site = config_env['site']
+    prefix = config_env['prefix']
+    project_name = _get_project_name(config_env, namespace)
+    is_azure = site == 'azure'
+    should_exit = False
+    if is_azure:
+        result_text += azure_login(
+            ctx,
+            config_env['credentials']['servicePrincipalId'],
+            config_env['credentials']['servicePrincipalKey'],
+            config_env['credentials']['tenantId'],
+            config_env['azure_resource_group'],
+            config_env['azure_cluster_name'])
+    else:
+        oc_token = config_env['credentials']
+        login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
+        login_result = login_cmd.stderr.decode().strip()
+        if login_cmd.returncode != 0:
+            ctx.chat.send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
+            should_exit = True
+    return is_azure, prefix, project_name, result_text, should_exit
+
+
+def do_logout(is_azure):
+    if not is_azure:
+        logout_command = ['oc', 'logout']
+        result_text = subprocess.check_output(logout_command).decode() + '\n\n'
+        result_text = re.sub('\n{2,}', '\n', result_text)
+    else:
+        result_text = ""
+    return result_text
+
+
+def _get_project_name(env_config, environment):
+    project_name = env_config.get('projectNameOverride', environment.lower())
+    project_prefix = env_config.get('projectPrefix')
+    if project_prefix:
+        project_name = project_prefix + '-' + project_name
+    return project_name

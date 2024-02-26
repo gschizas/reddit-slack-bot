@@ -1,4 +1,3 @@
-import re
 import subprocess
 from string import Template
 
@@ -8,7 +7,7 @@ from ruamel.yaml import YAML
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
 from commands.openshift.common import OpenShiftNamespace, check_security, read_config, env_config
-from commands.openshift.api_obsolete_3 import azure_login
+from commands.openshift.api_obsolete_3 import do_login, do_logout
 
 yaml = YAML()
 
@@ -38,14 +37,6 @@ def _masked_oc_password(variable_list):
             else:
                 result += full_variable + '\n'
     return result
-
-
-def _get_project_name(env_config, environment):
-    project_name = env_config.get('projectNameOverride', environment.lower())
-    project_prefix = env_config.get('projectPrefix')
-    if project_prefix:
-        project_name = project_prefix + '-' + project_name
-    return project_name
 
 
 @gyrobot.group('mock', cls=DefaultCommandGroup)
@@ -83,7 +74,7 @@ def set_mock(ctx: ExtendedContext, namespace: str, mock_status: str):
                             f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
         return
 
-    is_azure, prefix, project_name, result_text, should_exit = _do_login(ctx, config_env, namespace)
+    is_azure, prefix, project_name, result_text, should_exit = do_login(ctx, config_env, namespace)
     if should_exit:
         return
 
@@ -103,45 +94,10 @@ def set_mock(ctx: ExtendedContext, namespace: str, mock_status: str):
             result_text += environment_set_cmd.stderr.decode() + '\n\n'
         result_text += environment_set_cmd.stdout.decode() + '\n\n'
 
-    result_text += _do_logout(is_azure)
+    result_text += do_logout(is_azure)
     # ctx.chat.send_text('```' + result_text + '```')
 
     ctx.chat.send_file(result_text.encode(), filename='mock.txt')
-
-
-def _do_login(ctx: ExtendedContext, config_env, namespace):
-    result_text = ""
-    site = config_env['site']
-    prefix = config_env['prefix']
-    project_name = _get_project_name(config_env, namespace)
-    is_azure = site == 'azure'
-    should_exit = False
-    if is_azure:
-        result_text += azure_login(
-            ctx,
-            config_env['credentials']['servicePrincipalId'],
-            config_env['credentials']['servicePrincipalKey'],
-            config_env['credentials']['tenantId'],
-            config_env['azure_resource_group'],
-            config_env['azure_cluster_name'])
-    else:
-        oc_token = config_env['credentials']
-        login_cmd = subprocess.run(['oc', 'login', site, f'--token={oc_token}'], capture_output=True)
-        login_result = login_cmd.stderr.decode().strip()
-        if login_cmd.returncode != 0:
-            ctx.chat.send_text(f"Error while logging in:\n```{login_result}```", is_error=True)
-            should_exit = True
-    return is_azure, prefix, project_name, result_text, should_exit
-
-
-def _do_logout(is_azure):
-    if not is_azure:
-        logout_command = ['oc', 'logout']
-        result_text = subprocess.check_output(logout_command).decode() + '\n\n'
-        result_text = re.sub('\n{2,}', '\n', result_text)
-    else:
-        result_text = ""
-    return result_text
 
 
 def _check_recursive(ctx, vartemplates):
@@ -173,7 +129,7 @@ def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
     """View current status of environment"""
     config_env = env_config(ctx, namespace)
 
-    is_azure, prefix, project_name, result_text, should_exit = _do_login(ctx, config_env, namespace)
+    is_azure, prefix, project_name, result_text, should_exit = do_login(ctx, config_env, namespace)
     if should_exit:
         return
 
@@ -185,6 +141,6 @@ def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
         env_var_list = _masked_oc_password(env_var_list)
         result_text += env_var_list + '\n\n'
 
-    result_text += _do_logout(is_azure)
+    result_text += do_logout(is_azure)
 
     ctx.chat.send_file(result_text.encode(), title='OpenShift Data', filename='openshift-data.txt')
