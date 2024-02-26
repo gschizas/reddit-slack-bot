@@ -27,6 +27,8 @@ def read_config(env_var):
             permissions = yaml.load(f)
     else:
         permissions = []
+    with (pathlib.Path('config') / 'kubernetes_servers.yml').open(encoding='utf8') as f:
+        servers = yaml.load(f)
     for env_name, env_cfg in config['environments'].items():
         if env_name in credentials:
             credentials_object = credentials[env_name]
@@ -36,6 +38,9 @@ def read_config(env_var):
         if env_name in permissions:
             env_cfg['users'] = permissions[env_name]['users']
             env_cfg['channels'] = permissions[env_name]['channels']
+        if env_name in servers:
+            env_cfg['url'] = servers[env_name].get('url')
+            env_cfg['cert'] = servers[env_name].get('cert')
     return config
 
 
@@ -52,6 +57,8 @@ class OpenShiftNamespace(click.ParamType):
     def convert(self, value, param, ctx) -> str:
         valid_environments = [e.lower() for e in self._config['environments']]
         valid_environments_text = ', '.join(valid_environments)
+        if value.lower().startswith('omni-'):
+            value = value[5:]
         if value.lower() not in valid_environments:
             self.fail(
                 f"{value} is not a valid namespace. Try one of those: {valid_environments_text}",

@@ -39,7 +39,7 @@ def azure_login(ctx: ExtendedContext, service_principal_id, service_principal_ke
 
 def do_login(ctx: ExtendedContext, config_env, namespace):
     result_text = ""
-    site = config_env['site']
+    site = config_env['url']
     prefix = config_env['prefix']
     project_name = _get_project_name(config_env, namespace)
     is_azure = site == 'azure'
