@@ -18,6 +18,7 @@ wrapper.break_on_hyphens = False
 def wrap_text(data):
     global wrapper
     if type(data) in (str, scalarstring.LiteralScalarString) and len(data) > wrapper.width:
+        data = data.replace('\n', '')
         result = literal('\n'.join(wrapper.wrap(data)))
         try:
             token = jwt.decode(data, options={'verify_signature': False})
@@ -32,6 +33,10 @@ def wrap_text(data):
     elif type(data) in (dict, comments.CommentedMap):
         for x in data:
             data[x] = wrap_text(data[x])
+            if type(data[x]) is scalarstring.LiteralScalarString and data[x].comment:
+                # this shouldn't work, but it does
+                data.yaml_set_comment_before_after_key(key=x, before='?')
+                data.yaml_key_comment_extend(key=x, comment='?')
         return data
     else:
         return data
