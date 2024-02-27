@@ -61,6 +61,7 @@ class KubernetesConnection:
         self.server_url = self.config['url']
         self.is_azure = self.server_url == 'azure'
         logging.getLogger('kubernetes.client.rest').setLevel(logging.INFO)
+        logging.getLogger('cron_descriptor.GetText').setLevel(logging.INFO)
 
     def _login_openshift(self):
         self.api_key = self.config['credentials']
