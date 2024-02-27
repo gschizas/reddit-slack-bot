@@ -116,7 +116,7 @@ class KubernetesConnection:
 
     def __enter__(self):
         if 'cert' in self.config:
-            self.cert_authority = str((pathlib.Path('data') / self.config['cert']).resolve())
+            self.cert_authority = str((pathlib.Path('config') / self.config['cert']).resolve())
 
         if self.is_azure:
             self._login_azure()
