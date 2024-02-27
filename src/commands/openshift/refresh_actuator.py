@@ -81,8 +81,9 @@ def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str
                                                                                          label_selector=label_selector)
             pods_to_refresh = [pod.metadata.name for pod in all_pods.items]
             if len(pods_to_refresh) == 0:
-                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to {action_names[0]} for {deployment}",
-                                   is_error=True)
+                ctx.chat.send_text(
+                    f"Couldn't find any pods on {conn.project_name} to {action_names[0]} for {deployment}",
+                    is_error=True)
                 continue
 
             pods_actioned_successful = 0
