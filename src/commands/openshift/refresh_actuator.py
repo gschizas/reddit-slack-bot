@@ -122,7 +122,7 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None, excel: bool
             sum([cs.restart_count for cs in pod.status.container_statuses]),
             pod.status.host_ip,
             pod.status.pod_ip])) for pod in all_pods.items]
-        ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list, send_as_excel=excel)
+        ctx.chat.send_table(title=f"pods-{conn.project_name}", table=pods_list, send_as_excel=excel)
 
 
 def _environment_table(pod_env_raw):

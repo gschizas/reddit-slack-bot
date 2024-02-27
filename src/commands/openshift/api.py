@@ -56,8 +56,8 @@ class KubernetesConnection:
     def __init__(self, ctx: ExtendedContext, namespace: str):
         self.ctx = ctx
         self.namespace = namespace
-        self.project_name = self.namespace
         self.config = self.ctx.obj['config']['environments'][self.namespace]
+        self.project_name = self.config.get('project_name', self.namespace)
         self.server_url = self.config['url']
         self.is_azure = self.server_url == 'azure'
         logging.getLogger('kubernetes.client.rest').setLevel(logging.INFO)
@@ -67,7 +67,6 @@ class KubernetesConnection:
 
     def _login_azure(self):
         creds = self.config['credentials']
-        self.project_name = self.config['project_name']
         yaml = YAML()
         session = requests.Session()
         login_page = session.post(

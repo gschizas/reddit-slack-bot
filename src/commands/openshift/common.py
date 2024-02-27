@@ -30,6 +30,8 @@ def read_config(env_var):
     with (pathlib.Path('config') / 'kubernetes_servers.yml').open(encoding='utf8') as f:
         servers = yaml.load(f)
     for env_name, env_cfg in config['environments'].items():
+        if env_cfg is None:
+            env_cfg = config['environments'][env_name] = {}
         if env_name in credentials:
             credentials_object = credentials[env_name]
             if isinstance(credentials_object, str):
@@ -41,6 +43,7 @@ def read_config(env_var):
         if env_name in servers:
             env_cfg['url'] = servers[env_name].get('url')
             env_cfg['cert'] = servers[env_name].get('cert')
+            env_cfg['project_name'] = servers[env_name].get('project_name')
     return config
 
 

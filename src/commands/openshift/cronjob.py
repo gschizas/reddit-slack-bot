@@ -1,5 +1,4 @@
 import datetime
-import json
 import locale
 import pathlib
 
@@ -101,8 +100,8 @@ def cronjob(ctx: ExtendedContext):
 @click.pass_context
 @check_security
 def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
-    with KubernetesConnection(ctx, namespace) as conn:
-        cronjobs = conn.batch_v1_api.list_namespaced_cron_job(namespace)
+    with KubernetesConnection(ctx, namespace) as k8s:
+        cronjobs = k8s.batch_v1_api.list_namespaced_cron_job(k8s.project_name)
 
     cronjob_table = [{
         'Name': r.metadata.name,
@@ -123,8 +122,8 @@ def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
 def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
     with open('data/cronjob-stack.yml', mode='r', encoding='utf8') as f:
         suspended_cronjobs_stack = yaml.load(f) or []
-    with KubernetesConnection(ctx, namespace) as conn:
-        cronjobs = conn.batch_v1_api.list_namespaced_cron_job(namespace)
+    with KubernetesConnection(ctx, namespace) as k8s:
+        cronjobs = k8s.batch_v1_api.list_namespaced_cron_job(k8s.project_name)
         suspended_cronjobs = []
         result = []
         for r in cronjobs.items:
@@ -132,10 +131,8 @@ def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
                 continue
             suspended_cronjobs.append(r.metadata.name)
             result.append(
-                conn.batch_v1_api.patch_namespaced_cron_job(
-                    r.metadata.name,
-                    namespace,
-                    {'spec': {'suspend': True}}))
+                k8s.batch_v1_api.patch_namespaced_cron_job(
+                    r.metadata.name, k8s.project_name, {'spec': {'suspend': True}}))
     suspended_cronjobs_stack.append(suspended_cronjobs)
     with open('data/cronjob-stack.yml', mode='w', encoding='utf8') as f:
         yaml.dump(suspended_cronjobs_stack, f)
@@ -163,12 +160,12 @@ def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
         return
     cronjobs_to_resume = suspended_cronjobs_stack.pop() or []
     result = []
-    with KubernetesConnection(ctx, namespace) as conn:
+    with KubernetesConnection(ctx, namespace) as k8s:
         for one_cronjob_name in cronjobs_to_resume:
             result.append(
-                conn.batch_v1_api.patch_namespaced_cron_job(
+                k8s.batch_v1_api.patch_namespaced_cron_job(
                     one_cronjob_name,
-                    namespace,
+                    k8s.project_name,
                     {'spec': {'suspend': False}}))
     with open('data/cronjob-stack.yml', mode='w', encoding='utf8') as f:
         yaml.dump(suspended_cronjobs_stack, f)
