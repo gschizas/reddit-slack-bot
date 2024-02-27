@@ -48,7 +48,7 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
             response_before, response_after, refresh_result)
         pod_results[pod_to_refresh + ' - after'] = _environment_table(response_after)
 
-    action_names = ('refresh', 'refreshing', 'Refreshed')
+    action_names = ('refresh', 'Refreshed')
 
     _actuator_action(ctx, namespace, deployments, excel, action_names, refresh_action)
 
@@ -67,13 +67,13 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
             timeout=30)
         pod_results[pod_to_refresh] = _environment_table(response)
 
-    action_names = ('view', 'viewing', 'Viewed')
+    action_names = ('view', 'Viewed')
 
     _actuator_action(ctx, namespace, deployments, excel, action_names, view_action)
 
 
 def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool,
-                     action_names: tuple[str, str, str], action: Callable):
+                     action_names: tuple[str, str], action: Callable):
     with KubernetesConnection(ctx, namespace) as conn:
         for deployment in deployments:
             label_selector = f'deployment={deployment}'
@@ -93,11 +93,9 @@ def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str
                         action(conn, pod_results, pod_to_refresh)
                         pods_actioned_successful += 1
                     except requests.exceptions.ConnectionError as ex:
-                        ctx.chat.send_text(f"Error when {action_names[1]} pod {pod_to_refresh}\n```{ex!r}```",
-                                           is_error=True)
                         pod_results[pod_to_refresh] = [{'State': 'Error', 'Message': repr(ex)}]
             ctx.chat.send_text(
-                f"{action_names[2]} {pods_actioned_successful}/{len(pods_to_refresh)} pods for {deployment}")
+                f"{action_names[1]} {pods_actioned_successful}/{len(pods_to_refresh)} pods for {deployment}")
             ctx.chat.send_tables('PodStatus', pod_results, excel)
 
 
@@ -195,7 +193,6 @@ def _send_results(ctx: ExtendedContext,
                   pod_env_before: requests.Response,
                   refresh_result: requests.Response,
                   pod_env_after: requests.Response):
-
     refresh_actuator_result = refresh_result.json()
     if type(refresh_actuator_result) is list:
         value_types = [isinstance(rar, str) for rar in refresh_actuator_result]
@@ -217,5 +214,3 @@ def _send_results(ctx: ExtendedContext,
         ctx.chat.send_file(
             file_data=pod_env_after.content,
             filename=f'pod_env_after_raw-{pod_to_refresh}.json')
-
-
