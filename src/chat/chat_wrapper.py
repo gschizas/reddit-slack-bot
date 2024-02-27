@@ -82,6 +82,20 @@ class Conversation(ABC):
             table_df[col] = table_df[col].dt.tz_localize(None)
 
     @staticmethod
+    def plain_text_table_sequence(tables: Dict[str, List[Dict]]) -> str:
+        result = ''
+        for table_name, table in tables.items():
+            table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline', maxcolwidths=64)
+            # table_markdown = tabulate(table, headers='keys', tablefmt='pipe', maxcolwidths=30)
+            table_length = len(table_name)
+            result += "╒" + "═" * (2 + table_length) + "╕" + "\n"
+            result += "│ " + table_name + " │\n"
+            result += "╞" + table_markdown[1:3 + table_length] + "╧"
+            result += table_markdown[4 + table_length:]
+            result += "\n\n"
+        return result
+
+    @staticmethod
     def zipped_markdown_from_tables(tables):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:

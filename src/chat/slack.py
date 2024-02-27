@@ -42,15 +42,17 @@ class SlackConversation(Conversation):
             self.send_file(excel_data, filename=f'{title}.xlsx')
         else:
             table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
-            self.send_file(file_data=table_markdown.encode(), filename=f'{title}.md')
+            self.send_file(file_data=table_markdown.encode(), filename=f'{title}.txt')
 
     def send_tables(self, title: str, tables: Dict[str, List[Dict]], send_as_excel: bool = False) -> None:
         if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
             excel_data = self.excel_from_tables(tables)
             self.send_file(excel_data, filename=f'{title}.xlsx')
         else:
-            zip_data = self.zipped_markdown_from_tables(tables)
-            self.send_file(zip_data, filename=f'{title}.zip')
+            result = self.plain_text_table_sequence(tables)
+            self.send_file(file_data=result.encode(), filename=f'{title}.txt')
+            # zip_data = self.zipped_markdown_from_tables(tables)
+            # self.send_file(zip_data, filename=f'{title}.zip')
 
     def send_ephemeral(self, text=None, blocks=None, is_error=False, icon_emoji=None):
         if icon_emoji is None:
