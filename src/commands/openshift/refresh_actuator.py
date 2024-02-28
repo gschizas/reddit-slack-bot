@@ -22,7 +22,11 @@ def _actuator_config():
 def actuator(ctx: ExtendedContext):
     ctx.ensure_object(dict)
     ctx.obj['config'] = _actuator_config()
-    ctx.obj['security_text'] = {'refresh': 'refresh actuator', 'view': 'view actuator variables', 'pods': 'view pods'}
+    ctx.obj['security_text'] = {
+        'refresh': 'refresh actuator',
+        'health': 'view actuator health',
+        'view': 'view actuator variables',
+        'pods': 'view pods'}
 
 
 @actuator.command('refresh')
@@ -70,6 +74,39 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
     action_names = ('view', 'Viewed')
 
     _actuator_action(ctx, namespace, deployments, excel, action_names, view_action)
+
+
+@actuator.command('health')
+@click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
+@click.argument('deployments', type=str, nargs=-1)
+@click.option('-x', '--excel', is_flag=True, default=False)
+@click.pass_context
+@check_security
+def health_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
+    def health_action(conn, pod_results, pod):
+        response = requests.get(
+            url=f'http://{pod}.pod.{conn.project_name}.kubernetes:8778/actuator/health',
+            proxies={'http': None, 'https': None},
+            timeout=30)
+        health_raw = response.json()
+        ctx.chat.send_file(response.content, filename='health.json')
+        health_table = []
+        for key, value in health_raw['components'].items():
+            if key == 'diskSpace':
+                disk_space_raw = value['details']['free'] / value['details']['total']
+                disk_space = f"{disk_space_raw:3.2%}"
+            else:
+                disk_space = ''
+            health_table.append(
+                {'Name': key,
+                 'Status': value.get('status'),
+                 'DiskSpace': disk_space,
+                 'Version': value.get('details', {}).get('version')})
+        pod_results[pod] = health_table
+
+    action_names = ('view health', 'Viewed health')
+
+    _actuator_action(ctx, namespace, deployments, excel, action_names, health_action)
 
 
 def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool,
