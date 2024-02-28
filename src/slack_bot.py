@@ -15,6 +15,7 @@ import chat.chat_wrapper
 import commands
 import commands.convert
 import commands.generic
+import commands.roll
 import commands.weather
 from bot_framework.common import normalize_text
 from bot_framework.common import setup_logging
