@@ -89,7 +89,6 @@ def health_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str]
             proxies={'http': None, 'https': None},
             timeout=30)
         health_raw = response.json()
-        ctx.chat.send_file(response.content, filename='health.json')
         health_table = []
         for key, value in health_raw['components'].items():
             if key == 'diskSpace':
