@@ -163,16 +163,20 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None, excel: bool
 def _environment_table(pod_env_raw):
     env_current = json.loads(pod_env_raw.content)
 
-    if 'propertySources' in env_current:  # list of property sources, find the one called bootstrapProperties
+    if 'propertySources' in env_current:  # Spring Boot v2+
         property_sources = env_current.get('propertySources')
-        bootstrap_properties = [prop for prop in property_sources if prop['name'] == 'bootstrapProperties']
+        bootstrap_properties = [prop for prop in property_sources if prop['name'].startswith('bootstrapProperties')]
         if not bootstrap_properties:
             return [
                 {'Status': 'Error',
                  'Message': "Could not find property sources in environment (maybe spring boot 2.7?)"}]
-        property_root = bootstrap_properties[0]['properties']
+        property_root = {}
+        for bootstrap_property in bootstrap_properties:
+            common_keys = list(set(bootstrap_property['properties'].keys()) & set(property_root.keys()))
+            assert not common_keys
+            property_root.update(bootstrap_property['properties'])
         complex_properties = True
-    elif 'bootstrapProperties' in env_current:  # only one dictionary, get to it directly
+    elif 'bootstrapProperties' in env_current:  # Spring Boot v1.5, only one dictionary, get to it directly
         property_root = env_current.get('bootstrapProperties')
         complex_properties = False
     else:
