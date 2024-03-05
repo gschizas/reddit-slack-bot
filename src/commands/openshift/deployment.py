@@ -28,11 +28,8 @@ def deployment(ctx: ExtendedContext):
 def list_deployments(ctx: ExtendedContext, namespace: str, excel: bool):
     with KubernetesConnection(ctx, namespace) as k8s:
         deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
-    if not excel:
-        deployment_table = [{k: v for k, v in dep.items() if k not in REMOVE_DEPLOYMENT_KEYS} for dep in deployments]
-    else:
-        deployment_table = deployments.items()
-    ctx.chat.send_table(title='deployments', table=deployment_table, send_as_excel=excel)
+    deployments_table = [_make_deployments_table(deployments)]
+    ctx.chat.send_table(title='deployments', table=deployments_table, send_as_excel=excel)
 
 
 @deployment.command('pause')
