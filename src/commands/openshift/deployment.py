@@ -1,4 +1,3 @@
-import json
 from typing import Dict, List
 
 import click
@@ -8,7 +7,6 @@ from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
 from commands.openshift.common import read_config, OpenShiftNamespace, check_security
 
-REMOVE_DEPLOYMENT_KEYS = ['Containers', 'Images', 'Selector']
 _deployment_config = read_config('OPENSHIFT_DEPLOYMENT')
 
 
@@ -28,7 +26,7 @@ def deployment(ctx: ExtendedContext):
 def list_deployments(ctx: ExtendedContext, namespace: str, excel: bool):
     with KubernetesConnection(ctx, namespace) as k8s:
         deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
-    deployments_table = [_make_deployments_table(deployments)]
+    deployments_table = _make_deployments_table(deployments.items)
     ctx.chat.send_table(title='deployments', table=deployments_table, send_as_excel=excel)
 
 
@@ -41,12 +39,11 @@ def pause_deployment(ctx: ExtendedContext, namespace: str, excel: bool):
     with KubernetesConnection(ctx, namespace) as k8s:
         deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
         result = []
-        for one_deployment in deployments:
+        for one_deployment in deployments.items:
             result.append(k8s.apps_v1_api.patch_namespaced_deployment(
                 one_deployment.metadata.name, k8s.project_name,
                 {'spec': {'paused': True}}))
         result_markdown = _make_deployments_table(result)
-    ctx.chat.send_file(json.dumps(result).encode(), filename='deployments.json')
     ctx.chat.send_table(title='deployments', table=result_markdown, send_as_excel=excel)
 
 
@@ -58,20 +55,21 @@ def pause_deployment(ctx: ExtendedContext, namespace: str, excel: bool):
 def resume_deployment(ctx: ExtendedContext, namespace, excel: bool):
     with KubernetesConnection(ctx, namespace) as k8s:
         deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
-    result = []
-    for one_deployment in deployments:
-        result.append(k8s.apps_v1_api.patch_namespaced_deployment(one_deployment.metadata.name, k8s.project_name,
-                                                                  {'spec': {'paused': None}}))
-    ctx.chat.send_file(json.dumps(result).encode(), filename='deployments.json')
+        result = []
+        for one_deployment in deployments.items:
+            result.append(k8s.apps_v1_api.patch_namespaced_deployment(
+                one_deployment.metadata.name, k8s.project_name,
+                {'spec': {'paused': None}}))
     ctx.chat.send_table(title='deployments', table=_make_deployments_table(result), send_as_excel=excel)
-    ctx.chat.send_file(json.dumps(result).encode(), filename='deployments.json')
 
 
 def _make_deployments_table(result) -> List[Dict]:
     return [{
         'Namespace': dep.metadata.namespace,
         'Name': dep.metadata.name,
+        'Created': dep.metadata.creation_timestamp,
         'Replicas': dep.status.replicas,
         'Updated Replicas': dep.status.updated_replicas,
         'Ready Replicas': dep.status.ready_replicas,
-        'Available Replicas': dep.status.available_replicas} for dep in result]
+        'Available Replicas': dep.status.available_replicas,
+        'Paused': dep.spec.paused} for dep in result]
