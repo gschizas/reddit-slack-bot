@@ -124,14 +124,18 @@ def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
     ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
 
 
-def _load_cronjob_stack():
-    with open('data/cronjob-stack.yml', mode='r', encoding='utf8') as f:
+def _load_cronjob_stack(namespace):
+    stack_file = pathlib.Path('data') / f'data/cronjob-stack-{namespace}.yml'
+    if not stack_file.exists():
+        return []
+    with stack_file.open(mode='r', encoding='utf8') as f:
         suspended_cronjobs_stack = yaml.load(f) or []
     return suspended_cronjobs_stack
 
 
-def _save_cronjob_stack(suspended_cronjobs_stack):
-    with open('data/cronjob-stack.yml', mode='w', encoding='utf8') as f:
+def _save_cronjob_stack(namespace, suspended_cronjobs_stack):
+    stack_file = pathlib.Path('data') / f'data/cronjob-stack-{namespace}.yml'
+    with stack_file.open(mode='w', encoding='utf8') as f:
         yaml.dump(suspended_cronjobs_stack, f)
 
 
@@ -148,7 +152,7 @@ def _send_results(ctx, result, excel):
 @click.pass_context
 @check_security
 def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
-    suspended_cronjobs_stack = _load_cronjob_stack()
+    suspended_cronjobs_stack = _load_cronjob_stack(namespace)
     with KubernetesConnection(ctx, namespace) as k8s:
         cronjobs = k8s.batch_v1_api.list_namespaced_cron_job(k8s.project_name)
         suspended_cronjobs = []
@@ -161,7 +165,7 @@ def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
                 k8s.batch_v1_api.patch_namespaced_cron_job(
                     r.metadata.name, k8s.project_name, {'spec': {'suspend': True}}))
     suspended_cronjobs_stack.append(suspended_cronjobs)
-    _save_cronjob_stack(suspended_cronjobs_stack)
+    _save_cronjob_stack(namespace, suspended_cronjobs_stack)
     _send_results(ctx, result, excel)
 
 
@@ -171,7 +175,7 @@ def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
 @click.pass_context
 @check_security
 def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
-    suspended_cronjobs_stack = _load_cronjob_stack()
+    suspended_cronjobs_stack = _load_cronjob_stack(namespace)
     if len(suspended_cronjobs_stack) == 0:
         ctx.chat.send_text("No cronjobs to resume", is_error=True)
         return
@@ -184,7 +188,7 @@ def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
                     one_cronjob_name,
                     k8s.project_name,
                     {'spec': {'suspend': False}}))
-    _save_cronjob_stack(suspended_cronjobs_stack)
+    _save_cronjob_stack(namespace, suspended_cronjobs_stack)
     _send_results(ctx, result, excel)
 
 
