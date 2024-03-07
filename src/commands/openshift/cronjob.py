@@ -118,7 +118,7 @@ def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
         cronjobs = k8s.batch_v1_api.list_namespaced_cron_job(k8s.project_name)
 
     cronjob_table = _make_cronjob_table(cronjobs.items)
-    ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
+    ctx.chat.send_table(title=f'cronjobs-{namespace}', table=cronjob_table, send_as_excel=excel)
 
 
 def _load_cronjob_stack(namespace):
@@ -136,12 +136,13 @@ def _save_cronjob_stack(namespace, suspended_cronjobs_stack):
         yaml.dump(suspended_cronjobs_stack, f)
 
 
-def _send_results(ctx, result, excel):
+def _send_results(ctx, namespace, result, excel):
     cronjob_table = _make_cronjob_table(result)
     if cronjob_table:
-        ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
+        ctx.chat.send_table(title=f'cronjobs-{namespace}', table=cronjob_table, send_as_excel=excel)
     else:
         ctx.chat.send_text("No cronjobs were modified")
+
 
 @cronjob.command('pause')
 @click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
@@ -163,7 +164,7 @@ def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
                     r.metadata.name, k8s.project_name, {'spec': {'suspend': True}}))
     suspended_cronjobs_stack.append(suspended_cronjobs)
     _save_cronjob_stack(namespace, suspended_cronjobs_stack)
-    _send_results(ctx, result, excel)
+    _send_results(ctx, namespace, result, excel)
 
 
 @cronjob.command('resume')
@@ -186,7 +187,7 @@ def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
                     k8s.project_name,
                     {'spec': {'suspend': False}}))
     _save_cronjob_stack(namespace, suspended_cronjobs_stack)
-    _send_results(ctx, result, excel)
+    _send_results(ctx, namespace, result, excel)
 
 
 def _enable_disable_cronjob(ctx, namespace, cronjob_name, suspend_status, excel):
@@ -195,7 +196,7 @@ def _enable_disable_cronjob(ctx, namespace, cronjob_name, suspend_status, excel)
             cronjob_name,
             k8s.project_name,
             {'spec': {'suspend': suspend_status}})
-    _send_results(ctx, [result], excel)
+    _send_results(ctx, namespace, [result], excel)
 
 
 @cronjob.command("disable")
