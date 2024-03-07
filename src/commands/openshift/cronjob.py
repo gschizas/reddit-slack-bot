@@ -14,9 +14,6 @@ from commands.openshift.common import read_config, OpenShiftNamespace, check_sec
 yaml = YAML()
 REMOVE_CRONJOB_KEYS = ['Containers', 'Images', 'Selector']
 _cronjob_config = read_config('OPENSHIFT_CRONJOB')
-_data_file = pathlib.Path('data') / 'cronjob-stack.yml'
-if not _data_file.exists():
-    _data_file.write_text('')
 
 
 def _new_get_month_description(self):
