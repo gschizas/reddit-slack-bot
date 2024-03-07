@@ -4,7 +4,6 @@ import datetime
 import json
 import math
 import os
-import random
 import re
 import subprocess
 
@@ -32,15 +31,6 @@ def binary(ctx):
     rest_of_text = re.sub(r'(\S{8})\s?', r'\1 ', rest_of_text)
     decoded_text = ''.join([chr(int(c, 2)) for c in rest_of_text.split()])
     ctx.chat.send_text(''.join(decoded_text))
-
-
-@gyrobot.command('cointoss')
-@click.pass_context
-def cointoss(ctx: ExtendedContext):
-    """Toss a coin"""
-    toss = random.randrange(2)
-    toss_text = ['Heads', 'Tails'][toss]
-    ctx.chat.send_text(toss_text)
 
 
 @gyrobot.command('covid', aliases=['covid19', 'covid_19'],

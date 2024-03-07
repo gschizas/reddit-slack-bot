@@ -97,3 +97,12 @@ def roll_statline(ctx: ExtendedContext, spec=None):
             f" Keeping {', '.join([str(a) for a in ability_line_sorted])},"
             f" for a sum of *{sum(ability_line_sorted)}*.\n")
     ctx.chat.send_text(ability_text)
+
+
+@gyrobot.command('cointoss')
+@click.pass_context
+def cointoss(ctx: ExtendedContext):
+    """Toss a coin"""
+    toss = random.randrange(2)
+    toss_text = ['Heads', 'Tails'][toss]
+    ctx.chat.send_text(toss_text)
