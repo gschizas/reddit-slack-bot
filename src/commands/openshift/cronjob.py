@@ -122,7 +122,7 @@ def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
 
 
 def _load_cronjob_stack(namespace):
-    stack_file = pathlib.Path('data') / f'data/cronjob-stack-{namespace}.yml'
+    stack_file = pathlib.Path('data') / f'cronjob-stack-{namespace}.yml'
     if not stack_file.exists():
         return []
     with stack_file.open(mode='r', encoding='utf8') as f:
@@ -131,7 +131,7 @@ def _load_cronjob_stack(namespace):
 
 
 def _save_cronjob_stack(namespace, suspended_cronjobs_stack):
-    stack_file = pathlib.Path('data') / f'data/cronjob-stack-{namespace}.yml'
+    stack_file = pathlib.Path('data') / f'cronjob-stack-{namespace}.yml'
     with stack_file.open(mode='w', encoding='utf8') as f:
         yaml.dump(suspended_cronjobs_stack, f)
 
