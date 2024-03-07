@@ -91,7 +91,15 @@ def _schedule_description(schedule: str) -> str:
 def cronjob(ctx: ExtendedContext):
     ctx.ensure_object(dict)
     ctx.obj['config'] = _cronjob_config
-    ctx.obj['security_text'] = {'list': 'list cronjobs', 'pause': 'pause cronjobs', 'resume': 'resume cronjobs'}
+    ctx.obj['security_text'] = {
+        'list': 'list cronjobs',
+        'pause': 'pause cronjobs',
+        'resume': 'resume cronjobs',
+        'disable': 'suspend cronjob',
+        'enable': 'enable cronjob'
+    }
+
+
 def _make_cronjob_table(cronjobs):
     return [{
         'Name': job.metadata.name,
@@ -179,3 +187,31 @@ def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
     _save_cronjob_stack(suspended_cronjobs_stack)
     _send_results(ctx, result, excel)
 
+
+def _enable_disable_cronjob(ctx, namespace, cronjob_name, suspend_status, excel):
+    with KubernetesConnection(ctx, namespace) as k8s:
+        result = k8s.batch_v1_api.patch_namespaced_cron_job(
+            cronjob_name,
+            k8s.project_name,
+            {'spec': {'suspend': suspend_status}})
+    _send_results(ctx, [result], excel)
+
+
+@cronjob.command("disable")
+@click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
+@click.argument('cronjob_name', type=str)
+@click.option('-x', '--excel', is_flag=True, default=False)
+@click.pass_context
+@check_security
+def disable(ctx: ExtendedContext, namespace, cronjob_name: str, excel: bool):
+    _enable_disable_cronjob(ctx, namespace, cronjob_name, True, excel)
+
+
+@cronjob.command("enable")
+@click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
+@click.argument('cronjob_name', type=str)
+@click.option('-x', '--excel', is_flag=True, default=False)
+@click.pass_context
+@check_security
+def enable(ctx: ExtendedContext, namespace, cronjob_name: str, excel: bool):
+    _enable_disable_cronjob(ctx, namespace, cronjob_name, False, excel)
