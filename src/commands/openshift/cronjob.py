@@ -92,6 +92,15 @@ def cronjob(ctx: ExtendedContext):
     ctx.ensure_object(dict)
     ctx.obj['config'] = _cronjob_config
     ctx.obj['security_text'] = {'list': 'list cronjobs', 'pause': 'pause cronjobs', 'resume': 'resume cronjobs'}
+def _make_cronjob_table(cronjobs):
+    return [{
+        'Name': job.metadata.name,
+        'Suspended': job.spec.suspend,
+        'Last Schedule Time': job.status.last_schedule_time,
+        'Last Successful Tiome': job.status.last_successful_time,
+        'Schedule': _schedule_description(job.spec.schedule),
+        'Schedule Raw': job.spec.schedule}
+        for job in cronjobs]
 
 
 @cronjob.command('list')
@@ -103,16 +112,27 @@ def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
     with KubernetesConnection(ctx, namespace) as k8s:
         cronjobs = k8s.batch_v1_api.list_namespaced_cron_job(k8s.project_name)
 
-    cronjob_table = [{
-        'Name': r.metadata.name,
-        'Suspended': r.spec.suspend,
-        'Last Schedule Time': r.status.last_schedule_time,
-        'Last Successful Tiome': r.status.last_successful_time,
-        'Schedule': _schedule_description(r.spec.schedule),
-        'Schedule Raw': r.spec.schedule}
-        for r in cronjobs.items]
+    cronjob_table = _make_cronjob_table(cronjobs.items)
     ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
 
+
+def _load_cronjob_stack():
+    with open('data/cronjob-stack.yml', mode='r', encoding='utf8') as f:
+        suspended_cronjobs_stack = yaml.load(f) or []
+    return suspended_cronjobs_stack
+
+
+def _save_cronjob_stack(suspended_cronjobs_stack):
+    with open('data/cronjob-stack.yml', mode='w', encoding='utf8') as f:
+        yaml.dump(suspended_cronjobs_stack, f)
+
+
+def _send_results(ctx, result, excel):
+    cronjob_table = _make_cronjob_table(result)
+    if cronjob_table:
+        ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
+    else:
+        ctx.chat.send_text("No cronjobs were modified")
 
 @cronjob.command('pause')
 @click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
@@ -120,8 +140,7 @@ def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
 @click.pass_context
 @check_security
 def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
-    with open('data/cronjob-stack.yml', mode='r', encoding='utf8') as f:
-        suspended_cronjobs_stack = yaml.load(f) or []
+    suspended_cronjobs_stack = _load_cronjob_stack()
     with KubernetesConnection(ctx, namespace) as k8s:
         cronjobs = k8s.batch_v1_api.list_namespaced_cron_job(k8s.project_name)
         suspended_cronjobs = []
@@ -134,17 +153,8 @@ def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
                 k8s.batch_v1_api.patch_namespaced_cron_job(
                     r.metadata.name, k8s.project_name, {'spec': {'suspend': True}}))
     suspended_cronjobs_stack.append(suspended_cronjobs)
-    with open('data/cronjob-stack.yml', mode='w', encoding='utf8') as f:
-        yaml.dump(suspended_cronjobs_stack, f)
-    cronjob_table = [{
-        'Name': r.metadata.name,
-        'Suspended': r.spec.suspend,
-        'Last Schedule Time': r.status.last_schedule_time,
-        'Last Successful Tiome': r.status.last_successful_time,
-        'Schedule': _schedule_description(r.spec.schedule),
-        'Schedule Raw': r.spec.schedule}
-        for r in result]
-    ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
+    _save_cronjob_stack(suspended_cronjobs_stack)
+    _send_results(ctx, result, excel)
 
 
 @cronjob.command('resume')
@@ -153,8 +163,7 @@ def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
 @click.pass_context
 @check_security
 def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
-    with open('data/cronjob-stack.yml', mode='r', encoding='utf8') as f:
-        suspended_cronjobs_stack = yaml.load(f) or []
+    suspended_cronjobs_stack = _load_cronjob_stack()
     if len(suspended_cronjobs_stack) == 0:
         ctx.chat.send_text("No cronjobs to resume", is_error=True)
         return
@@ -167,14 +176,6 @@ def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
                     one_cronjob_name,
                     k8s.project_name,
                     {'spec': {'suspend': False}}))
-    with open('data/cronjob-stack.yml', mode='w', encoding='utf8') as f:
-        yaml.dump(suspended_cronjobs_stack, f)
-    cronjob_table = [{
-        'Name': r.metadata.name,
-        'Suspended': r.spec.suspend,
-        'Last Schedule Time': r.status.last_schedule_time,
-        'Last Successful Tiome': r.status.last_successful_time,
-        'Schedule': _schedule_description(r.spec.schedule),
-        'Schedule Raw': r.spec.schedule}
-        for r in result]
-    ctx.chat.send_table(title='cronjobs', table=cronjob_table, send_as_excel=excel)
+    _save_cronjob_stack(suspended_cronjobs_stack)
+    _send_results(ctx, result, excel)
+
