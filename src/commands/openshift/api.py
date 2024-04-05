@@ -80,12 +80,16 @@ class KubernetesConnection:
         azure_token = login_page.json()['access_token']
         session.headers['Authorization'] = 'Bearer ' + azure_token
         subscriptions_page = session.get('https://management.azure.com/subscriptions?api-version=2019-11-01')
+        subscription_count = len(subscriptions_page.json()['value'])
+        assert subscription_count == 1, f"Was expecting one subscription, got {subscription_count}"
         subscription_id = subscriptions_page.json()['value'][0]['subscriptionId']
         aks_credentials_page = session.post(
             (f'https://management.azure.com/subscriptions/{subscription_id}/resourceGroups'
              f'/{self.config["azure_resource_group"]}/providers/Microsoft.ContainerService/managedClusters'
              f'/{self.config["azure_cluster_name"]}/listClusterUserCredential?api-version=2022-03-01'))
         aks_credentials = aks_credentials_page.json()
+        if 'error' in aks_credentials:
+            raise Exception(aks_credentials['error'])
         aks_value_raw = list(filter(lambda x: x['name'] == 'clusterUser', aks_credentials['kubeconfigs']))[0]['value']
         with io.BytesIO(base64.b64decode(aks_value_raw)) as f:
             aks_value = yaml.load(f)
