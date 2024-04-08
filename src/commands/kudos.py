@@ -215,7 +215,7 @@ def _create_kudos_video(high_scores):
     score_moving = 0
     wait_counter = 0
 
-    high_scores = high_scores[:10]
+    high_scores = high_scores[:16]
 
     # Set the initial x position for the text
     x_pos = [width] * len(high_scores)
