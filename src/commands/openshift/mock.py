@@ -8,6 +8,7 @@ from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
 from commands.openshift.common import OpenShiftNamespace, check_security, read_config, env_config
 from commands.openshift.api_obsolete_3 import do_login, do_logout
+from commands.openshift.api import KubernetesConnection
 
 yaml = YAML()
 
@@ -144,3 +145,13 @@ def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
     result_text += do_logout(is_azure)
 
     ctx.chat.send_file(result_text.encode(), title='OpenShift Data', filename='openshift-data.txt')
+
+@mock.command('view')
+@click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
+@click.pass_context
+@check_security
+def mock_view(ctx: ExtendedContext, namespace: str, excel: bool):
+    with KubernetesConnection(ctx, namespace) as k8s:
+        deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
+    deployments_table = _make_deployments_table(deployments.items)
+    ctx.chat.send_table(title='deployments', table=deployments_table, send_as_excel=excel)
