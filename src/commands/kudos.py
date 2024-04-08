@@ -4,7 +4,6 @@ import random
 import re
 
 import click
-import cloup
 import psycopg
 
 from commands import gyrobot, DefaultCommandGroup
@@ -124,16 +123,14 @@ def kudos_give(ctx: ExtendedContext):
 @kudos.command('view')
 @click.argument('days_to_check', type=click.INT, default=14)
 @click.argument('channel', default='')
-@cloup.option_group("Format",
-                    cloup.option('-t', '--text', 'send_as_text', is_flag=True, default=False),
-                    cloup.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False),
-                    cloup.option('-v', '--video', 'send_as_video', is_flag=True, default=True),
-                    constraint=cloup.constraints.require_one)
 @click.option('-g', '--givers', 'show_givers', is_flag=True, default=False)
+@click.option('-t', '--text', 'output_format', flag_value='text', default=True)
+@click.option('-x', '--excel', 'output_format', flag_value='excel')
+@click.option('-v', '--video', 'output_format', flag_value='video')
 @click.pass_context
 def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str,
                show_givers: bool,
-               send_as_text: bool, send_as_excel: bool, send_as_video: bool):
+               output_format: str):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
@@ -150,11 +147,13 @@ def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str,
         ctx.chat.send_text("No kudos yet!")
     else:
         table = [dict(zip(cols, row)) for row in rows]
-        if send_as_video:
+        if output_format == 'video':
             video_file = _create_kudos_video(table)
             ctx.chat.send_file(video_file, title="Kudos", filename="kudos.mp4")
+        elif output_format == 'text':
+            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=False)
         else:
-            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=send_as_excel)
+            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=True)
 
 
 def _create_kudos_video(high_scores):
