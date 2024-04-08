@@ -1,10 +1,14 @@
 import html
+import io
 import os
 import random
 import re
 
 import click
+import imageio.v3 as imageio
+import numpy as np
 import psycopg
+from PIL import Image, ImageDraw, ImageFont
 
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
@@ -127,6 +131,7 @@ def kudos_give(ctx: ExtendedContext):
 @click.option('-t', '--text', 'output_format', flag_value='text', default=True)
 @click.option('-x', '--excel', 'output_format', flag_value='excel')
 @click.option('-v', '--video', 'output_format', flag_value='video')
+@click.option('-i', '--image', 'output_format', flag_value='image')
 @click.pass_context
 def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str,
                show_givers: bool,
@@ -150,17 +155,60 @@ def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str,
         if output_format == 'video':
             video_file = _create_kudos_video(table)
             ctx.chat.send_file(video_file, title="Kudos", filename="kudos.mp4")
+        elif output_format == 'image':
+            image_file = _create_kudos_image(table)
+            ctx.chat.send_file(image_file, title="Kudos", filename="kudos.png")
         elif output_format == 'text':
             ctx.chat.send_table(title="Kudos", table=table, send_as_excel=False)
         else:
             ctx.chat.send_table(title="Kudos", table=table, send_as_excel=True)
 
 
-def _create_kudos_video(high_scores):
-    from PIL import Image, ImageDraw, ImageFont
-    import numpy as np
-    import imageio.v3 as imageio
+def _create_kudos_image(high_scores):
+    width, height = 320, 480
 
+    high_scores = high_scores[:16]
+
+    score_font = ImageFont.truetype("img/kudos/amstrad_cpc464.ttf", 12)
+    title_font = ImageFont.truetype("img/kudos/amstrad_cpc464.ttf", 18)
+
+    # Create a new image
+    bg = Image.open("img/kudos/wallpaper.jpg").resize((width, height))
+    image = Image.new("RGB", (width, height), (0, 0, 0))
+    image.paste(bg, (0, 0))
+    draw = ImageDraw.Draw(image)
+
+    draw.text((50, 50), "::: Kudos :::", fill=(255, 255, 255), font=title_font)
+
+    # Draw the high scores
+    for i, player_and_score in enumerate(high_scores):
+        player, score = player_and_score['User'], player_and_score['kudos']
+        score_text = f"{score:> 4} {player}"
+        draw.text(
+            (21, 101 + i * 20),
+            score_text,
+            fill=(0, 0, 0),
+            font=score_font,
+        )
+        draw.text(
+            (20, 100 + i * 20),
+            score_text,
+            fill=(255, 255, 255),
+            font=score_font,
+        )
+
+    # Save the image to a BytesIO object
+    byte_arr = io.BytesIO()
+    image.save(byte_arr, format='PNG')
+
+    # Get the byte array
+    byte_arr = byte_arr.getvalue()
+
+    return byte_arr
+
+
+
+def _create_kudos_video(high_scores):
     width, height = 320, 480
 
     frame = 0
