@@ -1,11 +1,14 @@
 import html
+import io
 import os
 import random
 import re
 
 import click
-import cloup
+import imageio.v3 as imageio
+import numpy as np
 import psycopg
+from PIL import Image, ImageDraw, ImageFont
 
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
@@ -38,6 +41,21 @@ SELECT to_user as "User", COUNT(*) as Kudos
 FROM kudos
 WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
 GROUP BY to_user
+ORDER BY 2 DESC;"""
+
+SQL_KUDOS_VIEW_GIVERS = """\
+SELECT from_user as "User", COUNT(*) as Kudos
+FROM kudos
+WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+AND channel_id = %(channel_id)s
+GROUP BY from_user
+ORDER BY 2 DESC;"""
+
+SQL_KUDOS_VIEW_GIVERS_ALL = """\
+SELECT from_user as "User", COUNT(*) as Kudos
+FROM kudos
+WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+GROUP BY from_user
 ORDER BY 2 DESC;"""
 
 
@@ -109,47 +127,95 @@ def kudos_give(ctx: ExtendedContext):
 @kudos.command('view')
 @click.argument('days_to_check', type=click.INT, default=14)
 @click.argument('channel', default='')
-@cloup.option_group("Format",
-                    cloup.option('-t', '--text', 'send_as_text', is_flag=True, default=False),
-                    cloup.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False),
-                    cloup.option('-v', '--video', 'send_as_video', is_flag=True, default=True),
-                    constraint=cloup.constraints.require_one)
+@click.option('-g', '--givers', 'show_givers', is_flag=True, default=False)
+@click.option('-t', '--text', 'output_format', flag_value='text', default=True)
+@click.option('-x', '--excel', 'output_format', flag_value='excel')
+@click.option('-v', '--video', 'output_format', flag_value='video')
+@click.option('-i', '--image', 'output_format', flag_value='image')
 @click.pass_context
 def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str,
-               send_as_text: bool, send_as_excel: bool, send_as_video: bool):
+               show_givers: bool,
+               output_format: str):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             if channel == '*':
-                cur.execute(SQL_KUDOS_VIEW_ALL, {'days': days_to_check})
+                sql = SQL_KUDOS_VIEW_ALL if not show_givers else SQL_KUDOS_VIEW_GIVERS_ALL
+                cur.execute(sql, {'days': days_to_check})
             else:
                 channel_id = ctx.chat.channel_id if channel == '' else (EXTRACT_SLACK_ID.findall(channel) or [''])[0]
-                cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check, 'channel_id': channel_id})
+                sql = SQL_KUDOS_VIEW if not show_givers else SQL_KUDOS_VIEW_GIVERS
+                cur.execute(sql, {'days': days_to_check, 'channel_id': channel_id})
             rows = cur.fetchall()
             cols = [col.name for col in cur.description]
     if len(rows) == 0:
         ctx.chat.send_text("No kudos yet!")
     else:
         table = [dict(zip(cols, row)) for row in rows]
-        if send_as_video:
+        if output_format == 'video':
             video_file = _create_kudos_video(table)
             ctx.chat.send_file(video_file, title="Kudos", filename="kudos.mp4")
+        elif output_format == 'image':
+            image_file = _create_kudos_image(table)
+            ctx.chat.send_file(image_file, title="Kudos", filename="kudos.png")
+        elif output_format == 'text':
+            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=False)
         else:
-            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=send_as_excel)
+            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=True)
+
+
+def _create_kudos_image(high_scores):
+    width, height = 320, 480
+
+    high_scores = high_scores[:16]
+
+    score_font = ImageFont.truetype("img/kudos/amstrad_cpc464.ttf", 12)
+    title_font = ImageFont.truetype("img/kudos/amstrad_cpc464.ttf", 18)
+
+    # Create a new image
+    bg = Image.open("img/kudos/wallpaper.jpg").resize((width, height))
+    image = Image.new("RGB", (width, height), (0, 0, 0))
+    image.paste(bg, (0, 0))
+    draw = ImageDraw.Draw(image)
+
+    draw.text((50, 50), "::: Kudos :::", fill=(255, 255, 255), font=title_font)
+
+    # Draw the high scores
+    for i, player_and_score in enumerate(high_scores):
+        player, score = player_and_score['User'], player_and_score['kudos']
+        score_text = f"{score:> 4} {player}"
+        draw.text(
+            (21, 101 + i * 20),
+            score_text,
+            fill=(0, 0, 0),
+            font=score_font,
+        )
+        draw.text(
+            (20, 100 + i * 20),
+            score_text,
+            fill=(255, 255, 255),
+            font=score_font,
+        )
+
+    # Save the image to a BytesIO object
+    byte_arr = io.BytesIO()
+    image.save(byte_arr, format='PNG')
+
+    # Get the byte array
+    byte_arr = byte_arr.getvalue()
+
+    return byte_arr
+
 
 
 def _create_kudos_video(high_scores):
-    from PIL import Image, ImageDraw, ImageFont
-    import numpy as np
-    import imageio.v3 as imageio
-
     width, height = 320, 480
 
     frame = 0
     score_moving = 0
     wait_counter = 0
 
-    high_scores = high_scores[:10]
+    high_scores = high_scores[:16]
 
     # Set the initial x position for the text
     x_pos = [width] * len(high_scores)
