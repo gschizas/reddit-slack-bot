@@ -40,6 +40,21 @@ WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
 GROUP BY to_user
 ORDER BY 2 DESC;"""
 
+SQL_KUDOS_VIEW_GIVERS = """\
+SELECT from_user as "User", COUNT(*) as Kudos
+FROM kudos
+WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+AND channel_id = %(channel_id)s
+GROUP BY from_user
+ORDER BY 2 DESC;"""
+
+SQL_KUDOS_VIEW_GIVERS_ALL = """\
+SELECT from_user as "User", COUNT(*) as Kudos
+FROM kudos
+WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+GROUP BY from_user
+ORDER BY 2 DESC;"""
+
 
 @gyrobot.group('kudos',
                cls=DefaultCommandGroup,
@@ -114,17 +129,21 @@ def kudos_give(ctx: ExtendedContext):
                     cloup.option('-x', '--excel', 'send_as_excel', is_flag=True, default=False),
                     cloup.option('-v', '--video', 'send_as_video', is_flag=True, default=True),
                     constraint=cloup.constraints.require_one)
+@click.option('-g', '--givers', 'show_givers', is_flag=True, default=False)
 @click.pass_context
 def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str,
+               show_givers: bool,
                send_as_text: bool, send_as_excel: bool, send_as_video: bool):
     database_url = os.environ['KUDOS_DATABASE_URL']
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             if channel == '*':
-                cur.execute(SQL_KUDOS_VIEW_ALL, {'days': days_to_check})
+                sql = SQL_KUDOS_VIEW_ALL if not show_givers else SQL_KUDOS_VIEW_GIVERS_ALL
+                cur.execute(sql, {'days': days_to_check})
             else:
                 channel_id = ctx.chat.channel_id if channel == '' else (EXTRACT_SLACK_ID.findall(channel) or [''])[0]
-                cur.execute(SQL_KUDOS_VIEW, {'days': days_to_check, 'channel_id': channel_id})
+                sql = SQL_KUDOS_VIEW if not show_givers else SQL_KUDOS_VIEW_GIVERS
+                cur.execute(sql, {'days': days_to_check, 'channel_id': channel_id})
             rows = cur.fetchall()
             cols = [col.name for col in cur.description]
     if len(rows) == 0:
