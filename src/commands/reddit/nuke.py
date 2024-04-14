@@ -171,7 +171,7 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: tuple[str] = None,
                 continue
             submission_created = datetime.datetime.fromtimestamp(s.created_utc)
             submission_age = now - submission_created
-            if submission_age.days > cutoff_age:
+            if submission_age.days > cutoff_age.to_days():
                 too_old += 1
                 continue
             s.mod.remove()
