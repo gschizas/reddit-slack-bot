@@ -22,7 +22,11 @@ def _actuator_config():
 def actuator(ctx: ExtendedContext):
     ctx.ensure_object(dict)
     ctx.obj['config'] = _actuator_config()
-    ctx.obj['security_text'] = {'refresh': 'refresh actuator', 'view': 'view actuator variables', 'pods': 'view pods'}
+    ctx.obj['security_text'] = {
+        'refresh': 'refresh actuator',
+        'health': 'view actuator health',
+        'view': 'view actuator variables',
+        'pods': 'view pods'}
 
 
 @actuator.command('refresh')
@@ -48,7 +52,7 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
             response_before, response_after, refresh_result)
         pod_results[pod_to_refresh + ' - after'] = _environment_table(response_after)
 
-    action_names = ('refresh', 'refreshing', 'Refreshed')
+    action_names = ('refresh', 'Refreshed')
 
     _actuator_action(ctx, namespace, deployments, excel, action_names, refresh_action)
 
@@ -67,13 +71,45 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
             timeout=30)
         pod_results[pod_to_refresh] = _environment_table(response)
 
-    action_names = ('view', 'viewing', 'Viewed')
+    action_names = ('view', 'Viewed')
 
     _actuator_action(ctx, namespace, deployments, excel, action_names, view_action)
 
 
+@actuator.command('health')
+@click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
+@click.argument('deployments', type=str, nargs=-1)
+@click.option('-x', '--excel', is_flag=True, default=False)
+@click.pass_context
+@check_security
+def health_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
+    def health_action(conn, pod_results, pod):
+        response = requests.get(
+            url=f'http://{pod}.pod.{conn.project_name}.kubernetes:8778/actuator/health',
+            proxies={'http': None, 'https': None},
+            timeout=30)
+        health_raw = response.json()
+        health_table = []
+        for key, value in health_raw['components'].items():
+            if key == 'diskSpace':
+                disk_space_raw = value['details']['free'] / value['details']['total']
+                disk_space = f"{disk_space_raw:3.2%}"
+            else:
+                disk_space = ''
+            health_table.append(
+                {'Name': key,
+                 'Status': value.get('status'),
+                 'DiskSpace': disk_space,
+                 'Version': value.get('details', {}).get('version')})
+        pod_results[pod] = health_table
+
+    action_names = ('view health', 'Viewed health')
+
+    _actuator_action(ctx, namespace, deployments, excel, action_names, health_action)
+
+
 def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool,
-                     action_names: tuple[str, str, str], action: Callable):
+                     action_names: tuple[str, str], action: Callable):
     with KubernetesConnection(ctx, namespace) as conn:
         for deployment in deployments:
             label_selector = f'deployment={deployment}'
@@ -81,8 +117,9 @@ def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str
                                                                                          label_selector=label_selector)
             pods_to_refresh = [pod.metadata.name for pod in all_pods.items]
             if len(pods_to_refresh) == 0:
-                ctx.chat.send_text(f"Couldn't find any pods on {namespace} to {action_names[0]} for {deployment}",
-                                   is_error=True)
+                ctx.chat.send_text(
+                    f"Couldn't find any pods on {conn.project_name} to {action_names[0]} for {deployment}",
+                    is_error=True)
                 continue
 
             pods_actioned_successful = 0
@@ -93,11 +130,9 @@ def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str
                         action(conn, pod_results, pod_to_refresh)
                         pods_actioned_successful += 1
                     except requests.exceptions.ConnectionError as ex:
-                        ctx.chat.send_text(f"Error when {action_names[1]} pod {pod_to_refresh}\n```{ex!r}```",
-                                           is_error=True)
                         pod_results[pod_to_refresh] = [{'State': 'Error', 'Message': repr(ex)}]
             ctx.chat.send_text(
-                f"{action_names[2]} {pods_actioned_successful}/{len(pods_to_refresh)} pods for {deployment}")
+                f"{action_names[1]} {pods_actioned_successful}/{len(pods_to_refresh)} pods for {deployment}")
             ctx.chat.send_tables('PodStatus', pod_results, excel)
 
 
@@ -122,22 +157,26 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None, excel: bool
             sum([cs.restart_count for cs in pod.status.container_statuses]),
             pod.status.host_ip,
             pod.status.pod_ip])) for pod in all_pods.items]
-        ctx.chat.send_table(title=f"pods-{namespace}", table=pods_list, send_as_excel=excel)
+        ctx.chat.send_table(title=f"pods-{conn.project_name}", table=pods_list, send_as_excel=excel)
 
 
 def _environment_table(pod_env_raw):
     env_current = json.loads(pod_env_raw.content)
 
-    if 'propertySources' in env_current:  # list of property sources, find the one called bootstrapProperties
+    if 'propertySources' in env_current:  # Spring Boot v2+
         property_sources = env_current.get('propertySources')
-        bootstrap_properties = [prop for prop in property_sources if prop['name'] == 'bootstrapProperties']
+        bootstrap_properties = [prop for prop in property_sources if prop['name'].startswith('bootstrapProperties')]
         if not bootstrap_properties:
             return [
                 {'Status': 'Error',
                  'Message': "Could not find property sources in environment (maybe spring boot 2.7?)"}]
-        property_root = bootstrap_properties[0]['properties']
+        property_root = {}
+        for bootstrap_property in bootstrap_properties:
+            common_keys = list(set(bootstrap_property['properties'].keys()) & set(property_root.keys()))
+            assert not common_keys
+            property_root.update(bootstrap_property['properties'])
         complex_properties = True
-    elif 'bootstrapProperties' in env_current:  # only one dictionary, get to it directly
+    elif 'bootstrapProperties' in env_current:  # Spring Boot v1.5, only one dictionary, get to it directly
         property_root = env_current.get('bootstrapProperties')
         complex_properties = False
     else:
@@ -195,7 +234,6 @@ def _send_results(ctx: ExtendedContext,
                   pod_env_before: requests.Response,
                   refresh_result: requests.Response,
                   pod_env_after: requests.Response):
-
     refresh_actuator_result = refresh_result.json()
     if type(refresh_actuator_result) is list:
         value_types = [isinstance(rar, str) for rar in refresh_actuator_result]
@@ -217,5 +255,3 @@ def _send_results(ctx: ExtendedContext,
         ctx.chat.send_file(
             file_data=pod_env_after.content,
             filename=f'pod_env_after_raw-{pod_to_refresh}.json')
-
-

@@ -1,12 +1,10 @@
-import subprocess
-import shlex
-
 import click
-from commands.openshift.common import read_config, user_allowed, OpenShiftNamespace, env_config
 from ruamel.yaml import YAML
 
-from commands import gyrobot
+from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
+from commands.openshift.api import KubernetesConnection
+from commands.openshift.common import read_config, OpenShiftNamespace, check_security
 
 yaml = YAML()
 all_users = []
@@ -18,91 +16,48 @@ def _scaledown_config():
     return read_config(env_var)
 
 
-@gyrobot.command('scaledown')
+@gyrobot.group('scaledown', cls=DefaultCommandGroup)
+@click.pass_context
+def scaledown(ctx: ExtendedContext):
+    ctx.ensure_object(dict)
+    ctx.obj['config'] = _scaledown_config()
+    ctx.obj['security_text'] = {'do': 'scale down kubernetes objects'}
+
+
+@scaledown.command(default_command=True,
+                   context_settings={
+                       'ignore_unknown_options': True,
+                       'allow_extra_args': True})
 @click.argument('namespace', type=OpenShiftNamespace(_scaledown_config()))
 @click.pass_context
-def scaledown(ctx: ExtendedContext, namespace):
-    ctx.obj['config'] = _scaledown_config()
-    namespace_obj = env_config(ctx, namespace)
-    server_url = namespace_obj['url']
-    allowed_users = namespace_obj['users']
-    if not user_allowed(ctx.chat.team_name, ctx.chat.user_id, allowed_users):
-        ctx.chat.send_text(f"You don't have permission to scale down kubernetes objects.", is_error=True)
-        return
-    allowed_channels = namespace_obj['channels']
-    channel_name = ctx.chat.channel_name
-    if channel_name not in allowed_channels:
-        ctx.chat.send_text(f"Kubernetes scale down commands are not allowed in {channel_name}", is_error=True)
-        return
-    openshift_token = namespace_obj['credentials']
+def scaledown_default(ctx: ExtendedContext, namespace: str):
+    ctx.forward(scaledown_do)
 
-    result = ""
 
-    login_cmd = subprocess.run(['oc', 'login', f'--token={openshift_token}', f'--server={server_url}'],
-                               capture_output=True)
-    if login_cmd.returncode != 0:
-        ctx.chat.send_text("Error while logging in:\n```" + login_cmd.stderr.decode().strip() + "```", is_error=True)
-        return
+@scaledown.command('do')
+@click.argument('namespace', type=OpenShiftNamespace(_scaledown_config()))
+@click.pass_context
+@check_security
+def scaledown_do(ctx: ExtendedContext, namespace):
+    with KubernetesConnection(ctx, namespace) as k8s:
+        deployments_to_scaledown = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
+        if len(deployments_to_scaledown.items) == 0:
+            ctx.chat.send_text(f"Couldn't find any deployments on {namespace} to scale down", is_error=True)
+            return
 
-    whoami_cmd = subprocess.run(['oc', 'whoami'], capture_output=True)
-    result += whoami_cmd.stdout.decode() + '\n'
+        results = []
+        for deployment_to_scaledown in deployments_to_scaledown.items:
+            if deployment_to_scaledown in ctx.obj['config'].get('~deployments', []): continue  # ignore deployment
+            result = k8s.apps_v1_api.patch_namespaced_replica_set_scale(
+                deployment_to_scaledown.metadata.name, k8s.project_name,
+                {'spec': {'replicas': 0}})
+            results.append(result)
 
-    change_project_cmd = subprocess.run(['oc', 'project', namespace], capture_output=True)
-    if change_project_cmd.returncode != 0:
-        change_project_output = change_project_cmd.stderr.decode().strip()
-        ctx.chat.send_text(f"Error while selecting project {namespace} in:\n```{change_project_output}```",
-                           is_error=True)
-        return
+        for resource_to_scaledown in deployments_to_scaledown.items:
+            if resource_to_scaledown in ctx.obj['config'].get('~statefulsets', []): continue  # ignore statefulset
+            result = k8s.apps_v1_api.patch_namespaced_stateful_set_scale(
+                resource_to_scaledown.metadata.name, k8s.project_name,
+                {'spec': {'replicas': 0}})
+            results.append(result)
 
-    project_cmd = subprocess.run(['oc', 'project'], capture_output=True)
-    result += project_cmd.stdout.decode() + '\n'
-
-    deployments_to_scaledown_cmd_line = ['oc', 'get', '-o',
-                                         'go-template={{range .items}}{{.metadata.name}}{{"\\n"}}{{end}}',
-                                         'deployment']
-    deployments_to_scaledown_cmd = subprocess.run(deployments_to_scaledown_cmd_line, capture_output=True)
-    if deployments_to_scaledown_cmd.returncode != 0:
-        deployments_to_scaledown_output = deployments_to_scaledown_cmd.stderr.decode().strip()
-        ctx.chat.send_text(f"Error while retrieveing deployments:\n```{deployments_to_scaledown_output}```",
-                           is_error=True)
-        return
-
-    deployments_to_scaledown_raw = deployments_to_scaledown_cmd.stdout.decode()
-    deployments_to_scaledown = deployments_to_scaledown_raw.strip().splitlines()
-    if len(deployments_to_scaledown) == 0:
-        ctx.chat.send_text(f"Couldn't find any deployments on {namespace} to scale down", is_error=True)
-        return
-
-    for deployment_to_scaledown in deployments_to_scaledown:
-        if deployment_to_scaledown in namespace_obj.get('~deployments', []): continue  # ignore deployment
-        result += "\n"
-        scaledown_cmd_line = ['oc', 'scale', 'deployment', deployment_to_scaledown, '--replicas=0']
-        result += shlex.join(scaledown_cmd_line)
-        scaledown_cmd = subprocess.run(scaledown_cmd_line, capture_output=True)
-        if scaledown_cmd.returncode != 0:
-            result += (f"\nError {scaledown_cmd.returncode} while scaling down "
-                       f"deployment {deployment_to_scaledown} to scale down\n")
-        result += scaledown_cmd.stdout.decode().strip() + "\n"
-        result += scaledown_cmd.stderr.decode().strip() + "\n"
-
-    for resource_to_scaledown in namespace_obj['resources']:
-        result += "\n"
-        scaledown_cmd_line = ['oc', 'scale', 'sts', resource_to_scaledown, '--replicas=0']
-        scaledown_cmd = subprocess.run(scaledown_cmd_line, capture_output=True)
-        if scaledown_cmd.returncode != 0:
-            result += (f"\nError {scaledown_cmd.returncode} while scaling down "
-                       f"stateful set {resource_to_scaledown} to scale down\n")
-        result += scaledown_cmd.stdout.decode().strip() + "\n"
-        result += scaledown_cmd.stderr.decode().strip() + "\n"
-
-    result_cmd = subprocess.run(['oc', 'get', 'pod'], capture_output=True)
-    if result_cmd.returncode != 0:
-        ctx.chat.send_text(f"Error while getting pod status", is_error=True)
-    result += result_cmd.stdout.decode().strip() + "\n"
-    result += result_cmd.stderr.decode().strip() + "\n"
-
-    logout_cmd = subprocess.run(['oc', 'logout', f'--server={server_url}'], capture_output=True)
-    result += logout_cmd.stdout.decode().strip() + "\n"
-    result += logout_cmd.stderr.decode().strip() + "\n"
-
-    ctx.chat.send_file(file_data=result.encode(), filename='scaledown.txt')
+        ctx.chat.send_table(title=f"scaledown-{k8s.project_name}", table=results)

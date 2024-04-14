@@ -1,5 +1,6 @@
 import base64
 import io
+import logging
 import pathlib
 
 import kubernetes.client
@@ -55,17 +56,18 @@ class KubernetesConnection:
     def __init__(self, ctx: ExtendedContext, namespace: str):
         self.ctx = ctx
         self.namespace = namespace
-        self.project_name = self.namespace
         self.config = self.ctx.obj['config']['environments'][self.namespace]
+        self.project_name = self.config.get('project_name', self.namespace)
         self.server_url = self.config['url']
         self.is_azure = self.server_url == 'azure'
+        logging.getLogger('kubernetes.client.rest').setLevel(logging.INFO)
+        logging.getLogger('cron_descriptor.GetText').setLevel(logging.INFO)
 
     def _login_openshift(self):
         self.api_key = self.config['credentials']
 
     def _login_azure(self):
         creds = self.config['credentials']
-        self.project_name = self.config['project_name']
         yaml = YAML()
         session = requests.Session()
         login_page = session.post(
@@ -119,7 +121,7 @@ class KubernetesConnection:
 
     def __enter__(self):
         if 'cert' in self.config:
-            self.cert_authority = str((pathlib.Path('data') / self.config['cert']).resolve())
+            self.cert_authority = str((pathlib.Path('config') / self.config['cert']).resolve())
 
         if self.is_azure:
             self._login_azure()
@@ -137,6 +139,8 @@ class KubernetesConnection:
             kubernetes_configuration.ssl_ca_cert = self.cert_authority
 
         self.api_client = kubernetes.client.ApiClient(kubernetes_configuration)
+        self.apps_v1_api = kubernetes.client.AppsV1Api(self.api_client)
+        self.batch_v1_api = kubernetes.client.BatchV1Api(self.api_client)
         self.core_v1_api = kubernetes.client.CoreV1Api(self.api_client)
         self.well_known_api = kubernetes.client.WellKnownApi(self.api_client)
         return self
