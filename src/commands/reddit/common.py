@@ -4,14 +4,16 @@ REDDIT_USERNAME_PATTERN = r'^<https://(?:www\.|old\.|new\.)?reddit\.com/u(?:ser)
 
 
 def extract_username(username):
-    if re.match('^[a-zA-Z0-9_-]+$', username):
-        pass
+    if re.match(r'^\*.*\*$', username):
+        username = username[1:-1]  # Remove slack formatting
+    if re.match(r'^[a-zA-Z0-9_-]+$', username):
+        pass  # Already a valid username
     elif m := re.match(REDDIT_USERNAME_PATTERN, username):
-        username = m.group('username')
+        username = m.group('username')  # Extract username from reddit link
     elif re.match(r'^u/[a-zA-Z0-9_-]+$', username):
-        username = username.split('/')[-1]
+        username = username.split('/')[-1]  # Extract username from reddit link
     else:
-        username = None
+        username = None  # Invalid username
     return username
 
 
