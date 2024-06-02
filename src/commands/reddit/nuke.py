@@ -3,6 +3,7 @@ import datetime
 import click
 import prawcore
 from durations_nlp import Duration
+from word2number.w2n import word_to_num
 
 from commands import gyrobot, ClickAliasedGroup
 from commands.extended_context import ExtendedContext
@@ -69,6 +70,12 @@ def undo_nuke_thread(ctx: ExtendedContext, thread_id):
         ctx.chat.send_text(f"Nuking {len(removed_comments)} comments was undone")
 
 
+def _w2n(input_text):
+    try:
+        return word_to_num(input_text)
+    except ValueError:
+        return None
+
 @nuke.command('user')
 @click.argument('username')
 @click.argument('timeframe', required=False, nargs=-1)
@@ -85,6 +92,8 @@ def nuke_user(ctx: ExtendedContext, username: str, timeframe: tuple[str] = None,
         timeframe = ('24', 'hours')
     if timeframe[0] in ('a', 'an'):
         timeframe = ('1',) + timeframe[1:]
+    elif (conv_num := _w2n(timeframe[0])) is not None:
+        timeframe = (str(conv_num), ) + timeframe[1:]
     if timeframe in (('forever_and_ever',), ('forever', 'and', 'ever'), ('forever',)):
         timeframe = ('100', 'years')  # should be enough
     timeframe = ' '.join(timeframe)
