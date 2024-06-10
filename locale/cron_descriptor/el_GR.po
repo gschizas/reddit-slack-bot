@@ -1,0 +1,265 @@
+# Translation of cron_descriptor
+# Copyright (C) 2016
+# This file is distributed under the same license as the cron_descriptor package.
+# Adam Schubert <adam.schubert@sg1-game.net>, 2016.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-01-19 02:00+0100\n"
+"PO-Revision-Date: 2024-02-24 19:03+0200\n"
+"Last-Translator: George Schizas <gschizas@gmail.com>\n"
+"Language-Team: \n"
+"Language: el_GR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#: ExpressionDescriptor.py:134
+msgid ""
+"An error occured when generating the expression description.  Check the cron "
+"expression syntax."
+msgstr ""
+"Πρόεκυψε σφάλμα κατά τη δημιουργία της περιγραφής της έκφρασης.  Ελέγξτε τη "
+"σύνταξη της έκφρασης cron."
+
+#: ExpressionDescriptor.py:158
+msgid "At "
+msgstr "Στις "
+
+#: ExpressionDescriptor.py:169
+#, python-brace-format
+msgid "Every minute between {0} and {1}"
+msgstr "Κάθε λεπτό μεταξύ {0} και {1}"
+
+#: ExpressionDescriptor.py:175
+msgid "At"
+msgstr "Στις"
+
+#: ExpressionDescriptor.py:184
+msgid " and"
+msgstr " και"
+
+#: ExpressionDescriptor.py:226
+msgid "every second"
+msgstr "κάθε δευτερόλεπτο"
+
+#: ExpressionDescriptor.py:228
+#, python-brace-format
+msgid "every {0} seconds"
+msgstr "κάθε {0} δευτερόλεπτα"
+
+#: ExpressionDescriptor.py:229
+#, python-brace-format
+msgid "seconds {0} through {1} past the minute"
+msgstr "δευτερόλεπτα {0} ως {1} μετά το λεπτό"
+
+#: ExpressionDescriptor.py:218 ExpressionDescriptor.py:220
+#: ExpressionDescriptor.py:222
+#, python-brace-format
+msgid "at {0} seconds past the minute"
+msgstr "στα {0} δευτερόλεπτα μετά το λεπτό"
+
+#: ExpressionDescriptor.py:257
+msgid "every minute"
+msgstr "κάθε λεπτό"
+
+#: ExpressionDescriptor.py:259
+#, python-brace-format
+msgid "every {0} minutes"
+msgstr "κάθε {0} λεπτά"
+
+#: ExpressionDescriptor.py:260
+#, python-brace-format
+msgid "minutes {0} through {1} past the hour"
+msgstr "λεπτά {0} ως {1} μετά την ώρα"
+
+#: ExpressionDescriptor.py:249 ExpressionDescriptor.py:251
+#: ExpressionDescriptor.py:253
+#, python-brace-format
+msgid "at {0} minutes past the hour"
+msgstr "στα {0} λεπτά μετά την ώρα"
+
+#: ExpressionDescriptor.py:275
+msgid "every hour"
+msgstr "κάθε ώρα"
+
+#: ExpressionDescriptor.py:218
+#, python-brace-format
+msgid "every {0} hours"
+msgstr "κάθε {0} ώρες"
+
+#: ExpressionDescriptor.py:218
+#, python-brace-format
+msgid "between {0} and {1}"
+msgstr "μεταξύ {0} και {1}"
+
+#: ExpressionDescriptor.py:218
+#, python-brace-format
+msgid "at {0}"
+msgstr "στις {0}"
+
+#: ExpressionDescriptor.py:312
+msgid "first"
+msgstr "πρώτη"
+
+#: ExpressionDescriptor.py:313
+msgid "second"
+msgstr "δεύτερη"
+
+#: ExpressionDescriptor.py:314
+msgid "third"
+msgstr "τρίτη"
+
+#: ExpressionDescriptor.py:315
+msgid "forth"
+msgstr "τέταρτη"
+
+#: ExpressionDescriptor.py:316
+msgid "fifth"
+msgstr "πέμπτη"
+
+#: ExpressionDescriptor.py:322
+msgid ", on the "
+msgstr ", στις "
+
+#: ExpressionDescriptor.py:322
+#, python-brace-format
+msgid " {0} of the month"
+msgstr " {0} του μήνα"
+
+#: ExpressionDescriptor.py:324
+#, python-brace-format
+msgid ", on the last {0} of the month"
+msgstr ", την τελευταία {0} του μήνα"
+
+#: ExpressionDescriptor.py:326
+#, python-brace-format
+msgid ", only on {0}"
+msgstr ", μόνο {0}"
+
+#: ExpressionDescriptor.py:260 ExpressionDescriptor.py:303
+#: ExpressionDescriptor.py:435
+msgid ", every day"
+msgstr ", κάθε μέρα"
+
+#: ExpressionDescriptor.py:260
+#, python-brace-format
+msgid ", every {0} days of the week"
+msgstr ", κάθε {0} μέρες της εβδομάδας"
+
+#: ExpressionDescriptor.py:260 ExpressionDescriptor.py:274
+#: ExpressionDescriptor.py:318
+#, python-brace-format
+msgid ", {0} through {1}"
+msgstr ", {0} ως {1}"
+
+#: ExpressionDescriptor.py:272
+#, python-brace-format
+msgid ", every {0} months"
+msgstr ", κάθε {0} μήνες"
+
+#: ExpressionDescriptor.py:353 ExpressionDescriptor.py:422
+#, python-brace-format
+msgid ", only in {0}"
+msgstr ", μόνο το{0}"
+
+#: ExpressionDescriptor.py:288
+msgid ", on the last day of the month"
+msgstr ", την τελευταία μέρα του μήνα"
+
+#: ExpressionDescriptor.py:290
+msgid ", on the last weekday of the month"
+msgstr ", την τελευταία εργάσιμη του μήνα"
+
+#: ExpressionDescriptor.py:297
+msgid "first weekday"
+msgstr "πρώτη εργάσιμη"
+
+#: ExpressionDescriptor.py:297
+#, python-brace-format
+msgid "weekday nearest day {0}"
+msgstr "εργάσιμη πιο κοντά στις {0}"
+
+#: ExpressionDescriptor.py:299
+#, python-brace-format
+msgid ", on the {0} of the month"
+msgstr ", τις {0} του μήνα"
+
+#: ExpressionDescriptor.py:303
+#, python-brace-format
+msgid ", every {0} days"
+msgstr ", κάθε {0} μέρες"
+
+#: ExpressionDescriptor.py:304
+#, python-brace-format
+msgid ", between day {0} and {1} of the month"
+msgstr ", μεταξύ της {0} και {1} του μήνα"
+
+#: ExpressionDescriptor.py:304
+#, python-brace-format
+msgid ", on day {0} of the month"
+msgstr ", την {0}η μέρα του μήνα"
+
+#: ExpressionDescriptor.py:316
+#, python-brace-format
+msgid ", every {0} years"
+msgstr ", κάθε {0} χρόνια"
+
+#: ExpressionDescriptor.py:385
+msgid " and "
+msgstr " και "
+
+#: ExpressionDescriptor.py:433
+msgid ", every minute"
+msgstr ", κάθε λεπτό"
+
+#: ExpressionDescriptor.py:434
+msgid ", every hour"
+msgstr ", κάθε ώρα"
+
+#: ExpressionDescriptor.py:564
+msgid "AM"
+msgstr "πμ"
+
+#: ExpressionDescriptor.py:564
+msgid "PM"
+msgstr "μμ"
+
+#: ExpressionDescriptor.py:483
+msgid ", starting {0}"
+msgstr ", αρχίζοντας από {0}"
+
+#: ExpressionDescriptor.py:390
+msgid ", {0} days before the last day of the month"
+msgstr ", {0} μέρες πριν το τέλος του μήνα"
+
+#: ExpressionDescriptor.py:231
+msgid "at {0} seconds past the minute [grThen20]"
+msgstr "στα {0} δευτερόλεπτα μετά το λεπτό [grThen20]"
+
+#: ExpressionDescriptor.py:242
+msgid ", second {0} through second {1}"
+msgstr ", δευτερόλεπτο {0} ως δευτερόλεπτο {1}"
+
+#: ExpressionDescriptor.py:262
+msgid "at {0} minutes past the hour [grThen20]"
+msgstr "στα {0} λεπτά μετά την ώρα [grThen20]"
+
+#: ExpressionDescriptor.py:273
+msgid ", minute {0} through minute {1}"
+msgstr ", λεπτό {0} ως λεπτό {1}"
+
+#: ExpressionDescriptor.py:291
+msgid ", hour {0} through hour {1}"
+msgstr ", ώρα {0} ως ώρα {1}"
+
+#: ExpressionDescriptor.py:363 ExpressionDescriptor.py:365
+msgid ", month {0} through month {1}"
+msgstr ", μήνας {0} ως μήνας {1}"
+
+#: ExpressionDescriptor.py:432 ExpressionDescriptor.py:434
+msgid ", year {0} through year {1}"
+msgstr ", έτος {0} ως έτος {1}"
