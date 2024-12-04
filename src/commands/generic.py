@@ -230,6 +230,14 @@ def stocks(ctx: ExtendedContext, stock_name):
 
     change = (((stock.info['ask'] / stock.info['previousClose']) - 1) * 100)  # > 10
 
+    fields = [
+        f"Ask Price: {stock.info['ask']}",
+        f"Bid: {stock.info['bid']}",
+        f"Day High: {stock.info['dayHigh']}",
+        f"Last Day: {stock.info['regularMarketPreviousClose']}",
+        f"Change: {change:.02f}"
+    ]
+
     blocks = [
         {
             "type": "section",
@@ -243,32 +251,7 @@ def stocks(ctx: ExtendedContext, stock_name):
                 "image_url": stock.info.get('logo_url', EMPTY_IMAGE),
                 "alt_text": stock.info['longName']
             },
-            "fields": [
-                {
-                    "type": "plain_text",
-                    "text": f"Ask Price: {stock.info['ask']}"
-                },
-                {
-                    "type": "plain_text",
-                    "text": f"Bid: {stock.info['bid']}"
-                },
-                {
-                    "type": "plain_text",
-                    "text": f"Low: {stock.info['regularMarketDayLow']}"
-                },
-                {
-                    "type": "plain_text",
-                    "text": f"Day High: {stock.info['dayHigh']}"
-                },
-                {
-                    "type": "plain_text",
-                    "text": f"Last Day: {stock.info['regularMarketPreviousClose']}"
-                },
-                {
-                    "type": "plain_text",
-                    "text": f"Change: {change:.02f}"
-                }
-            ]
+            "fields": [{"type": "plain_text", "text": field} for field in fields]
         }
     ]
     ctx.chat.send_blocks(blocks)
