@@ -21,6 +21,9 @@ from commands.extended_context import ExtendedContext
 from commands.reddit.common import extract_username, extract_real_thread_id
 from state_file import state_file
 
+if 'SUBREDDIT_NAME' not in os.environ:
+    raise ImportError('SUBREDDIT_NAME not found in environment')
+
 ARCHIVE_URL = 'http://archive.is'
 CHROME_USER_AGENT = (
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '

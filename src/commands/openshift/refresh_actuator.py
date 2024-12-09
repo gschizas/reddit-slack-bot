@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Callable
 
 import click
@@ -10,6 +11,9 @@ from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
 from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security
+
+if 'OPENSHIFT_ACTUATOR_REFRESH' not in os.environ:
+    raise ImportError('OPENSHIFT_ACTUATOR_REFRESH not found in environment')
 
 
 def _actuator_config():

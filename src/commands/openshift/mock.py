@@ -1,3 +1,4 @@
+import os
 import subprocess
 from string import Template
 
@@ -6,9 +7,12 @@ from ruamel.yaml import YAML
 
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
-from commands.openshift.common import OpenShiftNamespace, check_security, read_config, env_config
-from commands.openshift.api_obsolete_3 import do_login, do_logout
 from commands.openshift.api import KubernetesConnection
+from commands.openshift.api_obsolete_3 import do_login, do_logout
+from commands.openshift.common import OpenShiftNamespace, check_security, read_config, env_config
+
+if 'MOCK_CONFIGURATION' not in os.environ:
+    raise ImportError('MOCK_CONFIGURATION not found in environment')
 
 yaml = YAML()
 
@@ -89,7 +93,7 @@ def set_mock(ctx: ExtendedContext, namespace: str, mock_status: str):
     for microservice_info, status in statuses.items():
         microservice, env_variable_value = _get_environment_values(env_vars, vartemplates, microservice_info, status)
         result_text += f"Setting {prefix + microservice} to {env_variable_value}...\n"
-        environment_set_args = ['oc', 'set', 'env', '-n', project_name,  prefix + microservice, env_variable_value]
+        environment_set_args = ['oc', 'set', 'env', '-n', project_name, prefix + microservice, env_variable_value]
         environment_set_cmd = subprocess.run(environment_set_args, capture_output=True)
         if environment_set_cmd.returncode:
             result_text += environment_set_cmd.stderr.decode() + '\n\n'
@@ -145,6 +149,7 @@ def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
     result_text += do_logout(is_azure)
 
     ctx.chat.send_file(result_text.encode(), title='OpenShift Data', filename='openshift-data.txt')
+
 
 @mock.command('view')
 @click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))

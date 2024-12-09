@@ -1,5 +1,6 @@
 import datetime
 import locale
+import os
 import pathlib
 
 import click
@@ -10,6 +11,9 @@ from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
 from commands.openshift.common import read_config, OpenShiftNamespace, check_security
+
+if 'OPENSHIFT_CRONJOB' not in os.environ:
+    raise ImportError('OPENSHIFT_CRONJOB not found in environment')
 
 yaml = YAML()
 REMOVE_CRONJOB_KEYS = ['Containers', 'Images', 'Selector']

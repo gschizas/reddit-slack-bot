@@ -13,6 +13,9 @@ from bot_framework.yaml_wrapper import yaml
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 
+if 'QUESTIONNAIRE_DATABASE_URL' not in os.environ:
+    raise ImportError('QUESTIONNAIRE_DATABASE_URL not found in environment')
+
 SQL_SURVEY_PREFILLED_ANSWERS = r"""select answer[3] AS Code, answer_value as Answer, count(*) AS VoteCount
 from (select regexp_split_to_array(code, '_') AS answer_parts, *
       from "Answers"

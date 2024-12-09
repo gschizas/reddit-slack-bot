@@ -12,11 +12,6 @@ import praw
 import requests
 
 import chat.chat_wrapper
-import commands
-import commands.convert
-import commands.generic
-import commands.roll
-import commands.weather
 from bot_framework.common import normalize_text
 from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
@@ -26,42 +21,57 @@ from chat.chat_wrapper import ChatWrapper, Conversation, Message
 
 locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
 
-if 'MOCK_CONFIGURATION' in os.environ:
-    import commands.openshift.mock
+def do_imports():
+    import importlib
+    from glob import glob
+    for module_filename in glob('plugins/**/*.py', recursive=True):
+        module_name = os.path.splitext(module_filename)[0].replace(os.path.sep, '.')
+        try:
+            importlib.import_module(module_name)
+        except Exception as e:
+            print(f"Error importing {module_name}: {e}")
 
-if 'DOCKER_DEPLOY_CONFIGURATION' in os.environ:
-    import commands.openshift.docker_deploy
+    import commands
+    import commands.convert
+    import commands.generic
+    import commands.roll
+    # import commands.weather
+    # if 'MOCK_CONFIGURATION' in os.environ:
+    #     import commands.openshift.mock
 
-if 'OPENSHIFT_ACTUATOR_REFRESH' in os.environ:
-    import commands.openshift.refresh_actuator
+    # if 'DOCKER_DEPLOY_CONFIGURATION' in os.environ:
+    #     import commands.openshift.docker_deploy
 
-if 'OPENSHIFT_SCALEDOWN' in os.environ:
-    import commands.openshift.scaledown
+    # if 'OPENSHIFT_ACTUATOR_REFRESH' in os.environ:
+    #     import commands.openshift.refresh_actuator
 
-if 'OPENSHIFT_DEPLOYMENT' in os.environ:
-    import commands.openshift.deployment
+    # if 'OPENSHIFT_SCALEDOWN' in os.environ:
+    #     import commands.openshift.scaledown
 
-if 'OPENSHIFT_CRONJOB' in os.environ:
-    import commands.openshift.cronjob
+    # if 'OPENSHIFT_DEPLOYMENT' in os.environ:
+    #     import commands.openshift.deployment
 
-if 'CHEESE_DATABASE_URL' in os.environ:
-    import commands.cheese
+    # if 'OPENSHIFT_CRONJOB' in os.environ:
+    #     import commands.openshift.cronjob
 
-if 'SUBREDDIT_NAME' in os.environ:
-    import commands.reddit
-    import commands.reddit.nuke
+    # if 'CHEESE_DATABASE_URL' in os.environ:
+    #     import commands.cheese
 
-if 'REDDIT_ALT_USER' in os.environ:
-    import commands.reddit.bot
+    # if 'SUBREDDIT_NAME' in os.environ:
+    #     import commands.reddit
+    #     import commands.reddit.nuke
 
-if 'QUESTIONNAIRE_DATABASE_URL' in os.environ and 'QUESTIONNAIRE_FILE' in os.environ:
-    import commands.reddit.survey
+    # if 'REDDIT_ALT_USER' in os.environ:
+    #     import commands.reddit.bot
 
-if 'KUDOS_DATABASE_URL' in os.environ:
-    import commands.kudos
+    # if 'QUESTIONNAIRE_DATABASE_URL' in os.environ and 'QUESTIONNAIRE_FILE' in os.environ:
+    #     import commands.reddit.survey
 
-if 'GYROBOT_DATABASE_URL' in os.environ:
-    import commands.reddit.database
+    # if 'KUDOS_DATABASE_URL' in os.environ:
+    #     import commands.kudos
+
+    # if 'GYROBOT_DATABASE_URL' in os.environ:
+    #     import commands.reddit.database
 
 logger: logging.Logger
 chat_obj: ChatWrapper
@@ -238,4 +248,5 @@ def main():
 
 
 if __name__ == '__main__':
+    do_imports()
     main()

@@ -15,6 +15,9 @@ from slackconfig import channel_deployment, username_deployment
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 
+if 'DOCKER_DEPLOY_CONFIGURATION' not in os.environ:
+    raise ImportError('DOCKER_DEPLOY_CONFIGURATION not found in environment')
+
 urllib3.disable_warnings()
 
 usernames = dict()

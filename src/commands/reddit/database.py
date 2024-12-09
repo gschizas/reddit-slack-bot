@@ -6,6 +6,10 @@ import psycopg
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 
+if 'GYROBOT_DATABASE_URL' not in os.environ:
+    raise ImportError('GYROBOT_DATABASE_URL not found in environment')
+
+
 SQL_TOO_MANY_POSTS = """\
                 select
                     author,
