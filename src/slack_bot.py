@@ -35,43 +35,6 @@ def do_imports():
     import commands.convert
     import commands.generic
     import commands.roll
-    # import commands.weather
-    # if 'MOCK_CONFIGURATION' in os.environ:
-    #     import commands.openshift.mock
-
-    # if 'DOCKER_DEPLOY_CONFIGURATION' in os.environ:
-    #     import commands.openshift.docker_deploy
-
-    # if 'OPENSHIFT_ACTUATOR_REFRESH' in os.environ:
-    #     import commands.openshift.refresh_actuator
-
-    # if 'OPENSHIFT_SCALEDOWN' in os.environ:
-    #     import commands.openshift.scaledown
-
-    # if 'OPENSHIFT_DEPLOYMENT' in os.environ:
-    #     import commands.openshift.deployment
-
-    # if 'OPENSHIFT_CRONJOB' in os.environ:
-    #     import commands.openshift.cronjob
-
-    # if 'CHEESE_DATABASE_URL' in os.environ:
-    #     import commands.cheese
-
-    # if 'SUBREDDIT_NAME' in os.environ:
-    #     import commands.reddit
-    #     import commands.reddit.nuke
-
-    # if 'REDDIT_ALT_USER' in os.environ:
-    #     import commands.reddit.bot
-
-    # if 'QUESTIONNAIRE_DATABASE_URL' in os.environ and 'QUESTIONNAIRE_FILE' in os.environ:
-    #     import commands.reddit.survey
-
-    # if 'KUDOS_DATABASE_URL' in os.environ:
-    #     import commands.kudos
-
-    # if 'GYROBOT_DATABASE_URL' in os.environ:
-    #     import commands.reddit.database
 
 logger: logging.Logger
 chat_obj: ChatWrapper
