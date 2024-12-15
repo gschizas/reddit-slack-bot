@@ -12,6 +12,7 @@ import praw
 import requests
 
 import chat.chat_wrapper
+import commands
 from bot_framework.common import normalize_text
 from bot_framework.common import setup_logging
 from bot_framework.praw_wrapper import praw_wrapper
@@ -31,7 +32,6 @@ def do_imports():
         except Exception as e:
             print(f"Error importing {module_name}: {e}")
 
-    import commands
     import commands.convert
     import commands.generic
     import commands.roll
