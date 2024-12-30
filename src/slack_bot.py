@@ -25,8 +25,10 @@ locale.setlocale(locale.LC_ALL, os.environ.get('LOCALE', ''))
 def do_imports():
     import importlib
     from glob import glob
-    for module_filename in glob('plugins/**/*.py', recursive=True):
-        module_name = os.path.splitext(module_filename)[0].replace(os.path.sep, '.')
+    for module_filename in glob('src/commands/**/*.py', recursive=True):
+        module_without_folder = module_filename.removeprefix('src/')
+        module_without_extension = os.path.splitext(module_without_folder)[0]
+        module_name = module_without_extension.replace(os.path.sep, '.')
         try:
             importlib.import_module(module_name)
         except Exception as e:
