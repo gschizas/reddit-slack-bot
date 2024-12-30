@@ -1,4 +1,5 @@
 import re
+import requests
 
 REDDIT_USERNAME_PATTERN = r'^<https://(?:www\.|old\.|new\.)?reddit\.com/u(?:ser)?/(?P<username>[a-zA-Z0-9_-]+)/?(?:\|\1)?>$'
 
@@ -18,7 +19,10 @@ def extract_username(username):
 
 
 def extract_real_thread_id(thread_id):
-    if '/' in thread_id:
+    if thread_id.startswith('https://www.reddit.com/r/') and '/s/' in thread_id:
+        response = requests.get(thread_id)
+        thread_id = response.url.split('/')[6]
+    elif '/' in thread_id:
         if thread_id.startswith('<') and thread_id.endswith('>'):  # slack link
             thread_id = thread_id[1:-1]
         if thread_id.startswith('http://') or thread_id.startswith('https://'):
