@@ -90,11 +90,11 @@ def _w2n(input_text):
 def nuke_user(ctx: ExtendedContext, username: str, timeframe: tuple[str] = None, remove_submissions: bool = False):
     """\
     Nuke the comments of a user. Append the timeframe to search.
-    Default value is 24 hours. You can use standard values, e.g. "48 hours", "2 months", "10 years" etc.
+    Default value is 3 days. You can use standard values, e.g. "48 hours", "2 months", "10 years" etc.
     Add SUBMISSIONS or POSTS to remove submissions as well.
     """
     if not timeframe:
-        timeframe = ('24', 'hours')
+        timeframe = ('3', 'days')
     if timeframe[0] in ('a', 'an'):
         timeframe = ('1',) + timeframe[1:]
     elif (conv_num := _w2n(timeframe[0])) is not None:
