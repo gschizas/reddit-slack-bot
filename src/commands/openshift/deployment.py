@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List
 
 import click
@@ -6,6 +7,9 @@ from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
 from commands.openshift.common import read_config, OpenShiftNamespace, check_security
+
+if 'OPENSHIFT_DEPLOYMENT' not in os.environ:
+    raise ImportError('OPENSHIFT_DEPLOYMENT not found in environment')
 
 _deployment_config = read_config('OPENSHIFT_DEPLOYMENT')
 

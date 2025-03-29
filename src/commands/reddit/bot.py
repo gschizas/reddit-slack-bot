@@ -1,7 +1,12 @@
+import os
+
 import click
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
+
+if 'REDDIT_ALT_USER' not in os.environ:
+    raise ImportError('REDDIT_ALT_USER not found in environment')
 
 WIKI_PAGE_BAD_FORMAT = "Page should have a title (starting with `# `) at the first line and an empty line below that"
 

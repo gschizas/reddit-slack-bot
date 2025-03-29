@@ -13,6 +13,9 @@ from PIL import Image, ImageDraw, ImageFont
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
 
+if 'KUDOS_DATABASE_URL' not in os.environ:
+    raise ImportError('KUDOS_DATABASE_URL not found in environment')
+
 SQL_KUDOS_INSERT = """\
 INSERT INTO kudos (
    from_user, from_user_id,
@@ -205,7 +208,6 @@ def _create_kudos_image(high_scores):
     byte_arr = byte_arr.getvalue()
 
     return byte_arr
-
 
 
 def _create_kudos_video(high_scores):

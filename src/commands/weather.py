@@ -1,13 +1,16 @@
 import io
 import os
+import urllib.parse
 
 import click
 import requests
-import urllib.parse
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from state_file import state_file
+
+if not 'WEGO_EXE' in os.environ and not 'WEATHER_URL' in os.environ:
+    raise ImportError('WEGO_EXE or WEATHER_URL not found in environment')
 
 COLS = 180
 ROWS = 100
@@ -93,7 +96,8 @@ def render_ansi(text, options=None):
         v_padding = 8
 
         bg_color = 0
-        image = Image.new('RGB', (2 * h_padding + cols * CHAR_WIDTH, 2 * v_padding + rows * CHAR_HEIGHT), color=bg_color)
+        image = Image.new('RGB', (2 * h_padding + cols * CHAR_WIDTH, 2 * v_padding + rows * CHAR_HEIGHT),
+                          color=bg_color)
 
         buf = buf[-ROWS:]
 

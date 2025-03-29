@@ -1,3 +1,5 @@
+import os
+
 import click
 from ruamel.yaml import YAML
 
@@ -5,6 +7,9 @@ from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
 from commands.openshift.common import read_config, OpenShiftNamespace, check_security
+
+if 'OPENSHIFT_SCALEDOWN' not in os.environ:
+    raise ImportError('OPENSHIFT_SCALEDOWN not found in environment')
 
 yaml = YAML()
 all_users = []

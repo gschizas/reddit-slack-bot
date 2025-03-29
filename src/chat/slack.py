@@ -3,24 +3,20 @@ import logging
 import os
 from typing import List, Dict, Callable
 
-from slack_sdk.errors import SlackApiError
-from slack_sdk.rtm_v2 import RTMClient
-from slack_sdk.web import WebClient
+from slack_bolt import App
+from slack_bolt.adapter.socket_mode import SocketModeHandler
 from tabulate import tabulate
 
 from chat.chat_wrapper import Conversation, Message
-
-slack_client: RTMClient = RTMClient(token=os.environ['SLACK_API_TOKEN'], proxy=os.environ.get('HTTPS_PROXY'))
-web_client: WebClient = WebClient(token=os.environ['SLACK_API_TOKEN'], proxy=os.environ.get('HTTPS_PROXY'))
 
 teams_cache = {}
 users_cache = {}
 channels_cache = {}
 
-bot_name: str
 handle_message: Callable
 logger: logging.Logger
 
+app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
 class SlackConversation(Conversation):
     @property
@@ -30,7 +26,7 @@ class SlackConversation(Conversation):
     def send_text(self, text, is_error=False, icon_emoji=None, channel=None):
         if icon_emoji is None:
             icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
-        web_client.chat_postMessage(
+        app.client.chat_postMessage(
             channel=channel or self.channel_id,
             text=text,
             icon_emoji=icon_emoji,
@@ -57,7 +53,7 @@ class SlackConversation(Conversation):
     def send_ephemeral(self, text=None, blocks=None, is_error=False, icon_emoji=None):
         if icon_emoji is None:
             icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
-        web_client.chat_postEphemeral(
+        app.client.chat_postEphemeral(
             channel=self.channel_id,
             blocks=blocks,
             text=text,
@@ -67,18 +63,18 @@ class SlackConversation(Conversation):
 
     def send_file(self, file_data, title=None, filename=None, channel=None):
         try:
-            web_client.files_upload_v2(
+            app.client.files_upload_v2(
                 channel=channel or self.channel_id,
                 icon_emoji=':robot_face:',
                 username=self.bot_name,
                 file=file_data,
                 filename=filename,
                 title=title)
-        except SlackApiError as ex:
+        except Exception as ex:
             self.send_text(text=f"Error while uploading {filename}:\n```{ex!r}```", is_error=True)
 
     def send_fields(self, text, fields):
-        web_client.chat_postMessage(
+        app.client.chat_postMessage(
             channel=self.channel_id,
             icon_emoji=':robot_face:',
             text=text,
@@ -86,7 +82,7 @@ class SlackConversation(Conversation):
             attachments=fields)
 
     def send_blocks(self, blocks):
-        web_client.chat_postMessage(
+        app.client.chat_postMessage(
             channel=self.channel_id,
             icon_emoji=':robot_face:',
             blocks=blocks,
@@ -105,19 +101,19 @@ def chat_connect(a_bot_name, a_line_handler):
     global bot_name, line_handler, logger
     bot_name = a_bot_name
     line_handler = a_line_handler
-    slack_client.start()
+    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
 
 
 def _slack_user_info(user_id):
     if user_id not in users_cache:
-        response_user = web_client.users_info(user=user_id)
+        response_user = app.client.users_info(user=user_id)
         if response_user['ok']:
             users_cache[user_id] = response_user['user']
 
 
 def _slack_team_info(team_id):
     if team_id not in teams_cache:
-        response_team = web_client.team_info()
+        response_team = app.client.team_info()
         if response_team['ok']:
             teams_cache[team_id] = response_team['team']
 
@@ -126,13 +122,13 @@ def _slack_channel_info(team_id, channel_id):
     if team_id not in channels_cache:
         channels_cache[team_id] = {}
     if channel_id not in channels_cache[team_id]:
-        response_channel = web_client.conversations_info(channel=channel_id)
+        response_channel = app.client.conversations_info(channel=channel_id)
         channel_info = response_channel['channel'] if response_channel['ok'] else {}
         if channel_info.get('is_group') or channel_info.get('is_channel'):
             priv = '🔒' if channel_info.get('is_private') else '#'
             channels_cache[team_id][channel_id] = priv + channel_info['name_normalized']
         elif channel_info.get('is_im'):
-            response_members = web_client.conversations_members(channel=channel_id)
+            response_members = app.client.conversations_members(channel=channel_id)
             for user_id in response_members['members']:
                 _slack_user_info(user_id)
             participants = [f"{users_cache[user_id]['real_name']} <{users_cache[user_id]['name']}@{user_id}>"
@@ -146,8 +142,8 @@ def _preload(user_id, team_id, channel_id):
     _slack_channel_info(team_id, channel_id)
 
 
-@slack_client.on(event_type='message')
-def handle_slack_message(client: RTMClient, event: dict):
+@app.event("message")
+def handle_slack_message(event, say):
     global logger
     if event.get('subtype') in (
             'message_deleted', 'message_replied', 'file_share', 'bot_message', 'slackbot_response'):
@@ -164,7 +160,7 @@ def handle_slack_message(client: RTMClient, event: dict):
     _preload(user_id, team_id, channel_id)
 
     timestamp = datetime.datetime.fromtimestamp(float(event['ts']))
-    permalink_raw = web_client.chat_getPermalink(channel=channel_id, message_ts=event['ts'])
+    permalink_raw = app.client.chat_getPermalink(channel=channel_id, message_ts=event['ts'])
     permalink = permalink_raw['permalink']
 
     conversation = SlackConversation(bot_name, channel_id, user_id, team_id)

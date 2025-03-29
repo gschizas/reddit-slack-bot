@@ -7,6 +7,9 @@ import psycopg
 from bot_framework.yaml_wrapper import yaml
 from commands import gyrobot, extended_context
 
+if 'CHEESE_DATABASE_URL' not in os.environ:
+    raise ImportError('CHEESE_DATABASE_URL not found in environment')
+
 SQL_CHEESE_VIEW = """\
 SELECT "objectData", "lastUpdate"
 FROM "machineState"
