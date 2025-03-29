@@ -17,6 +17,7 @@ class Conversation(ABC):
     channel_name: str
     user_id: str
     team_id: str
+    bot_name: str
 
     def __init__(self, bot_name, channel_id, user_id, team_id):
         self.bot_name = bot_name
