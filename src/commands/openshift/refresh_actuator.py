@@ -172,6 +172,8 @@ def _environment_table(pod_env_raw):
                  'Message': "Could not find property sources in environment (maybe spring boot 2.7?)"}]
         property_root = {}
         for bootstrap_property in bootstrap_properties:
+            if bootstrap_property['properties'] == {}:
+                continue
             common_keys = list(set(bootstrap_property['properties'].keys()) & set(property_root.keys()))
             assert not common_keys
             property_root.update(bootstrap_property['properties'])
