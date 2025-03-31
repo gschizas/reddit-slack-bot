@@ -28,7 +28,6 @@ dependencies = [
     "python-dateutil>=2.9.0.post0",
     "requests>=2.32.3",
     "ruamel-yaml>=0.18.6",
-    "slack-sdk>=3.33.0",
     "tabulate>=0.1.dev612",
     "tqdm>=4.66.5",
     "word2number>=1.1",
