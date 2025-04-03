@@ -98,6 +98,10 @@ def kudos_give(ctx: ExtendedContext):
     reason = html.unescape(arg.split('>')[-1].strip())
     all_users = set(EXTRACT_SLACK_ID.findall(arg))
 
+    if len(all_users) == 0:
+        ctx.chat.send_text("Who are you giving kudos to?", is_error=True)
+        return
+
     final_text = ""
 
     for recipient_user_id in all_users:
@@ -124,6 +128,8 @@ def kudos_give(ctx: ExtendedContext):
             final_text += text_to_send + '\n'
         else:
             final_text += f"⚠️Kudos not recorded for {recipient_name}" + '\n'
+    if final_text == "":
+        final_text = "(empty text)"
     ctx.chat.send_text(final_text)
 
 
