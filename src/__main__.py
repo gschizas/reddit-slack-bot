@@ -6,10 +6,12 @@ import logging
 import os
 import re
 import traceback
+import sys
 
 import click.testing
 import praw
 import requests
+from dotenv import load_dotenv
 
 import chat.chat_wrapper
 import commands
@@ -213,5 +215,6 @@ def main():
 
 
 if __name__ == '__main__':
+    load_dotenv(dotenv_path=f'.env.d/{sys.argv[1]}.env', override=True)
     do_imports()
     main()
