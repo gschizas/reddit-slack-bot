@@ -24,8 +24,8 @@ class SlackConversation(Conversation):
         return channels_cache[self.team_id].get(self.channel_id)
 
     def send_text(self, text, is_error=False, icon_emoji=None, channel=None):
-        if icon_emoji is None:
-            icon_emoji = ':robot_face:' if not is_error else ':face_palm:'
+        if is_error:
+            icon_emoji = ':face_palm:'
         app.client.chat_postMessage(
             channel=channel or self.channel_id,
             text=text,
