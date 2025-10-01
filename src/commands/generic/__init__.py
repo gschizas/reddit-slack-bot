@@ -34,6 +34,17 @@ def unicode(ctx: ExtendedContext, text):
     ctx.chat.send_file(final_text.encode('utf8'), filename='UnicodeAnalysis.txt', title='Unicode')
 
 
+
+@gyrobot.command('path')
+@click.pass_context
+def showpath(ctx: ExtendedContext):
+    """Show full environment"""
+    import os
+    text = os.environ['PATH'].replace(':', '\n')
+    ctx.chat.send_file(text.encode('utf8'), filename='env.txt', title='env')
+
+
+
 def _get_version():
     git_version_command = [
         'git',
