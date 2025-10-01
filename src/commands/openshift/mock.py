@@ -56,7 +56,7 @@ def mock(ctx: click.Context):
               context_settings={
                   'ignore_unknown_options': True,
                   'allow_extra_args': True})
-@click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
+@click.argument('namespace', type=OpenShiftNamespace(_mock_config()))
 @click.argument('mock_status')
 @click.pass_context
 def mock_default(ctx: ExtendedContext, namespace: str, mock_status: OpenShiftNamespace):
@@ -64,7 +64,7 @@ def mock_default(ctx: ExtendedContext, namespace: str, mock_status: OpenShiftNam
 
 
 @mock.command('set')
-@click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
+@click.argument('namespace', type=OpenShiftNamespace(_mock_config()))
 @click.argument('mock_status')
 @click.pass_context
 @check_security
@@ -72,8 +72,8 @@ def set_mock(ctx: ExtendedContext, namespace: str, mock_status: str):
     """Switch openshift mock status on environment"""
     env_vars = ctx.obj['config']['env_vars']
     config_env = env_config(ctx, namespace)
-    valid_mock_statuses = [k.upper() for k in config_env['status'].keys()]
-    mock_status = mock_status.upper()
+    valid_mock_statuses = [k.lower() for k in config_env['status'].keys()]
+    mock_status = mock_status.lower()
     if mock_status not in valid_mock_statuses:
         ctx.chat.send_text((f"Invalid status `{mock_status}`. "
                             f"Mock status must be one of {', '.join(valid_mock_statuses)}"), is_error=True)
@@ -127,7 +127,7 @@ def _get_environment_values(env_vars, vartemplates, microservice_info, status):
 
 
 @mock.command('check')
-@click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
+@click.argument('namespace', type=OpenShiftNamespace(_mock_config()))
 @click.pass_context
 @check_security
 def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
@@ -152,7 +152,7 @@ def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
 
 
 @mock.command('view')
-@click.argument('namespace', type=OpenShiftNamespace(_mock_config(), force_upper=True))
+@click.argument('namespace', type=OpenShiftNamespace(_mock_config()))
 @click.pass_context
 @check_security
 def mock_view(ctx: ExtendedContext, namespace: str, excel: bool):
