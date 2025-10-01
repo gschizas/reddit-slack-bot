@@ -88,7 +88,7 @@ class Conversation(ABC):
             for row in table:
                 for key, value in row.items():
                     if isinstance(value, bytes):
-                        row[key] = value.decode('utf-8')
+                        row[key] = value.decode(encoding='utf-8', errors='backslashreplace')
             return table
 
         result = ''
