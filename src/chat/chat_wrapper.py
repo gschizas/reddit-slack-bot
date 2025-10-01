@@ -84,9 +84,16 @@ class Conversation(ABC):
 
     @staticmethod
     def plain_text_table_sequence(tables: Dict[str, List[Dict]]) -> str:
+        def _cleanup(table: List[Dict]) -> List[Dict]:
+            for row in table:
+                for key, value in row.items():
+                    if isinstance(value, bytes):
+                        row[key] = value.decode('utf-8')
+            return table
+
         result = ''
         for table_name, table in tables.items():
-            table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline', maxcolwidths=64)
+            table_markdown = tabulate(_cleanup(table), headers='keys', tablefmt='fancy_outline', maxcolwidths=64)
             # table_markdown = tabulate(table, headers='keys', tablefmt='pipe', maxcolwidths=30)
             table_length = len(table_name)
             result += "╒" + "═" * (2 + table_length) + "╕" + "\n"
