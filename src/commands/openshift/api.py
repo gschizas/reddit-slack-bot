@@ -1,6 +1,7 @@
 import base64
 import io
 import logging
+import os
 import pathlib
 
 import kubernetes.client
@@ -134,6 +135,7 @@ class KubernetesConnection:
         kubernetes_configuration.api_key_prefix['authorization'] = 'Bearer'
         kubernetes_configuration.api_key['authorization'] = self.api_key
         kubernetes_configuration.host = self.server_url
+        kubernetes_configuration.no_proxy = os.environ.get('NO_PROXY')
 
         if self.cert_authority:
             kubernetes_configuration.ssl_ca_cert = self.cert_authority
