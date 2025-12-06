@@ -59,6 +59,6 @@ _version = _get_version()
 
 @gyrobot.command('version')
 @click.pass_context
-def version(ctx):
+def version(ctx: ExtendedContext):
     """Display version"""
     ctx.chat.send_text(f"Version: {_version}")
