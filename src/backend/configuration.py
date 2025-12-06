@@ -6,22 +6,16 @@ from ruamel.yaml import YAML
 
 
 def read_config(env_var):
-    if os.environ[env_var].startswith('/'):
-        config_file = pathlib.Path(os.environ[env_var])
-    else:
-        config_file = pathlib.Path('config') / os.environ[env_var]
-    with config_file.open(encoding='utf8') as f:
-        config = yaml.load(f)
-    with config_file.with_suffix('.credentials.yml').open(encoding='utf8') as f:
-        credentials = yaml.load(f)
-    if (permissions_config := config_file.with_suffix('.permissions.yml')).exists():
-        with permissions_config.open(encoding='utf8') as f:
-            permissions = yaml.load(f)
-    else:
-        permissions = []
-    with (pathlib.Path('config') / 'kubernetes_servers.yml').open(encoding='utf8') as f:
-        servers = yaml.load(f)
-    for env_name, env_cfg in config['environments'].items():
+    config, config_file = _read_config_core(env_var)
+    credentials = _read_config_credentials(config_file)
+    permissions = _read_config_permissions(config_file)
+    kubernetes_servers = _read_config_kubernetes()
+    _inject_config_extras(config, credentials, permissions, kubernetes_servers)
+    return config
+
+
+def _inject_config_extras(config: dict, credentials, permissions, servers):
+    for env_name, env_cfg in config.get('environments', {}).items():
         if env_cfg is None:
             env_cfg = config['environments'][env_name] = {}
         if env_name in credentials:
@@ -36,7 +30,37 @@ def read_config(env_var):
             env_cfg['url'] = servers[env_name].get('url')
             env_cfg['cert'] = servers[env_name].get('cert')
             env_cfg['project_name'] = servers[env_name].get('project_name')
-    return config
+
+
+def _read_config_kubernetes() -> dict:
+    with (pathlib.Path('config') / 'kubernetes_servers.yml').open(encoding='utf8') as f:
+        servers = yaml.load(f)
+    return servers
+
+
+def _read_config_permissions(config_file) -> dict:
+    if (permissions_config := config_file.with_suffix('.permissions.yml')).exists():
+        with permissions_config.open(encoding='utf8') as f:
+            permissions = yaml.load(f)
+    else:
+        permissions = []
+    return permissions
+
+
+def _read_config_credentials(config_file) -> dict:
+    with config_file.with_suffix('.credentials.yml').open(encoding='utf8') as f:
+        credentials = yaml.load(f)
+    return credentials
+
+
+def _read_config_core(env_var) -> tuple[dict, pathlib.Path]:
+    if os.environ[env_var].startswith('/'):
+        config_file = pathlib.Path(os.environ[env_var])
+    else:
+        config_file = pathlib.Path('config') / os.environ[env_var]
+    with config_file.open(encoding='utf8') as f:
+        config: dict = yaml.load(f)
+    return config, config_file
 
 
 def user_allowed(chat_team_name, chat_user_id, allowed_users):
