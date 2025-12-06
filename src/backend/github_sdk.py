@@ -1,7 +1,9 @@
 import os
+
 import requests
 
-ses = None
+ses: requests.Session | None = None
+
 
 def _init_session():
     global ses
@@ -35,6 +37,7 @@ def get_org_members(org):
 
     return members
 
+
 def get_org_teams(org):
     _init_session()
 
@@ -53,6 +56,7 @@ def get_org_teams(org):
         page += 1
 
     return teams
+
 
 def get_org_team_members(org, team_slug):
     _init_session()
@@ -73,13 +77,15 @@ def get_org_team_members(org, team_slug):
 
     return team_members
 
+
 def get_user_details(username):
     pass
 
-def get_sso_identity(username):
+
+def get_sso_identity(org_name, username):
     _init_session()
 
-    url = f"https://api.github.com/orgs/{ORG_NAME}/memberships/{username}"
+    url = f"https://api.github.com/orgs/{org_name}/memberships/{username}"
     response = ses.get(url)
     if response.status_code == 200:
         data = response.json()
