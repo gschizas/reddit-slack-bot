@@ -11,6 +11,8 @@ from typing import List, Dict, Callable
 import pandas as pd
 from tabulate import tabulate
 
+from backend.constants import TableFormat
+
 
 class Conversation(ABC):
     channel_id: str
@@ -30,11 +32,12 @@ class Conversation(ABC):
         pass
 
     @abstractmethod
-    def send_table(self, title: str, table: List[Dict], send_as_excel: bool = False) -> None:
+    def send_table(self, title: str, table: List[Dict], table_format: TableFormat = TableFormat.TABLE) -> None:
         pass
 
     @abstractmethod
-    def send_tables(self, title: str, tables: Dict[str, List[Dict]], send_as_excel: bool = False) -> None:
+    def send_tables(self, title: str, tables: Dict[str, List[Dict]],
+                    table_format: TableFormat = TableFormat.TABLE) -> None:
         pass
 
     @abstractmethod

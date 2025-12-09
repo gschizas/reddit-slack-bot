@@ -6,7 +6,7 @@ import unicodedata
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
-
+from backend.constants import TableFormat
 
 @gyrobot.command('binary', aliases=['b'],
                  context_settings={

@@ -7,6 +7,7 @@ import kubernetes.client
 import requests
 from cryptography import x509
 
+from backend.constants import TableFormat
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
@@ -37,10 +38,11 @@ def actuator(ctx: ExtendedContext):
 @actuator.command('refresh')
 @click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
 @click.argument('deployments', type=str, nargs=-1)
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
+def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str],
+                     table_format: TableFormat = TableFormat.TABLE):
     def refresh_action(conn, pod_results, pod_to_refresh):
         empty_proxies = {'http': None, 'https': None}
         response_before = requests.get(
@@ -59,16 +61,17 @@ def refresh_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str
 
     action_names = ('refresh', 'Refreshed')
 
-    _actuator_action(ctx, namespace, deployments, excel, action_names, refresh_action)
+    _actuator_action(ctx, namespace, deployments, table_format, action_names, refresh_action)
 
 
 @actuator.command('view')
 @click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
 @click.argument('deployments', type=str, nargs=-1)
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
+def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str],
+                  table_format: TableFormat = TableFormat.TABLE):
     def view_action(conn, pod_results, pod_to_refresh):
         response = requests.get(
             url=f'http://{pod_to_refresh}.pod.{conn.project_name}.kubernetes:8778/actuator/env',
@@ -78,16 +81,17 @@ def view_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], 
 
     action_names = ('view', 'Viewed')
 
-    _actuator_action(ctx, namespace, deployments, excel, action_names, view_action)
+    _actuator_action(ctx, namespace, deployments, table_format, action_names, view_action)
 
 
 @actuator.command('health')
 @click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
 @click.argument('deployments', type=str, nargs=-1)
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def health_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool):
+def health_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str],
+                    table_format: TableFormat = TableFormat.TABLE):
     def health_action(conn, pod_results, pod):
         response = requests.get(
             url=f'http://{pod}.pod.{conn.project_name}.kubernetes:8778/actuator/health',
@@ -110,10 +114,10 @@ def health_actuator(ctx: ExtendedContext, namespace: str, deployments: list[str]
 
     action_names = ('view health', 'Viewed health')
 
-    _actuator_action(ctx, namespace, deployments, excel, action_names, health_action)
+    _actuator_action(ctx, namespace, deployments, table_format, action_names, health_action)
 
 
-def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str], excel: bool,
+def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str], table_format: TableFormat,
                      action_names: tuple[str, str], action: Callable):
     with KubernetesConnection(ctx, namespace) as conn:
         for deployment in deployments:
@@ -138,16 +142,16 @@ def _actuator_action(ctx: ExtendedContext, namespace: str, deployments: list[str
                         pod_results[pod_to_refresh] = [{'State': 'Error', 'Message': repr(ex)}]
             ctx.chat.send_text(
                 f"{action_names[1]} {pods_actioned_successful}/{len(pods_to_refresh)} pods for {deployment}")
-            ctx.chat.send_tables('PodStatus', pod_results, excel)
+            ctx.chat.send_tables('PodStatus', pod_results, table_format=table_format)
 
 
 @actuator.command('pods')
 @click.argument('namespace', type=OpenShiftNamespace(_actuator_config()))
 @click.argument('pod_name', type=str, required=False)
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None, excel: bool = False):
+def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None, table_format: TableFormat = TableFormat.TABLE):
     with KubernetesConnection(ctx, namespace) as conn:
         label_selector = f'deployment={pod_name}' if pod_name else None
         all_pods: kubernetes.client.V1PodList = conn.core_v1_api.list_namespaced_pod(namespace=conn.project_name,
@@ -162,7 +166,7 @@ def pods(ctx: ExtendedContext, namespace: str, pod_name: str = None, excel: bool
             sum([cs.restart_count for cs in pod.status.container_statuses]),
             pod.status.host_ip,
             pod.status.pod_ip])) for pod in all_pods.items]
-        ctx.chat.send_table(title=f"pods-{conn.project_name}", table=pods_list, send_as_excel=excel)
+        ctx.chat.send_table(title=f"pods-{conn.project_name}", table=pods_list, table_format=table_format)
 
 
 def _environment_table(pod_env_raw):

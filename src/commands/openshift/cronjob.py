@@ -7,6 +7,7 @@ import click
 import cron_descriptor
 from ruamel.yaml import YAML
 
+from backend.constants import TableFormat
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
@@ -115,15 +116,15 @@ def _make_cronjob_table(cronjobs):
 
 @cronjob.command('list')
 @click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def list_cronjobs(ctx: ExtendedContext, namespace: str, excel: bool):
+def list_cronjobs(ctx: ExtendedContext, namespace: str, table_format: TableFormat):
     with KubernetesConnection(ctx, namespace) as k8s:
         cronjobs = k8s.batch_v1_api.list_namespaced_cron_job(k8s.project_name)
 
     cronjob_table = _make_cronjob_table(cronjobs.items)
-    ctx.chat.send_table(title=f'cronjobs-{namespace}', table=cronjob_table, send_as_excel=excel)
+    ctx.chat.send_table(title=f'cronjobs-{namespace}', table=cronjob_table, table_format=table_format)
 
 
 def _load_cronjob_stack(namespace):
@@ -141,20 +142,20 @@ def _save_cronjob_stack(namespace, suspended_cronjobs_stack):
         yaml.dump(suspended_cronjobs_stack, f)
 
 
-def _send_results(ctx, namespace, result, excel):
+def _send_results(ctx, namespace, result, table_format: TableFormat = TableFormat.TABLE):
     cronjob_table = _make_cronjob_table(result)
     if cronjob_table:
-        ctx.chat.send_table(title=f'cronjobs-{namespace}', table=cronjob_table, send_as_excel=excel)
+        ctx.chat.send_table(title=f'cronjobs-{namespace}', table=cronjob_table, table_format=table_format)
     else:
         ctx.chat.send_text("No cronjobs were modified")
 
 
 @cronjob.command('pause')
 @click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
+def pause_cronjob(ctx: ExtendedContext, namespace: str, table_format: TableFormat = TableFormat.TABLE):
     suspended_cronjobs_stack = _load_cronjob_stack(namespace)
     with KubernetesConnection(ctx, namespace) as k8s:
         cronjobs = k8s.batch_v1_api.list_namespaced_cron_job(k8s.project_name)
@@ -169,15 +170,15 @@ def pause_cronjob(ctx: ExtendedContext, namespace: str, excel: bool):
                     r.metadata.name, k8s.project_name, {'spec': {'suspend': True}}))
     suspended_cronjobs_stack.append(suspended_cronjobs)
     _save_cronjob_stack(namespace, suspended_cronjobs_stack)
-    _send_results(ctx, namespace, result, excel)
+    _send_results(ctx, namespace, result, table_format)
 
 
 @cronjob.command('resume')
 @click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
+def resume_cronjob(ctx: ExtendedContext, namespace, table_format: TableFormat = TableFormat.TABLE):
     suspended_cronjobs_stack = _load_cronjob_stack(namespace)
     if len(suspended_cronjobs_stack) == 0:
         ctx.chat.send_text("No cronjobs to resume", is_error=True)
@@ -192,33 +193,34 @@ def resume_cronjob(ctx: ExtendedContext, namespace, excel: bool):
                     k8s.project_name,
                     {'spec': {'suspend': False}}))
     _save_cronjob_stack(namespace, suspended_cronjobs_stack)
-    _send_results(ctx, namespace, result, excel)
+    _send_results(ctx, namespace, result, table_format=table_format)
 
 
-def _enable_disable_cronjob(ctx, namespace, cronjob_name, suspend_status, excel):
+def _enable_disable_cronjob(ctx, namespace, cronjob_name, suspend_status,
+                            table_format: TableFormat = TableFormat.TABLE):
     with KubernetesConnection(ctx, namespace) as k8s:
         result = k8s.batch_v1_api.patch_namespaced_cron_job(
             cronjob_name,
             k8s.project_name,
             {'spec': {'suspend': suspend_status}})
-    _send_results(ctx, namespace, [result], excel)
+    _send_results(ctx, namespace, [result], table_format=table_format)
 
 
 @cronjob.command("disable")
 @click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
 @click.argument('cronjob_name', type=str)
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def disable(ctx: ExtendedContext, namespace, cronjob_name: str, excel: bool):
-    _enable_disable_cronjob(ctx, namespace, cronjob_name, True, excel)
+def disable(ctx: ExtendedContext, namespace, cronjob_name: str, table_format: TableFormat = TableFormat.TABLE):
+    _enable_disable_cronjob(ctx, namespace, cronjob_name, True, table_format=table_format)
 
 
 @cronjob.command("enable")
 @click.argument('namespace', type=OpenShiftNamespace(_cronjob_config))
 @click.argument('cronjob_name', type=str)
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def enable(ctx: ExtendedContext, namespace, cronjob_name: str, excel: bool):
-    _enable_disable_cronjob(ctx, namespace, cronjob_name, False, excel)
+def enable(ctx: ExtendedContext, namespace, cronjob_name: str, table_format: TableFormat = TableFormat.TABLE):
+    _enable_disable_cronjob(ctx, namespace, cronjob_name, False, table_format=table_format)

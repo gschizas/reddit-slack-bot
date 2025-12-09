@@ -3,6 +3,7 @@ from typing import Dict, List
 
 import click
 
+from backend.constants import TableFormat
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
@@ -25,22 +26,22 @@ def deployment(ctx: ExtendedContext):
 
 @deployment.command('list')
 @click.argument('namespace', type=OpenShiftNamespace(_deployment_config))
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def list_deployments(ctx: ExtendedContext, namespace: str, excel: bool):
+def list_deployments(ctx: ExtendedContext, namespace: str, table_format: TableFormat=TableFormat.TABLE):
     with KubernetesConnection(ctx, namespace) as k8s:
         deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
     deployments_table = _make_deployments_table(deployments.items)
-    ctx.chat.send_table(title='deployments', table=deployments_table, send_as_excel=excel)
+    ctx.chat.send_table(title='deployments', table=deployments_table, table_format=table_format)
 
 
 @deployment.command('pause')
 @click.argument('namespace', type=OpenShiftNamespace(_deployment_config))
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def pause_deployment(ctx: ExtendedContext, namespace: str, excel: bool):
+def pause_deployment(ctx: ExtendedContext, namespace: str, table_format: TableFormat=TableFormat.TABLE):
     with KubernetesConnection(ctx, namespace) as k8s:
         deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
         result = []
@@ -49,15 +50,15 @@ def pause_deployment(ctx: ExtendedContext, namespace: str, excel: bool):
                 one_deployment.metadata.name, k8s.project_name,
                 {'spec': {'paused': True}}))
         result_markdown = _make_deployments_table(result)
-    ctx.chat.send_table(title='deployments', table=result_markdown, send_as_excel=excel)
+    ctx.chat.send_table(title='deployments', table=result_markdown, table_format=table_format)
 
 
 @deployment.command('resume')
 @click.argument('namespace', type=OpenShiftNamespace(_deployment_config))
-@click.option('-x', '--excel', is_flag=True, default=False)
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def resume_deployment(ctx: ExtendedContext, namespace, excel: bool):
+def resume_deployment(ctx: ExtendedContext, namespace, table_format: TableFormat=TableFormat.TABLE):
     with KubernetesConnection(ctx, namespace) as k8s:
         deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
         result = []
@@ -65,7 +66,7 @@ def resume_deployment(ctx: ExtendedContext, namespace, excel: bool):
             result.append(k8s.apps_v1_api.patch_namespaced_deployment(
                 one_deployment.metadata.name, k8s.project_name,
                 {'spec': {'paused': None}}))
-    ctx.chat.send_table(title='deployments', table=_make_deployments_table(result), send_as_excel=excel)
+    ctx.chat.send_table(title='deployments', table=_make_deployments_table(result), table_format=table_format)
 
 
 def _make_deployments_table(result) -> List[Dict]:

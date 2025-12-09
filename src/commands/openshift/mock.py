@@ -5,6 +5,7 @@ from string import Template
 import click
 from ruamel.yaml import YAML
 
+from backend.constants import TableFormat
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
@@ -154,10 +155,11 @@ def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
 
 @mock.command('view')
 @click.argument('namespace', type=OpenShiftNamespace(_mock_config()))
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
 @click.pass_context
 @check_security
-def mock_view(ctx: ExtendedContext, namespace: str, excel: bool):
+def mock_view(ctx: ExtendedContext, namespace: str, table_format: TableFormat=TableFormat.TABLE):
     with KubernetesConnection(ctx, namespace) as k8s:
         deployments = k8s.apps_v1_api.list_namespaced_deployment(k8s.project_name)
     deployments_table = _make_deployments_table(deployments.items)
-    ctx.chat.send_table(title='deployments', table=deployments_table, send_as_excel=excel)
+    ctx.chat.send_table(title='deployments', table=deployments_table, table_format=table_format)

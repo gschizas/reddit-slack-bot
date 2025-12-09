@@ -5,6 +5,10 @@ import pathlib
 from ruamel.yaml import YAML
 
 
+def truthy_env(var_name: str) -> bool:
+    return os.environ.get(var_name, '').lower() in ['true', '1', 't', 'y', 'yes']
+
+
 def read_config(env_var):
     config, config_file = _read_config_core(env_var)
     credentials = _read_config_credentials(config_file)

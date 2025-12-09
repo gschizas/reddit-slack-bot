@@ -7,7 +7,9 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from tabulate import tabulate
 
-from chat.chat_wrapper import Conversation, Message
+from backend.configuration import truthy_env
+from chat.chat_wrapper import Conversation, Message, TableFormat
+from backend.constants import TableFormat
 
 teams_cache = {}
 users_cache = {}
@@ -17,6 +19,7 @@ handle_message: Callable
 logger: logging.Logger
 
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+
 
 class SlackConversation(Conversation):
     @property
@@ -32,23 +35,36 @@ class SlackConversation(Conversation):
             icon_emoji=icon_emoji,
             username=self.bot_name)
 
-    def send_table(self, title: str, table: List[Dict], send_as_excel: bool = False) -> None:
-        if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
+    def send_table(self, title: str, table: List[Dict], table_format: TableFormat = TableFormat.TABLE) -> None:
+        if table_format == TableFormat.EXCEL or truthy_env('SEND_TABLES_AS_EXCEL'):
             excel_data = self.make_excel_table(table)
             self.send_file(excel_data, filename=f'{title}.xlsx')
-        else:
+        elif table_format == TableFormat.MARKDOWN:
             table_markdown = tabulate(table, headers='keys', tablefmt='fancy_outline')
             self.send_file(file_data=table_markdown.encode(), filename=f'{title}.txt')
+        elif table_format == TableFormat.TABLE:
+            header_row = [{"type": "raw_text", "text": key} for key in table[0].keys()]
+            data_rows = [[{"type": "raw_text", "text": str(value)} for value in row.values()] for row in table]
+            table_block = {
+                "type": "table",
+                "column_settings": [
+                    {"is_wrapped": True},
+                    {"align": "right"}],
+                "rows": [header_row] + data_rows
+            }
+            self.send_blocks(blocks=[table_block])
 
-    def send_tables(self, title: str, tables: Dict[str, List[Dict]], send_as_excel: bool = False) -> None:
-        if send_as_excel or os.environ.get('SEND_TABLES_AS_EXCEL', '').lower() in ['true', '1', 't', 'y', 'yes']:
+    def send_tables(self, title: str, tables: Dict[str, List[Dict]],
+                    table_format: TableFormat = TableFormat.TABLE) -> None:
+        if table_format == TableFormat.EXCEL or self.truthy_env('SEND_TABLES_AS_EXCEL'):
             excel_data = self.excel_from_tables(tables)
             self.send_file(excel_data, filename=f'{title}.xlsx')
-        else:
+        elif table_format == TableFormat.ZIP_MARKDOWN:
+            markdown_data = self.markdown_from_tables(tables)
+            self.send_file(markdown_data, filename=f'{title}.zip')
+        elif table_format == TableFormat.MARKDOWN:
             result = self.plain_text_table_sequence(tables)
             self.send_file(file_data=result.encode(), filename=f'{title}.txt')
-            # zip_data = self.zipped_markdown_from_tables(tables)
-            # self.send_file(zip_data, filename=f'{title}.zip')
 
     def send_ephemeral(self, text=None, blocks=None, is_error=False, icon_emoji=None):
         if icon_emoji is None:
@@ -86,6 +102,7 @@ class SlackConversation(Conversation):
             channel=self.channel_id,
             icon_emoji=':robot_face:',
             blocks=blocks,
+            text="...",
             username=self.bot_name)
 
     def get_user_info(self, user_id):

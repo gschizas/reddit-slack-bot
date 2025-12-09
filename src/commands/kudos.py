@@ -10,6 +10,7 @@ import numpy as np
 import psycopg
 from PIL import Image, ImageDraw, ImageFont
 
+from backend.constants import TableFormat
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
 
@@ -167,10 +168,10 @@ def kudos_view(ctx: ExtendedContext, days_to_check: int, channel: str,
         elif output_format == 'image':
             image_file = _create_kudos_image(table)
             ctx.chat.send_file(image_file, title="Kudos", filename="kudos.png")
-        elif output_format == 'text':
-            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=False)
+        elif output_format == 'excel':
+            ctx.chat.send_table(title="Kudos", table=table, table_format=TableFormat.EXCEL)
         else:
-            ctx.chat.send_table(title="Kudos", table=table, send_as_excel=True)
+            ctx.chat.send_table(title="Kudos", table=table, table_format=TableFormat.TABLE)
 
 
 def _create_kudos_image(high_scores):
