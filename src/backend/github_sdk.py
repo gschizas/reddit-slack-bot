@@ -79,7 +79,13 @@ def get_org_team_members(org, team_slug):
 
 
 def get_user_details(username):
-    pass
+    _init_session()
+
+    url = f"https://api.github.com/users/{username}"
+    response = ses.get(url)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch members: {response.status_code} {response.text}")
+    return response.json()
 
 
 def get_sso_identity(org_name, username):
