@@ -17,50 +17,48 @@ from commands.extended_context import ExtendedContext
 if 'KUDOS_DATABASE_URL' not in os.environ:
     raise ImportError('KUDOS_DATABASE_URL not found in environment')
 
-SQL_KUDOS_INSERT = """\
-INSERT INTO kudos (
-   from_user, from_user_id,
-   to_user, to_user_id,
-   team_name, team_id,
-   channel_name, channel_id,
-   permalink, reason)
-VALUES (
-   %(sender_name)s, %(sender_id)s,
-   %(recipient_name)s, %(recipient_id)s, 
-   %(team_name)s, %(team_id)s,
-   %(channel_name)s, %(channel_id)s,
-   %(permalink)s, %(reason)s);
-"""
+SQL_KUDOS_INSERT = """ \
+                   INSERT INTO kudos (from_user, from_user_id,
+                                      to_user, to_user_id,
+                                      team_name, team_id,
+                                      channel_name, channel_id,
+                                      permalink, reason)
+                   VALUES (%(sender_name)s, %(sender_id)s,
+                           %(recipient_name)s, %(recipient_id)s,
+                           %(team_name)s, %(team_id)s,
+                           %(channel_name)s, %(channel_id)s,
+                           %(permalink)s, %(reason)s); \
+                   """
 
-SQL_KUDOS_VIEW = """\
-SELECT to_user as "User", COUNT(*) as Kudos
-FROM kudos
-WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
-AND channel_id = %(channel_id)s
-GROUP BY to_user
-ORDER BY 2 DESC;"""
+SQL_KUDOS_VIEW = """ \
+                 SELECT to_user as "User", COUNT(*) as Kudos
+                 FROM kudos
+                 WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+                   AND channel_id = %(channel_id)s
+                 GROUP BY to_user
+                 ORDER BY 2 DESC;"""
 
-SQL_KUDOS_VIEW_ALL = """\
-SELECT to_user as "User", COUNT(*) as Kudos
-FROM kudos
-WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
-GROUP BY to_user
-ORDER BY 2 DESC;"""
+SQL_KUDOS_VIEW_ALL = """ \
+                     SELECT to_user as "User", COUNT(*) as Kudos
+                     FROM kudos
+                     WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+                     GROUP BY to_user
+                     ORDER BY 2 DESC;"""
 
-SQL_KUDOS_VIEW_GIVERS = """\
-SELECT from_user as "User", COUNT(*) as Kudos
-FROM kudos
-WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
-AND channel_id = %(channel_id)s
-GROUP BY from_user
-ORDER BY 2 DESC;"""
+SQL_KUDOS_VIEW_GIVERS = """ \
+                        SELECT from_user as "User", COUNT(*) as Kudos
+                        FROM kudos
+                        WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+                          AND channel_id = %(channel_id)s
+                        GROUP BY from_user
+                        ORDER BY 2 DESC;"""
 
-SQL_KUDOS_VIEW_GIVERS_ALL = """\
-SELECT from_user as "User", COUNT(*) as Kudos
-FROM kudos
-WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
-GROUP BY from_user
-ORDER BY 2 DESC;"""
+SQL_KUDOS_VIEW_GIVERS_ALL = """ \
+                            SELECT from_user as "User", COUNT(*) as Kudos
+                            FROM kudos
+                            WHERE DATE_PART('day', NOW() - datestamp) < %(days)s
+                            GROUP BY from_user
+                            ORDER BY 2 DESC;"""
 
 
 @gyrobot.group('kudos',

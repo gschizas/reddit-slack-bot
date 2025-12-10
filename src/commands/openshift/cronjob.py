@@ -7,12 +7,12 @@ import click
 import cron_descriptor
 from ruamel.yaml import YAML
 
+from backend.configuration import read_config, check_security
 from backend.constants import TableFormat
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
 from commands.openshift.common import OpenShiftNamespace
-from backend.configuration import read_config, check_security
 
 if 'OPENSHIFT_CRONJOB' not in os.environ:
     raise ImportError('OPENSHIFT_CRONJOB not found in environment')

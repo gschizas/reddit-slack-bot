@@ -8,8 +8,8 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from tabulate import tabulate
 
 from backend.configuration import truthy_env
-from chat.chat_wrapper import Conversation, Message, TableFormat
 from backend.constants import TableFormat
+from chat.chat_wrapper import Conversation, Message
 
 teams_cache = {}
 users_cache = {}

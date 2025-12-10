@@ -1,17 +1,16 @@
 import datetime
+import json
 import logging
 import os
-import json
 import traceback
-
 from typing import List, Dict, Callable
 
 import requests
-from tabulate import tabulate
 from mattermostdriver import Driver
+from tabulate import tabulate
 
-from chat.chat_wrapper import Conversation, Message, TableFormat
 from backend.constants import TableFormat
+from chat.chat_wrapper import Conversation, Message
 
 teams_cache = {}
 users_cache = {}
@@ -21,6 +20,7 @@ bot_name: str
 handle_message: Callable
 logger: logging.Logger
 mattermost_client: Driver
+
 
 class MattermostConversation(Conversation):
     def send_text(self, text, is_error: bool = False, icon_emoji: str = None, channel=None) -> None:
@@ -68,6 +68,7 @@ class MattermostConversation(Conversation):
     def get_team_info(self) -> Dict:
         pass
 
+
 def print_exception(ex):
     print("*** An exception occurred:", ex)
     traceback.print_exc()
@@ -75,7 +76,6 @@ def print_exception(ex):
     for filename, lineno, name, line in tb:
         print(f"File: {filename}, Line: {lineno}, Function: {name}, Code: {line}")
     return
-
 
 
 def _mattermost_team_info(team_id):
@@ -86,11 +86,11 @@ def _mattermost_team_info(team_id):
         except Exception as ex:
             print_exception(ex)
             return
-            
+
 
 def _preload(team_id):
     pass
-    #_mattermost_team_info(team_id)
+    # _mattermost_team_info(team_id)
 
 
 async def handler(event_raw):
@@ -104,7 +104,7 @@ async def handler(event_raw):
         if event_type in (None, 'hello', 'typing', 'post_deleted', 'post', 'status_change'):
             logger.debug(f"Found message of subtype {event.get('subtype')}")
             return
-        
+
         event_post = json.loads(event['data']['post'])
 
         channel_id = event_post.get('channel_id')
@@ -112,14 +112,14 @@ async def handler(event_raw):
         user_id = event_post.get('user_id')
         post_id = event_post.get('id')
 
-        
         message_raw = event_post['message']
         print(event_type, message_raw)
 
         _preload(team_id)
 
         timestamp = datetime.datetime.fromtimestamp(float(event_post['create_at']) / 1000.0)
-        permalink_raw = mattermost_client.posts.get_post(post_id) #. web_client.chat_getPermalink(channel=channel_id, message_ts=event['ts'])
+        permalink_raw = mattermost_client.posts.get_post(
+            post_id)  # . web_client.chat_getPermalink(channel=channel_id, message_ts=event['ts'])
         # permalink = permalink_raw['permalink']
         permalink = ""
 
@@ -158,6 +158,7 @@ async def handler(event_raw):
         for filename, lineno, name, line in tb:
             print(f"File: {filename}, Line: {lineno}, Function: {name}, Code: {line}")
         return
+
 
 def chat_connect(a_bot_name, a_line_handler):
     global bot_name, line_handler, logger, mattermost_client
@@ -205,58 +206,59 @@ def tests():
             "Authorization": f"Bearer {bot_token}",
             "Content-Type": "application/json"
         }
-        
+
         # url = f"{base_url}/api/v4/teams/{team_id}/channels"
         url = f"{base_url}/api/v4/users/me/teams"
         print(url)
-        
+
         response = requests.get(url, headers=headers)
-        
+
     def get_channels(base_url, bot_token, team_id):
         headers = {
             "Authorization": f"Bearer {bot_token}",
             "Content-Type": "application/json"
         }
-        
+
         url = f"{base_url}/api/v4/teams/{team_id}/channels"
-        
+
         response = requests.get(url, headers=headers)
-        
+
         if response.status_code == 200:
             channels = response.json()
             print(response.text)
             for channel in channels:
                 # Check channel type
-                channel_type = "Public" if channel["type"] == "O" else "Private" if channel["type"] == "P" else "Direct/Group"
+                channel_type = "Public" if channel["type"] == "O" else "Private" if channel[
+                                                                                        "type"] == "P" else "Direct/Group"
                 print(f"Channel Name: {channel['name']} | Channel ID: {channel['id']} | Type: {channel_type}")
         else:
             print(f"Failed to fetch channels: {response.status_code} {response.reason}")
 
         url = f"{base_url}/api/v4/teams/{team_id}/channels/private"
-        
+
         response = requests.get(url, headers=headers)
-        
+
         if response.status_code == 200:
             channels = response.json()
             print(response.text)
             for channel in channels:
                 # Check channel type
-                channel_type = "Public" if channel["type"] == "O" else "Private" if channel["type"] == "P" else "Direct/Group"
+                channel_type = "Public" if channel["type"] == "O" else "Private" if channel[
+                                                                                        "type"] == "P" else "Direct/Group"
                 print(f"Channel Name: {channel['name']} | Channel ID: {channel['id']} | Type: {channel_type}")
         else:
             print(f"Failed to fetch channels: {response.status_code} {response.reason}")
-
 
     def get_teams(base_url, bot_token):
         headers = {
             "Authorization": f"Bearer {bot_token}",
             "Content-Type": "application/json"
         }
-        
+
         url = f"{base_url}/api/v4/users/me/teams"
-        
+
         response = requests.get(url, headers=headers)
-        
+
         if response.status_code == 200:
             teams = response.json()
             for team in teams:
@@ -264,14 +266,10 @@ def tests():
         else:
             print(f"Failed to fetch teams: {response.status_code} {response.reason}")
 
-
-
-    # 
+    #
     get_teams(BASE_URL, BOT_TOKEN)
     team_id = 'miejdgzti7fm9ju4nyasim8dfe'
     get_channels(BASE_URL, BOT_TOKEN, team_id)
     channel_id = 'weohbqfg1t83urnxsrgkjo4i4a'
     channel_id = '53okohka67femr77g5s1f3hw7a'
     send_message(BASE_URL, BOT_TOKEN, channel_id, "Hello from eurobot (not working yet)")
-
-
