@@ -35,6 +35,7 @@ imageio = {extras = ["ffmpeg"], version = "*"}
 cloup = "*"
 cron-descriptor = "*"
 tabulate = {ref = "3b2b69505b3962ace99ac69ee96da1224b477f1a", git = "git+https://github.com/gschizas/python-tabulate.git"}
+word2number = "*"
 
 [dev-packages]
 

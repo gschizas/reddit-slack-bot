@@ -3,6 +3,7 @@ import os
 
 import click
 import requests
+import urllib.parse
 
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
@@ -170,12 +171,18 @@ def weather(ctx: ExtendedContext, place):
             file_data = f.read()
     else:
         if wego_exec := os.environ.get('WEGO_EXE'):
+            place_full_safe = urllib.parse.quote(place_full)
             import subprocess
-            wego_output = subprocess.check_output([wego_exec, place_full])
-            wego_output_text = wego_output.decode('utf-8')
-            wego_output_text_lines = wego_output_text.split('\n')[:7]
-            wego_output_text = '\n'.join(wego_output_text_lines)
-            file_data = render_ansi(wego_output_text)
+
+            wego_output = subprocess.run([wego_exec, place_full_safe], capture_output=True)
+            if wego_output.returncode:
+                wego_error_text = wego_output.stderr.decode('utf-8')
+                file_data = wego_error_text
+            else:
+                wego_output_text = wego_output.stdout.decode('utf-8')
+                wego_output_text_lines = wego_output_text.split('\n')[:7]
+                wego_output_text = '\n'.join(wego_output_text_lines)
+                file_data = render_ansi(wego_output_text)
         else:
             weather_url = os.environ.get('WEATHER_URL', 'http://wttr.in/')
             weather_page = requests.get(weather_url + place_full + '_p0.png?m')
