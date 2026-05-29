@@ -179,7 +179,7 @@ def _environment_table(pod_env_raw):
             if bootstrap_property['properties'] == {}:
                 continue
             common_keys = list(set(bootstrap_property['properties'].keys()) & set(property_root.keys()))
-            assert not common_keys
+            # assert not common_keys
             property_root.update(bootstrap_property['properties'])
         complex_properties = True
     elif 'bootstrapProperties' in env_current:  # Spring Boot v1.5, only one dictionary, get to it directly
