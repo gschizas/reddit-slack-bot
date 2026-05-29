@@ -20,7 +20,7 @@ def nuke():
     pass
 
 
-@nuke.command('thread')
+@nuke.command('thread', aliases=['post'])
 @click.argument('thread_id')
 @click.pass_context
 def nuke_thread(ctx: ExtendedContext, thread_id):

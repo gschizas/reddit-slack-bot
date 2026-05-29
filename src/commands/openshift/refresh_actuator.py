@@ -10,7 +10,8 @@ from cryptography import x509
 from commands import gyrobot
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
-from commands.openshift.common import read_config, OpenShiftNamespace, rangify, check_security
+from commands.openshift.common import OpenShiftNamespace, rangify
+from backend.configuration import read_config, check_security
 
 if 'OPENSHIFT_ACTUATOR_REFRESH' not in os.environ:
     raise ImportError('OPENSHIFT_ACTUATOR_REFRESH not found in environment')

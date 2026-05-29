@@ -6,7 +6,8 @@ from ruamel.yaml import YAML
 from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
-from commands.openshift.common import read_config, OpenShiftNamespace, check_security
+from commands.openshift.common import OpenShiftNamespace
+from backend.configuration import read_config, check_security
 
 if 'OPENSHIFT_SCALEDOWN' not in os.environ:
     raise ImportError('OPENSHIFT_SCALEDOWN not found in environment')

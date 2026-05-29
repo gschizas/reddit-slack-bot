@@ -1,25 +1,10 @@
-import base64
-import collections
-import datetime
-import json
 import os
-import pathlib
-import re
-import urllib.parse
-import zlib
 
 import click
-import praw
-import requests
-import unicodedata
-from requests.adapters import HTTPAdapter
-from requests.structures import CaseInsensitiveDict
-from treelib import Node, Tree
+from treelib import Tree
 
-from bot_framework.yaml_wrapper import yaml
-from commands import gyrobot, DefaultCommandGroup, ClickAliasedGroup
-from commands.extended_context import ExtendedContext
-from commands.github.github_sdk import get_org_teams
+from commands import gyrobot, DefaultCommandGroup
+from backend.github_sdk import get_org_teams
 
 if 'GITHUB_TOKEN' not in os.environ:
     raise ImportError('GITHUB_TOKEN not found in environment')

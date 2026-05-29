@@ -9,7 +9,8 @@ from commands import gyrobot, DefaultCommandGroup
 from commands.extended_context import ExtendedContext
 from commands.openshift.api import KubernetesConnection
 from commands.openshift.api_obsolete_3 import do_login, do_logout
-from commands.openshift.common import OpenShiftNamespace, check_security, read_config, env_config
+from commands.openshift.common import OpenShiftNamespace, env_config
+from backend.configuration import read_config, check_security
 
 if 'MOCK_CONFIGURATION' not in os.environ:
     raise ImportError('MOCK_CONFIGURATION not found in environment')
