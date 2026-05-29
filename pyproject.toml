@@ -40,8 +40,8 @@ dependencies = [
     "treelib>=1.8.0",
 ]
 
-[tool.uv.sources]
-tabulate = { git = "https://github.com/gschizas/python-tabulate.git" }
+# [tool.uv.sources]
+# tabulate = { git = "https://github.com/gschizas/python-tabulate.git" }
 
 #[tool.rye.scripts]
 #slack-bot-reddit-greece = { cmd = ["python", "src/slack_bot.py"], env-file = ".env.d/slack-bot-reddit-greece.env" }
