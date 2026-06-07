@@ -29,7 +29,7 @@ def _get_conversion_value(unit: str) -> float:
     global _conversions
     if _conversions is None:
         _conversions = _read_conversions()
-    result = list(filter(lambda u: _find_unit(u, unit), _conversions))
+    result = [u for u in _conversions if _find_unit(u, unit)]
     if len(result) == 0:
         return None
     elif len(result) == 1:
@@ -49,6 +49,7 @@ def convert(ctx: ExtendedContext, words):
 
     if len(words) < 3 or len(words) > 5:
         ctx.chat.send_text("Format is convert «number» «from» to «to»", is_error=True)
+        return
 
     if len(words) == 3:
         # Try to find out what the first argument is

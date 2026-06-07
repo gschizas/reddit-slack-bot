@@ -93,12 +93,10 @@ class KubernetesConnection:
         aks_credentials = aks_credentials_page.json()
         if 'error' in aks_credentials:
             raise Exception(aks_credentials['error'])
-        aks_value_raw = list(filter(lambda x: x['name'] == 'clusterUser', aks_credentials['kubeconfigs']))[0]['value']
+        aks_value_raw = [x for x in aks_credentials['kubeconfigs'] if x['name'] == 'clusterUser'][0]['value']
         with io.BytesIO(base64.b64decode(aks_value_raw)) as f:
             aks_value = yaml.load(f)
-        cluster_url = \
-            list(filter(lambda x: x['name'] == self.config['azure_cluster_name'], aks_value['clusters']))[0]['cluster'][
-                'server']
+        cluster_url = [x for x in aks_value['clusters'] if x['name'] == self.config['azure_cluster_name']][0]['cluster']['server']
         self.server_url = cluster_url + '/'
 
         #

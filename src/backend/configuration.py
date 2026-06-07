@@ -80,7 +80,7 @@ def user_allowed(chat_team_name, chat_user_id, allowed_users):
         with all_users_file.open(encoding='utf8') as f:
             all_users = yaml.load(f)
         all_users_last_update = all_users_file.stat().st_mtime
-    crowd_users = list(filter(lambda user: _get_chat_user_id(user, chat_team_name) == chat_user_id, all_users))
+    crowd_users = [user for user in all_users if _get_chat_user_id(user, chat_team_name) == chat_user_id]
     if len(crowd_users) != 1:
         return False
     crowd_user = crowd_users[0]
