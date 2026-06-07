@@ -62,3 +62,20 @@ _version = _get_version()
 def version(ctx: ExtendedContext):
     """Display version"""
     ctx.chat.send_text(f"Version: {_version}")
+
+@gyrobot.command('planets')
+@click.option('-f', '--format', type=TableFormat, default=TableFormat.TABLE)
+@click.pass_context
+def show_planets(ctx: ExtendedContext, table_format: TableFormat=TableFormat.TABLE):
+    """Test table"""
+    planets = [
+        {"name": "Mercury", "diameter_km": 4879, "mass_kg": 3.30e23, "day_hours": 1407.6, "year_days": 88},
+        {"name": "Venus", "diameter_km": 12104, "mass_kg": 4.87e24, "day_hours": 5832.5, "year_days": 225},
+        {"name": "Earth", "diameter_km": 12742, "mass_kg": 5.97e24, "day_hours": 24, "year_days": 365},
+        {"name": "Mars", "diameter_km": 6779, "mass_kg": 6.42e23, "day_hours": 24.6, "year_days": 687},
+        {"name": "Jupiter", "diameter_km": 139820, "mass_kg": 1.90e27, "day_hours": 9.9, "year_days": 4333},
+        {"name": "Saturn", "diameter_km": 116460, "mass_kg": 5.68e26, "day_hours": 10.7, "year_days": 10759},
+        {"name": "Uranus", "diameter_km": 50724, "mass_kg": 8.68e25, "day_hours": 17.2, "year_days": 30687},
+        {"name": "Neptune", "diameter_km": 49244, "mass_kg": 1.02e26, "day_hours": 16.1, "year_days": 60190}
+    ]
+    ctx.chat.send_table(f"Testing {_version}", planets, table_format=table_format)

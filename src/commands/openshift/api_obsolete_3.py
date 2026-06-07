@@ -19,7 +19,15 @@ def azure_login(ctx: ExtendedContext, service_principal_id, service_principal_ke
     ctx.logger.info(command_arguments)
     login_cmd = subprocess.run(command_arguments, capture_output=True)
     ctx.chat.send_text(f"Logging in to Azure...")
-    login_result = json.loads(login_cmd.stdout)
+    login_cmd_stdout = login_cmd.stdout
+    login_cmd_stderr = login_cmd.stderr
+    login_result = None
+    try:
+        login_result = json.loads(login_cmd_stdout)
+    except json.JSONDecodeError as ex:
+        ctx.chat.send_text(repr(login_cmd_stdout.decode()), is_error=True)
+        ctx.chat.send_text(repr(login_cmd_stderr.decode()), is_error=True)
+        return ''
     # ctx.chat.send_file(login_cmd.stdout, filename='login.json')
     ctx.chat.send_text(
         f"{login_result[0]['cloudName']} : {login_result[0]['name']} : {login_result[0]['user']['type']}")

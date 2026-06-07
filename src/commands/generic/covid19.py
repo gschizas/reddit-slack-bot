@@ -58,10 +58,10 @@ def covid(ctx: ExtendedContext, country: str):
             full_data = json.loads(full_data)
     country_data = full_data[country]
     data = {}
-    relevant_data = list(filter(lambda d: ('new_cases' in d and 'new_deaths' in d), country_data['data']))
+    relevant_data = [d for d in country_data['data'] if 'new_cases' in d and 'new_deaths' in d]
     for data_for_day in relevant_data[-7:-1]:
         data |= data_for_day
-        if 'new_vaccinations' or 'total_vaccinations' in data_for_day:
+        if 'new_vaccinations' in data_for_day or 'total_vaccinations' in data_for_day:
             data['vaccinations_on'] = data_for_day['date']
 
     report_date = datetime.datetime.strptime(data['date'], '%Y-%m-%d')

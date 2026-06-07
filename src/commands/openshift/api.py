@@ -80,7 +80,11 @@ class KubernetesConnection:
                 'client_secret': (creds['servicePrincipalKey']),
                 'scope': 'https://management.core.windows.net/.default'
             })
-        azure_token = login_page.json()['access_token']
+        login_result = login_page.json()
+        azure_token = login_result.get('access_token')
+        if not azure_token:
+            print(login_result)
+            raise Exception("Azure Login Failed")
         session.headers['Authorization'] = 'Bearer ' + azure_token
         subscriptions_page = session.get('https://management.azure.com/subscriptions?api-version=2019-11-01')
         subscription_count = len(subscriptions_page.json()['value'])

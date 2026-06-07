@@ -51,7 +51,7 @@ def _masked_oc_password(variable_list):
 def mock(ctx: click.Context):
     ctx.ensure_object(dict)
     ctx.obj['config'] = _mock_config()
-    ctx.obj['security_text'] = {'set': 'switch mock status', 'check': 'view mock status'}
+    ctx.obj['security_text'] = {'set': 'switch mock status', 'check': 'view mock status', 'view': 'view mock status'}
 
 
 @mock.command(default_command=True,
@@ -130,6 +130,7 @@ def _get_environment_values(env_vars, vartemplates, microservice_info, status):
 
 @mock.command('check')
 @click.argument('namespace', type=OpenShiftNamespace(_mock_config()))
+@click.option('-x', '--excel', is_flag=True, default=False)
 @click.pass_context
 @check_security
 def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
@@ -144,13 +145,30 @@ def mock_check(ctx: ExtendedContext, namespace: str, excel: bool):
     microservices = list(config_env['status'][first_status].keys())
     for microservice in microservices:
         environment_set_args = ['oc', 'set', 'env', '-n', project_name, prefix + microservice, '--list']
-        env_var_list = subprocess.check_output(environment_set_args).decode()
+        env_var_list_result = subprocess.run(environment_set_args, capture_output=True)
+        if env_var_list_result.returncode != 0:
+            #ctx.chat.send_text(env_var_list_result.stdout.decode(), channel=os.environ['PERSONAL_DEBUG'])
+            ctx.chat.send_text(env_var_list_result.stderr.decode(), channel=os.environ['PERSONAL_DEBUG'])
+            continue
+        env_var_list = env_var_list_result.stdout.decode()
         env_var_list = _masked_oc_password(env_var_list)
         result_text += env_var_list + '\n\n'
 
     result_text += do_logout(is_azure)
 
     ctx.chat.send_file(result_text.encode(), title='OpenShift Data', filename='openshift-data.txt')
+
+
+def _make_deployments_table(result) -> List[Dict]:
+    return [{
+        'Namespace': dep.metadata.namespace,
+        'Name': dep.metadata.name,
+        'Created': dep.metadata.creation_timestamp,
+        'Replicas': dep.status.replicas,
+        'Updated Replicas': dep.status.updated_replicas,
+        'Ready Replicas': dep.status.ready_replicas,
+        'Available Replicas': dep.status.available_replicas,
+        'Paused': dep.spec.paused} for dep in result]
 
 
 @mock.command('view')
