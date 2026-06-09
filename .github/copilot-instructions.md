@@ -337,6 +337,38 @@ Env guard: `CHEESE_DATABASE_URL` (PostgreSQL via psycopg3). Config from `data/ch
 
 Env guard: `QUESTIONNAIRE_DATABASE_URL`. Questionnaire definition loaded from `data/$QUESTIONNAIRE_FILE` (multi-document YAML). Question types: `radio`, `checkbox`, `tree`, `checktree`, `text`, `textarea`, `scale-matrix`. Subqueries: `count`, `questions`, `questions_full`, `mods`, `votes_per_day`, `q_N`, `full_replies [json]`.
 
+### Approval queue (`backend/approval.py`, `commands/onboarding.py`, `commands/approvals.py`)
+
+Env guard: `APPROVAL_DATABASE_URL` (PostgreSQL via psycopg3; schema auto-created on first use).
+
+A generic **command-approval queue**. Decorate any command with `@requires_approval` (placed *below* `@click.pass_context`) to make invoking it enqueue a pending request instead of running. Designated approvers act on the queue via the `approvals` group; approval re-invokes the original command body.
+
+```python
+from backend.approval import requires_approval
+
+@gyrobot.command('onboard')
+@click.argument('name')
+@click.pass_context
+@requires_approval(summarize=my_summary_fn, validate=my_validate_fn)
+def onboard(ctx, name):
+    ...  # only runs after approval
+```
+
+- The decorator sets `ctx.obj['_approved_execution']` during approved re-invocation; otherwise it serializes `ctx.params` (must be **JSON-serializable**) into the `approval_requests` table.
+- `summarize(params) -> str` builds the human-readable one-liner; `validate(params) -> str|None` rejects bad requests before queuing.
+- `execute_approved(approver_ctx, row)` rebuilds a `click.Context` for the stored command and invokes the real body, returning a result string stored on the request.
+
+| Command / Group | Description |
+|---|---|
+| `onboard "<name>" <email> [--github] [--jetbrains] [--crowd]` | Queue provisioning of any of: GitHub Copilot licence, JetBrains IntelliJ IDEA licence, Crowd entry (≥1 flag required) |
+| `offboard "<name>" <email>` | Queue removal of all licences/entries **and** Slack deactivation |
+| `approvals list` | List pending requests (approvers only) |
+| `approvals show <id>` | Full detail of one request |
+| `approvals approve <id...>` / `approvals approve all` | Approve + execute requests (self-approval blocked unless `APPROVAL_ALLOW_SELF`) |
+| `approvals reject <id...> [-r reason]` / `approvals reject all` | Reject pending requests |
+
+Provisioning is delegated to the **stub** providers in `backend/providers/` (`github_copilot`, `jetbrains`, `crowd`, `slack_provision`), each exposing `provision/deprovision` (or `deactivate`) with a `# TODO` marking the real API integration point. `PROVIDERS` maps resource keys (`github`/`jetbrains`/`crowd`) to provider modules; `RESOURCE_LABELS` holds display names. Approver/requester permissions reuse `user_allowed` against `APPROVAL_APPROVERS` / `APPROVAL_REQUESTERS`.
+
 ---
 
 ## Backend (`backend/`, `bot_framework/`)
@@ -497,3 +529,8 @@ All runtime config lives outside the repo under mounted volumes:
 | `KUDOS_DATABASE_URL` | PostgreSQL DSN for `kudos` (psycopg3) |
 | `CHEESE_DATABASE_URL` | PostgreSQL DSN for `cheese` (psycopg3) |
 | `GITHUB_TOKEN` | Bearer token for `backend/github_sdk.py` |
+| `APPROVAL_DATABASE_URL` | PostgreSQL DSN for the approval queue (psycopg3); enables `onboard`/`offboard`/`approvals` |
+| `APPROVAL_APPROVERS` | Who may approve/reject (comma-separated; `user_allowed` syntax: `*`, user IDs, `@group`) |
+| `APPROVAL_REQUESTERS` | Who may issue approval-gated commands (default `*`) |
+| `APPROVAL_NOTIFY_CHANNEL` | (Optional) channel ID to post new pending requests to |
+| `APPROVAL_ALLOW_SELF` | (Optional, default false) allow approving one's own request |
