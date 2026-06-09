@@ -11,6 +11,7 @@ Only commands whose click parameters are JSON-serializable can be gated.
 """
 import functools
 import os
+import pathlib
 from typing import Callable, List, Optional
 
 import click
@@ -19,9 +20,69 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from backend.configuration import user_allowed
+from bot_framework.yaml_wrapper import yaml
 
 if 'APPROVAL_DATABASE_URL' not in os.environ:
     raise ImportError('APPROVAL_DATABASE_URL not found in environment')
+
+if 'APPROVAL_CONFIGURATION' not in os.environ:
+    raise ImportError('APPROVAL_CONFIGURATION not found in environment')
+
+# Roles distinguished *within* the single active environment (not separate
+# environments): who may request approval-gated commands vs. who may approve them.
+ROLE_REQUEST = 'request'
+ROLE_APPROVE = 'approve'
+
+# Each role maps to (users key, channels key) in the resolved permissions block.
+_ROLE_KEYS: dict = {
+    ROLE_REQUEST: ('requesters', 'request_channels'),
+    ROLE_APPROVE: ('approvers', 'approve_channels'),
+}
+
+
+def _read_security_config() -> dict:
+    """Load the approval security config (core YAML + sibling ``.permissions.yml``).
+
+    The core file selects the single active ``environment`` and the self-approval
+    policy; the permissions file holds, per environment, ``requesters`` /
+    ``approvers`` (users), ``request_channels`` / ``approve_channels`` and the
+    ``notify_channel``. Mirrors the file-resolution convention of
+    :func:`backend.configuration.read_config`.
+    """
+    raw = os.environ['APPROVAL_CONFIGURATION']
+    config_file = pathlib.Path(raw) if raw.startswith('/') else pathlib.Path('config') / raw
+    with config_file.open(encoding='utf8') as f:
+        core = yaml.load(f) or {}
+
+    permissions = {}
+    permissions_file = config_file.with_suffix('.permissions.yml')
+    if permissions_file.exists():
+        with permissions_file.open(encoding='utf8') as f:
+            permissions = yaml.load(f) or {}
+
+    environment = core.get('environment')
+    if environment is None:
+        if len(permissions) == 1:
+            environment = next(iter(permissions))
+        else:
+            raise ValueError(
+                "Approval config must set `environment:` when the permissions file "
+                "defines more than one environment")
+    env_perms = permissions.get(environment) or {}
+
+    return {
+        'environment': environment,
+        'allow_self': bool(core.get('allow_self', False)),
+        'requesters': env_perms.get('requesters', []),
+        'request_channels': env_perms.get('request_channels', []),
+        'approvers': env_perms.get('approvers', []),
+        'approve_channels': env_perms.get('approve_channels', []),
+        'notify_channel': env_perms.get('notify_channel'),
+    }
+
+
+# Resolved security configuration for the single active environment.
+_SECURITY_CONFIG = _read_security_config()
 
 # Registry of approval-gated click commands, keyed by command name. Populated by the
 # requires_approval decorator at import time so requests can be re-invoked by name.
@@ -125,21 +186,55 @@ def set_result(request_id: int, status: str, result: str) -> None:
         conn.commit()
 
 
-def _approvers() -> list:
-    return [u for u in os.environ.get('APPROVAL_APPROVERS', '').split(',') if u]
+def _allow_self_approval() -> bool:
+    return bool(_SECURITY_CONFIG.get('allow_self', False))
 
 
-def _requesters() -> list:
-    raw = os.environ.get('APPROVAL_REQUESTERS', '*')
-    return [u for u in raw.split(',') if u] or ['*']
+def _notify_channel() -> Optional[str]:
+    channel = _SECURITY_CONFIG.get('notify_channel')
+    return channel or None
 
 
-def can_approve(ctx) -> bool:
-    return user_allowed(ctx.chat.team_name, ctx.chat.user_id, _approvers())
+def security_check(ctx, role: str, action_name: str) -> bool:
+    """Validate the calling user and channel for ``role`` against the YAML config.
+
+    Resembles :func:`backend.configuration.check_security`: checks the user with
+    :func:`user_allowed` and verifies the channel is permitted (``*`` allows any).
+    ``role`` selects requester vs. approver lists within the single active
+    environment. Sends an error message and returns ``False`` when not permitted.
+    """
+    action_proper = action_name.capitalize()
+    users_key, channels_key = _ROLE_KEYS[role]
+    allowed_users = _SECURITY_CONFIG.get(users_key, [])
+    if not user_allowed(ctx.chat.team_name, ctx.chat.user_id, allowed_users):
+        ctx.chat.send_text(f"You don't have permission to {action_name}.", is_error=True)
+        return False
+    allowed_channels = _SECURITY_CONFIG.get(channels_key, [])
+    channel_name = ctx.chat.channel_name
+    if '*' not in allowed_channels and channel_name not in allowed_channels:
+        ctx.chat.send_text(f"{action_proper} commands are not allowed in {channel_name}", is_error=True)
+        return False
+    return True
 
 
-def can_request(ctx) -> bool:
-    return user_allowed(ctx.chat.team_name, ctx.chat.user_id, _requesters())
+def check_approval_security(func: Callable = None, *, role: str = None):
+    """``check_security``-style decorator for approval commands.
+
+    Reads the human-readable action label from ``ctx.obj['security_text'][command]``
+    and gates execution on :func:`security_check` for the given ``role``. Place it
+    *below* ``@click.pass_context``.
+    """
+    if func is None:
+        return functools.partial(check_approval_security, role=role)
+
+    @functools.wraps(func)
+    def wrapper(ctx, *args, **kwargs):
+        action_name = ctx.obj['security_text'][ctx.command.name]
+        if not security_check(ctx, role, action_name):
+            return
+        return ctx.invoke(func, ctx, *args, **kwargs)
+
+    return wrapper
 
 
 def _requester_name(ctx) -> str:
@@ -170,12 +265,11 @@ def requires_approval(func: Callable = None, *, summarize: Callable = None,
         if ctx.obj.get('_approved_execution'):
             return ctx.invoke(func, ctx, *args, **kwargs)
 
-        if not can_request(ctx):
-            ctx.chat.send_text("You don't have permission to issue this command.", is_error=True)
+        command_name = ctx.command.name
+        if not security_check(ctx, ROLE_REQUEST, f"request {command_name}"):
             return
 
         params = dict(ctx.params)
-        command_name = ctx.command.name
 
         if validate is not None and (error := validate(params)):
             ctx.chat.send_text(error, is_error=True)
@@ -190,7 +284,7 @@ def requires_approval(func: Callable = None, *, summarize: Callable = None,
 
         ctx.chat.send_text(
             f":hourglass_flowing_sand: Request *#{request_id}* queued for approval: {summary}")
-        notify_channel = os.environ.get('APPROVAL_NOTIFY_CHANNEL')
+        notify_channel = _notify_channel()
         if notify_channel:
             ctx.chat.send_text(
                 f":inbox_tray: New approval request *#{request_id}*: {summary}\n"

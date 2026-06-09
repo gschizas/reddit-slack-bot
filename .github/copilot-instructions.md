@@ -339,7 +339,7 @@ Env guard: `QUESTIONNAIRE_DATABASE_URL`. Questionnaire definition loaded from `d
 
 ### Approval queue (`backend/approval.py`, `commands/onboarding.py`, `commands/approvals.py`)
 
-Env guard: `APPROVAL_DATABASE_URL` (PostgreSQL via psycopg3; schema auto-created on first use).
+Env guards: `APPROVAL_DATABASE_URL` (PostgreSQL via psycopg3; schema auto-created on first use) **and** `APPROVAL_CONFIGURATION` (path to the security YAML, under `config/` or absolute — same convention as the OpenShift commands).
 
 A generic **command-approval queue**. Decorate any command with `@requires_approval` (placed *below* `@click.pass_context`) to make invoking it enqueue a pending request instead of running. Designated approvers act on the queue via the `approvals` group; approval re-invokes the original command body.
 
@@ -364,10 +364,12 @@ def onboard(ctx, name):
 | `offboard "<name>" <email>` | Queue removal of all licences/entries **and** Slack deactivation |
 | `approvals list` | List pending requests (approvers only) |
 | `approvals show <id>` | Full detail of one request |
-| `approvals approve <id...>` / `approvals approve all` | Approve + execute requests (self-approval blocked unless `APPROVAL_ALLOW_SELF`) |
+| `approvals approve <id...>` / `approvals approve all` | Approve + execute requests (self-approval blocked unless `allow_self` in config) |
 | `approvals reject <id...> [-r reason]` / `approvals reject all` | Reject pending requests |
 
-Provisioning is delegated to the **stub** providers in `backend/providers/` (`github_copilot`, `jetbrains`, `crowd`, `slack_provision`), each exposing `provision/deprovision` (or `deactivate`) with a `# TODO` marking the real API integration point. `PROVIDERS` maps resource keys (`github`/`jetbrains`/`crowd`) to provider modules; `RESOURCE_LABELS` holds display names. Approver/requester permissions reuse `user_allowed` against `APPROVAL_APPROVERS` / `APPROVAL_REQUESTERS`.
+Provisioning is delegated to the **stub** providers in `backend/providers/` (`github_copilot`, `jetbrains`, `crowd`, `slack_provision`), each exposing `provision/deprovision` (or `deactivate`) with a `# TODO` marking the real API integration point. `PROVIDERS` maps resource keys (`github`/`jetbrains`/`crowd`) to provider modules; `RESOURCE_LABELS` holds display names.
+
+**Security (config-driven, like `check_security`).** All permissions come from the YAML at `APPROVAL_CONFIGURATION` (core file + sibling `.permissions.yml`); only the database stays in an env var. `environments` mean *real* environments — the core `approvals.yml` picks the single active one via `environment:` (plus `allow_self`). The selected environment's permissions block in `approvals.permissions.yml` holds: `requesters` + `request_channels` (who may issue gated commands and where requests are accepted), `approvers` + `approve_channels` (who may approve/reject and where), and `notify_channel` (where new pending requests are announced). Users accept `*` / Slack id / `@group` (via `user_allowed`); channels use the display name incl. `#`/`🔒` prefix, or `*` for any. The helpers are `security_check(ctx, role, action)` and the `@check_approval_security(role=...)` decorator (role is `ROLE_REQUEST`/`ROLE_APPROVE`; reads the action label from `ctx.obj['security_text']`, like `check_security`). Example pair: `config/approvals.yml`, `config/approvals.permissions.yml`.
 
 ---
 
@@ -466,6 +468,7 @@ All runtime config lives outside the repo under mounted volumes:
 | `config/<name>.credentials.yml` | Credentials per environment |
 | `config/<name>.permissions.yml` | User/channel permissions per environment |
 | `config/kubernetes_servers.yml` | Kubernetes cluster URLs |
+| `config/approvals.yml` (+ `.permissions.yml`) | Approval-queue security: active `environment` + `allow_self` in the core file; per-environment `requesters`/`approvers`, `request_channels`/`approve_channels`, `notify_channel` in `.permissions.yml` (path set by `APPROVAL_CONFIGURATION`) |
 | `data/crowd_users.yml` | User directory for group-based permissions |
 | `.env.d/<name>.env` | Environment variables for a bot instance |
 
@@ -530,7 +533,4 @@ All runtime config lives outside the repo under mounted volumes:
 | `CHEESE_DATABASE_URL` | PostgreSQL DSN for `cheese` (psycopg3) |
 | `GITHUB_TOKEN` | Bearer token for `backend/github_sdk.py` |
 | `APPROVAL_DATABASE_URL` | PostgreSQL DSN for the approval queue (psycopg3); enables `onboard`/`offboard`/`approvals` |
-| `APPROVAL_APPROVERS` | Who may approve/reject (comma-separated; `user_allowed` syntax: `*`, user IDs, `@group`) |
-| `APPROVAL_REQUESTERS` | Who may issue approval-gated commands (default `*`) |
-| `APPROVAL_NOTIFY_CHANNEL` | (Optional) channel ID to post new pending requests to |
-| `APPROVAL_ALLOW_SELF` | (Optional, default false) allow approving one's own request |
+| `APPROVAL_CONFIGURATION` | Path to the approval security YAML (under `config/` or absolute). Selects the active `environment`; per-environment `requesters`/`approvers`, their channels, `notify_channel` live in `.permissions.yml` |

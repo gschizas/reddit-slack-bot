@@ -1,8 +1,10 @@
 """Approval queue management commands.
 
-The ``approvals`` group lets designated approvers (``APPROVAL_APPROVERS``) review
-and act on requests queued by approval-gated commands such as ``onboard`` and
-``offboard``. Approving a request executes the original command body.
+The ``approvals`` group lets designated approvers review and act on requests queued
+by approval-gated commands such as ``onboard`` and ``offboard``. Approving a request
+executes the original command body. Approver permissions, the channels the group may
+be used in, and the self-approval policy all come from the YAML config pointed at by
+``APPROVAL_CONFIGURATION`` (see ``backend.approval`` / ``check_security``).
 """
 import os
 import traceback
@@ -10,24 +12,23 @@ from typing import List, Optional
 
 import click
 
-from backend.approval import (can_approve, execute_approved, get, list_pending,
-                              set_decision, set_result)
+from backend.approval import (ROLE_APPROVE, check_approval_security, execute_approved,
+                              get, list_pending, set_decision, set_result,
+                              _allow_self_approval)
 from commands import gyrobot, ClickAliasedGroup
 from commands.extended_context import ExtendedContext
 
 if 'APPROVAL_DATABASE_URL' not in os.environ:
     raise ImportError('APPROVAL_DATABASE_URL not found in environment')
 
-
-def _allow_self() -> bool:
-    return os.environ.get('APPROVAL_ALLOW_SELF', '').lower() in ('true', '1', 't', 'y', 'yes')
-
-
-def _ensure_approver(ctx: ExtendedContext) -> bool:
-    if not can_approve(ctx):
-        ctx.chat.send_text("You don't have permission to manage approvals.", is_error=True)
-        return False
-    return True
+# Human-readable action labels per subcommand, consumed by check_approval_security
+# (mirrors the ctx.obj['security_text'] convention used by check_security).
+_SECURITY_TEXT = {
+    'list': 'list approvals',
+    'show': 'view an approval request',
+    'approve': 'approve requests',
+    'reject': 'reject requests',
+}
 
 
 def _resolve_ids(ids: tuple) -> Optional[List[int]]:
@@ -43,15 +44,15 @@ def _resolve_ids(ids: tuple) -> Optional[List[int]]:
 @click.pass_context
 def approvals(ctx: ExtendedContext):
     """Review and act on queued command-approval requests"""
-    pass
+    ctx.ensure_object(dict)
+    ctx.obj['security_text'] = _SECURITY_TEXT
 
 
 @approvals.command('list')
 @click.pass_context
+@check_approval_security(role=ROLE_APPROVE)
 def list_approvals(ctx: ExtendedContext):
     """List pending approval requests"""
-    if not _ensure_approver(ctx):
-        return
     pending = list_pending()
     if not pending:
         ctx.chat.send_text("No pending approval requests.")
@@ -69,10 +70,9 @@ def list_approvals(ctx: ExtendedContext):
 @approvals.command('show')
 @click.argument('request_id', type=int)
 @click.pass_context
+@check_approval_security(role=ROLE_APPROVE)
 def show_approval(ctx: ExtendedContext, request_id: int):
     """Show full detail of a single approval request"""
-    if not _ensure_approver(ctx):
-        return
     row = get(request_id)
     if row is None:
         ctx.chat.send_text(f"Request #{request_id} not found.", is_error=True)
@@ -95,10 +95,9 @@ def show_approval(ctx: ExtendedContext, request_id: int):
 @approvals.command('approve')
 @click.argument('ids', nargs=-1, required=True)
 @click.pass_context
+@check_approval_security(role=ROLE_APPROVE)
 def approve(ctx: ExtendedContext, ids: tuple):
     """Approve and execute one or more requests (use `all` for every pending request)"""
-    if not _ensure_approver(ctx):
-        return
     request_ids = _resolve_ids(ids)
     if request_ids is None:
         ctx.chat.send_text("Invalid request id(s). Use numeric ids or `all`.", is_error=True)
@@ -118,7 +117,7 @@ def _approve_one(ctx: ExtendedContext, request_id: int) -> None:
     if row['status'] != 'pending':
         ctx.chat.send_text(f"Request #{request_id} is already `{row['status']}`.", is_error=True)
         return
-    if row['requested_by_user_id'] == ctx.chat.user_id and not _allow_self():
+    if row['requested_by_user_id'] == ctx.chat.user_id and not _allow_self_approval():
         ctx.chat.send_text(f"You can't approve your own request #{request_id}.", is_error=True)
         return
 
@@ -141,10 +140,9 @@ def _approve_one(ctx: ExtendedContext, request_id: int) -> None:
 @click.argument('ids', nargs=-1, required=True)
 @click.option('-r', '--reason', default='', help='Reason for rejection')
 @click.pass_context
+@check_approval_security(role=ROLE_APPROVE)
 def reject(ctx: ExtendedContext, ids: tuple, reason: str):
     """Reject one or more pending requests (use `all` for every pending request)"""
-    if not _ensure_approver(ctx):
-        return
     request_ids = _resolve_ids(ids)
     if request_ids is None:
         ctx.chat.send_text("Invalid request id(s). Use numeric ids or `all`.", is_error=True)
