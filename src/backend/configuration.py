@@ -4,6 +4,12 @@ import pathlib
 
 from ruamel.yaml import YAML
 
+# Cache for data/crowd_users.yml used by user_allowed() when resolving '@group'
+# permissions. Initialised here so the global lookup in user_allowed never hits an
+# unbound name on first use.
+all_users: list = []
+all_users_last_update: float = 0
+
 
 def truthy_env(var_name: str) -> bool:
     return os.environ.get(var_name, '').lower() in ['true', '1', 't', 'y', 'yes']
