@@ -13,6 +13,7 @@ PROVIDERS = {
     'github': github_copilot,
     'jetbrains': jetbrains,
     'crowd': crowd,
+    'slack': slack_provision,
 }
 
 # Human-readable labels for each resource key.
@@ -20,6 +21,7 @@ RESOURCE_LABELS = {
     'github': 'GitHub Copilot licence',
     'jetbrains': 'JetBrains IntelliJ IDEA licence',
     'crowd': 'Crowd entry',
+    'slack': 'Slack membership',
 }
 
 __all__ = ['Account', 'PROVIDERS', 'RESOURCE_LABELS', 'slack_provision']
